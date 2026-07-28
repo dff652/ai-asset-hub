@@ -52,9 +52,9 @@ print(collections.Counter(f['code'] for f in r['findings']).most_common())"
 ```
 
 ```bash
-VERSION=0.1.2 ./scripts/release-build.sh
+VERSION=0.1.3 ./scripts/release-build.sh
 ./scripts/check-release-checksums.sh
-cd dist/release && file aiah_0.1.2_* | cut -c1-80
+cd dist/release && file aiah_0.1.3_* | cut -c1-80
 ```
 
 必须看到：
@@ -77,17 +77,17 @@ CI 的跨平台目标只证明**可构建**，不代表在那些平台上验证�
 ```bash
 gh run list --branch main --limit 1
 gh run watch <run-id> --exit-status
-git tag -a v0.1.2 -m "aiah v0.1.2"
-git rev-parse v0.1.2^{}      # 必须等于刚通过 CI 的 main commit
-git push origin v0.1.2        # 这一步触发 Release
+git tag -a v0.1.3 -m "aiah v0.1.3"
+git rev-parse v0.1.3^{}      # 必须等于刚通过 CI 的 main commit
+git push origin v0.1.3        # 这一步触发 Release
 ```
 
 ## 4. 发布后验收
 
 ```bash
-gh release view v0.1.2
+gh release view v0.1.3
 # 下载并校验（换成实际平台）
-gh release download v0.1.2 \
+gh release download v0.1.3 \
   -p 'aiah_*_linux_amd64' -p 'LICENSE' -p 'NOTICE' \
   -p 'THIRD_PARTY_*' -p 'SHA256SUMS' -D /tmp/rel-check
 cd /tmp/rel-check && sha256sum -c SHA256SUMS --ignore-missing
