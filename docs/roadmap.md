@@ -251,6 +251,11 @@ TUI 可以编辑那个文件，但不得引入私有设置存储。
     `--package` 启动；同进程复用 `apply.Diff` / `apply.Apply`；changes 分组审阅；
     必须完整输入 `apply` 二次确认；成功显示 `backupId` 与完整回滚命令，失败原样
     展示 Core findings。10 项变异验证和真实 PTY dogfood 均通过。
+15. **TUI Phase D1：引导式本地闭环**。✅ **已实现（2026-07-28）**：
+    `aiah ui` 内按 `w` 明确输入并创建/打开工作区，compose 后按 `b` 选择 profile；
+    复用 `build.Build` 输出到工作区 `dist/`，成功自动进入既有 Phase C diff/apply。
+    没有隐式工作区或私有设置；3 项变异验证与真实 PTY 到 diff 均通过；
+    publish/pull、doctor 与执行 rollback 仍走 CLI。
 
 启动前置：ADR-0003 五项门槛第 3 条（跨设备分发）**已满足**（第 9 项，2026-07-28）。
 Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）。新增依赖时仍须
@@ -300,6 +305,7 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | 8 | ✅ **Secret Provider**（第 10 项） | 已完成 | 环境变量 + `pass`；解析失败整单零写入，解析值不进报告/事务元数据 |
 | 9 | ✅ **TUI Phase C** | 已完成 | 二次确认、backup/rollback、Core findings 原样展示；PTY dogfood 通过 |
 | 10 | ✅ **`aiah bootstrap`**（第 7 项） | 已完成 | ADR-0008；pull 前 TTY 预检，复用 Phase C typed confirmation |
+| 11 | ✅ **TUI Phase D1 引导式本地闭环** | 已完成 | 显式工作区→compose→profile→build→Phase C，降低首次使用门槛 |
 
 排序依据：**doctor 先于安装脚本**——安装脚本扩大用户面，doctor 让扩大后的用户
 能自查；反过来会先收到一批「我这边不对」而无从下手。
@@ -307,13 +313,14 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 工程维护项 **Actions Node.js 24 迁移**已完成；Release-only action 已随正常的
 public `v0.1.1` tag 实跑通过。
 
-D8、仓库身份、历史公开边界、发布收口和安装脚本均已完成。下一项产品工作应重新按
-待决策与渠道优先级选择。完整发布收口清单见
+D8、仓库身份、历史公开边界、发布收口、安装脚本和 TUI D1 均已完成。下一项产品
+工作应重新按待决策与渠道优先级选择。完整发布收口清单见
 [2026-07-27 Public readiness 评估](reviews/2026-07-27-public-readiness-assessment.md)。
 
 一句话链路：修 P1/P2 → 真机 dogfood ✅ → TUI Phase A ✅ / 发版闭环 ✅ →
 TUI dogfood ✅ → doctor ✅ → MCP ✅ / TUI Phase B ✅ → 跨设备分发 ✅ →
 Secret Provider ✅ → TUI Phase C ✅ → bootstrap ✅。
+当前再向后是 TUI D1 引导式本地闭环 ✅。
 **首次真机 dogfood 已完成，工具已从「工程演示」变为「自用工具」**（2026-07-25）；
 private `v0.1.0` 已完成流水线验收（2026-07-26）；public `v0.1.1` 已发布并完成
 匿名下载与自查验收（2026-07-28）。
@@ -487,15 +494,16 @@ Phase 1A 不写源目录，不生成资产包，也不执行脚本、hook 或 MC
 
 ## Phase 3.5：本地 TUI（原 Web UI 方案已取代）
 
-Phase A/B/C 已由 `aiah ui` 提供本地终端界面：
+Phase A/B/C/D1 已由 `aiah ui` 提供本地终端界面：
 
 - Inventory 搜索、过滤和预览；
 - findings 与安全告警分诊。
 - 显式工作区内的 manifest 组装；
+- profile 选择、构建到工作区 `dist/` 并自动进入 diff；
 - 部署 diff 分组审阅、二次确认 apply、backup/rollback 展示。
 
-不给 `--workspace` / `--package` 时仍保持只读；所有写操作复用 Go Core。不再规划
-localhost Web UI。
+不给 `--workspace` / `--package` 时初始仍保持只读；按 `w` 明确输入并确认工作区
+后才开启组装。所有写操作复用 Go Core。不再规划 localhost Web UI。
 
 ## Phase 4：受控 UI 与编辑器扩展
 

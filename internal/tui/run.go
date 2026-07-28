@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/x/term"
 	"github.com/dff652/ai-asset-hub/internal/apply"
 	"github.com/dff652/ai-asset-hub/internal/inventory"
+	"github.com/dff652/ai-asset-hub/internal/workspace"
 )
 
 var ErrNotTTY = errors.New("interactive terminal required")
@@ -21,8 +22,8 @@ type DeploymentResult struct {
 type Options struct {
 	Home    string
 	Project string
-	// Workspace enables Phase B composition. Empty keeps the UI read-only:
-	// it will not guess where a workspace lives (ADR-0006 §2).
+	// Workspace immediately enables Phase B composition. Empty starts read-only;
+	// the user may explicitly name a path in the TUI (ADR-0006 §2).
 	Workspace string
 	// Package enables Phase C diff/apply review. Targets uses the same target
 	// ids as the CLI diff/apply commands.
@@ -36,8 +37,8 @@ type terminalFile interface {
 	Fd() uintptr
 }
 
-// Run starts the workflow UI. It delegates scan, diff, apply, and workspace
-// composition to the same Core functions as the CLI.
+// Run starts the workflow UI. It delegates scan, composition, build, diff, and
+// apply to the same Core functions as the CLI.
 func Run(options Options) error {
 	return run(options, os.Getenv, term.IsTerminal)
 }
@@ -83,6 +84,13 @@ func runModel(
 ) (Model, error) {
 	if !interactiveTerminal(options, getenv, isTerminal) {
 		return Model{}, ErrNotTTY
+	}
+	if options.Workspace != "" {
+		root, _, err := workspace.PrepareRoot(options.Workspace, options.Home)
+		if err != nil {
+			return Model{}, err
+		}
+		options.Workspace = root
 	}
 
 	model := NewModel(inventory.Options{Home: options.Home, Project: options.Project}).
