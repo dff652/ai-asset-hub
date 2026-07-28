@@ -181,13 +181,12 @@
       上游 runtime metadata、源码安装 lint 与完整本地门禁均已通过；迁移提交的
       dev CI 8 个 job 全绿且 annotations 为 0；Release-only 的 action-gh-release
       已随 public `v0.1.1` 正常 tag 实跑通过。
-    - ⬜ **安装脚本 `scripts/install.sh` + `install.ps1`**（ADR-0003 §3 分发顺序
-      第 4 项）。private `v0.1.0` 已证明前置能力：六平台**裸二进制**（无需解压）+
-      `SHA256SUMS` + `check-release-checksums.sh`。设计约束见
-      [产品形态与分发边界评估 §4.3](research/product-form-and-distribution-assessment.md)：
-      必须校验 SHA256、原子安装绝不先删旧的、默认 `~/.local/bin` 不用 sudo、
-      平台不在矩阵内明确报错、已装同版本零动作。校验复用 `scripts/_sha256.sh`。
-      public `v0.1.1` 匿名下载验收已完成，安装脚本现已解除发布阻塞。
+    - ✅ **安装脚本 `scripts/install.sh` + `install.ps1`**（ADR-0003 §3 分发顺序
+      第 4 项）。默认固定 `v0.1.1`；校验 Release `SHA256SUMS` 后才安装，同目录
+      stage 后原子替换，不先删旧版本，不用 sudo、不改 profile，同版本零下载。
+      Unix 校验复用 `scripts/_sha256.sh`；Linux/macOS 与 Windows 分开探测，不猜测
+      不支持的平台。两套网络隔离测试覆盖校验失败保旧、重复 checksum、幂等和
+      原子替换；PowerShell 7.6.4 便携运行时本机通过，Windows 原生 CI 待 PR 验收。
     - ⬜ 包格式兼容矩阵：旧包被新 aiah 读到什么程度（同时是 ADR-0003 UI 门槛
       第 2 条的前置）。
 
@@ -293,7 +292,7 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | 1 | ✅ **TUI Phase A 真机 TTY dogfood** | 已完成 | 未发现需修复的 TUI bug |
 | 2 | ✅ **拍板 D8 + 仓库身份与历史公开边界** | 已完成 | 使用 `dff652`；采用干净公开历史，设备迁移台账不进入 public export |
 | 3 | ✅ **`aiah doctor` + 评审 P3** | 已完成 | 真机只读 dogfood 与变异验证通过 |
-| 4 | **`install.sh` + `install.ps1`** | 1 天 | public `v0.1.1` 匿名验收已完成，当前下一项 |
+| 4 | ✅ **`install.sh` + `install.ps1`** | 已完成 | SHA256、原子替换、无 sudo、幂等与平台拒绝均有回归测试 |
 | 5 | ✅ **`aiah mcp`（只读子集）** | 已完成 | 5 工具零依赖实现，8 项变异验证全部变红；边界固化为 ADR-0005 |
 | 6 | ✅ **TUI Phase B** | 已完成 | ADR-0006 已写；真机 PTY dogfood 通过 |
 | 7 | ✅ **跨设备分发闭环**（第 9 项） | 已完成 | ADR-0007；解除了 TUI Phase C 的唯一阻塞 |
@@ -307,8 +306,8 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 工程维护项 **Actions Node.js 24 迁移**已完成；Release-only action 已随正常的
 public `v0.1.1` tag 实跑通过。
 
-D8、仓库身份、历史公开边界和发布收口均已完成；当前开始安装脚本。
-完整发布收口清单见
+D8、仓库身份、历史公开边界、发布收口和安装脚本均已完成。下一项产品工作应重新按
+待决策与渠道优先级选择。完整发布收口清单见
 [2026-07-27 Public readiness 评估](reviews/2026-07-27-public-readiness-assessment.md)。
 
 一句话链路：修 P1/P2 → 真机 dogfood ✅ → TUI Phase A ✅ / 发版闭环 ✅ →
