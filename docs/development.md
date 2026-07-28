@@ -12,7 +12,7 @@
 |---|---|---|
 | 做什么 | 把资产包装进 `~/.claude` / `~/.codex` / `~/.grok` | 把 `aiah` 二进制交付给用户 |
 | 链路 | `build → diff/dry-run → apply → rollback` | tag → 多平台二进制 → 校验和 → Release |
-| 状态 | **已固化，且 2026-07-25 真机验证** | public `v0.1.1` 已发布并完成匿名验收，见 §5 |
+| 状态 | **已固化，且 2026-07-25 真机验证** | public `v0.1.2` 已发布并完成匿名验收，见 §5 |
 | SOP | [真机 dry-run runbook](runbooks/real-home-dry-run.md)、[假 HOME 闭环](runbooks/fake-home-loop.md) | [发版 runbook](runbooks/release.md) |
 
 ## 1. 开发
@@ -88,7 +88,7 @@ Windows 的 `chmod`、shebang、配置根语义都要单独的行为验收，不
 ```bash
 go build -o build/aiah ./cmd/aiah   # 版本 = dev，未发布二进制的诚实答案
 ./scripts/build.sh                  # 注入 git 版本 / commit / 时间
-VERSION=0.1.1 ./scripts/build.sh    # 下一版本发版预演
+VERSION=0.1.2 ./scripts/build.sh    # 已发布版本的构建复验示例
 aiah version [--output json]
 ```
 
@@ -111,8 +111,8 @@ VERSION/COMMIT/DATE——两份戳规则正是本地构建与发布构建开始�
 2026-07-28 从单提交干净历史发布并完成匿名验收。
 
 ```bash
-VERSION=0.1.1 ./scripts/release-build.sh   # 本地预演：Linux amd64 + 许可材料 + 校验和 + 自检
-git tag -a v0.1.1 -m "aiah v0.1.1" && git push origin v0.1.1   # 触发 Release
+VERSION=0.1.2 ./scripts/release-build.sh   # 本地预演：Linux amd64 + 许可材料 + 校验和 + 自检
+git tag -a v0.1.2 -m "aiah v0.1.2" && git push origin v0.1.2   # 触发 Release
 ```
 
 `.github/workflows/release.yml` 监听 `v*` tag，跑测试与 gofmt 门禁后调用同一个
@@ -125,6 +125,10 @@ public `v0.1.1` Release workflow 全绿；当时下载线上六平台交叉编�
 `aiah 0.1.1, commit ce1ba00dc56d`，且 `doctor --help` 可用。这证明发布链路已经
 端到端闭环，不改变「跨平台构建不等于跨平台语义验证」的边界。后续发布范围已
 收口为完成原生验收的 Linux amd64。
+
+public `v0.1.2` 于 2026-07-28 从 `main@942ab508dd18` 发布：Release workflow
+全绿，只上传一个 Linux amd64 二进制及许可/校验材料；线上 SHA256、版本号、
+commit 与 `doctor --help` 均通过验收。
 
 首次发布时 GitHub 把 `actions/checkout@v4`、`actions/setup-go@v5` 与
 `softprops/action-gh-release@v2` 的 Node.js 20 action 强制运行在 Node.js 24，
