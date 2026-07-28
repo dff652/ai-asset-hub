@@ -90,17 +90,18 @@ type Model struct {
 	noticeIsWarn bool
 	lastFindings []workspace.ComposeFinding
 
-	screen        screen
-	deployOptions apply.Options
-	diffStatus    status
-	diffReport    apply.Report
-	deployErr     error
-	diffCursor    int
-	diffExpanded  map[string]bool
-	confirming    bool
-	confirmInput  textinput.Model
-	applying      bool
-	applyResult   *apply.Report
+	screen           screen
+	deployOptions    apply.Options
+	packageFromBuild bool
+	diffStatus       status
+	diffReport       apply.Report
+	deployErr        error
+	diffCursor       int
+	diffExpanded     map[string]bool
+	confirming       bool
+	confirmInput     textinput.Model
+	applying         bool
+	applyResult      *apply.Report
 }
 
 func NewModel(options inventory.Options) Model {
@@ -167,6 +168,18 @@ func (m Model) WithDeployment(options apply.Options) Model {
 	return m
 }
 
+func (m *Model) invalidateBuiltPackage() {
+	if !m.packageFromBuild {
+		return
+	}
+	m.deployOptions.Package = ""
+	m.packageFromBuild = false
+	m.diffReport = apply.Report{}
+	m.deployErr = nil
+	m.applyResult = nil
+	m.diffCursor = 0
+}
+
 func (m Model) Init() tea.Cmd {
 	if m.deployOptions.Package != "" {
 		return tea.Batch(
@@ -214,6 +227,9 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.notice, m.noticeIsWarn = composeNotice(message)
 		m.lastFindings = message.result.Findings
 		if message.err == nil && message.result.Ok {
+			if len(message.result.Registered) > 0 {
+				m.invalidateBuiltPackage()
+			}
 			// Registered assets are now the workspace's; keeping them ticked
 			// would invite a second write that can only report duplicates.
 			for _, asset := range m.selectedAssets() {
@@ -239,17 +255,20 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case buildMsg:
 		m.building = false
 		if message.err != nil {
+			m.invalidateBuiltPackage()
 			m.notice = "构建失败：" + message.err.Error()
 			m.noticeIsWarn = true
 			return m, nil
 		}
 		if !message.report.Ok || message.report.Package == nil {
+			m.invalidateBuiltPackage()
 			m.notice = buildFailureNotice(message.report)
 			m.noticeIsWarn = true
 			return m, nil
 		}
 		m.deployOptions.Package = message.packagePath
 		m.deployOptions.DryRun = false
+		m.packageFromBuild = true
 		m.screen = screenDeployment
 		m.diffStatus = statusLoading
 		m.deployErr = nil

@@ -137,6 +137,7 @@ aiah ui --package <tar|dir> --home "$HOME"     # Phase C：审阅并部署
 ```
 
 - 没有 `--workspace` 时初始只读；按 `w` 明确输入并确认路径后才创建/打开工作区。
+- HOME/project 下的 `.agents`、`.claude`、`.codex`、`.grok` 不能作为工作区。
 - Phase B 只写显式工作区，create-only，不写工具目录。
 - 工作区内按 `b` 选择 profile，复用 `build` Core 写入 `dist/`，成功后自动进入 diff。
 - 没有 `--package` 且当前会话尚未成功构建时，不显示部署入口。

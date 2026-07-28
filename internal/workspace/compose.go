@@ -114,6 +114,10 @@ func Compose(options ComposeOptions, validateManifest func(manifestPath, root st
 	if err != nil {
 		return result, fmt.Errorf("%w: workspace root is not an accessible directory", ErrComposeBlocked)
 	}
+	managed, err := overlapsManagedToolDirectory(root, options.Home, options.Project)
+	if err != nil || managed {
+		return result, fmt.Errorf("%w: workspace root overlaps a managed tool directory", ErrComposeBlocked)
+	}
 	manifestPath := options.ManifestPath
 	if strings.TrimSpace(manifestPath) == "" {
 		manifestPath = filepath.Join(root, "manifest.yaml")
