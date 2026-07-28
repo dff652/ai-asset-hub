@@ -7,6 +7,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 INSTALLER="${INSTALLER:-$ROOT/scripts/install.sh}"
 TEST_ROOT="$(mktemp -d)"
 REAL_PATH="$PATH"
+unset AIAH_VERSION
 
 cleanup() {
   rm -rf "$TEST_ROOT"
@@ -94,8 +95,7 @@ write_checksums() {
 run_installer() {
   local fake_bin=$1
   local install_dir=$2
-  AIAH_VERSION=0.1.1 \
-    AIAH_INSTALL_DIR="$install_dir" \
+  AIAH_INSTALL_DIR="$install_dir" \
     AIAH_TEST_UNAME_S="${AIAH_TEST_UNAME_S:-Linux}" \
     AIAH_TEST_UNAME_M="${AIAH_TEST_UNAME_M:-x86_64}" \
     PATH="$fake_bin:$REAL_PATH" \
@@ -106,8 +106,8 @@ fixture=$TEST_ROOT/fixture
 fake_bin=$TEST_ROOT/fake-bin
 mkdir -p "$fixture"
 make_fake_tools "$fake_bin"
-make_binary "$fixture/binary" 0.1.1
-write_checksums "$fixture/binary" aiah_0.1.1_linux_amd64 "$fixture/SHA256SUMS"
+make_binary "$fixture/binary" 0.1.2
+write_checksums "$fixture/binary" aiah_0.1.2_linux_amd64 "$fixture/SHA256SUMS"
 export AIAH_TEST_BINARY=$fixture/binary
 export AIAH_TEST_CHECKSUMS=$fixture/SHA256SUMS
 export AIAH_TEST_SHA_HELPER=$ROOT/scripts/_sha256.sh
@@ -134,9 +134,9 @@ after=$(sha256sum "$install_dir/aiah")
 # A checksum mismatch must preserve the existing binary.
 mismatch_dir=$TEST_ROOT/mismatch/bin
 mkdir -p "$mismatch_dir"
-make_binary "$mismatch_dir/aiah" 0.1.0
+make_binary "$mismatch_dir/aiah" 0.1.1
 cp "$mismatch_dir/aiah" "$TEST_ROOT/old-mismatch"
-printf '%064d  %s\n' 0 aiah_0.1.1_linux_amd64 >"$fixture/SHA256SUMS"
+printf '%064d  %s\n' 0 aiah_0.1.2_linux_amd64 >"$fixture/SHA256SUMS"
 : >"$AIAH_TEST_CURL_LOG"
 if run_installer "$fake_bin" "$mismatch_dir" >/dev/null 2>&1; then
   fail "checksum mismatch was accepted"
@@ -144,7 +144,7 @@ fi
 assert_same "$TEST_ROOT/old-mismatch" "$mismatch_dir/aiah"
 
 # Duplicate exact checksum entries are ambiguous and must be rejected.
-write_checksums "$fixture/binary" aiah_0.1.1_linux_amd64 "$fixture/SHA256SUMS"
+write_checksums "$fixture/binary" aiah_0.1.2_linux_amd64 "$fixture/SHA256SUMS"
 checksum_line=$(cat "$fixture/SHA256SUMS")
 printf '%s\n%s\n' "$checksum_line" "$checksum_line" >"$fixture/SHA256SUMS"
 if run_installer "$fake_bin" "$mismatch_dir" >/dev/null 2>&1; then
@@ -153,10 +153,10 @@ fi
 assert_same "$TEST_ROOT/old-mismatch" "$mismatch_dir/aiah"
 
 # A failed final rename must preserve the existing binary and clean the stage.
-write_checksums "$fixture/binary" aiah_0.1.1_linux_amd64 "$fixture/SHA256SUMS"
+write_checksums "$fixture/binary" aiah_0.1.2_linux_amd64 "$fixture/SHA256SUMS"
 atomic_dir=$TEST_ROOT/atomic/bin
 mkdir -p "$atomic_dir"
-make_binary "$atomic_dir/aiah" 0.1.0
+make_binary "$atomic_dir/aiah" 0.1.1
 cp "$atomic_dir/aiah" "$TEST_ROOT/old-atomic"
 fail_bin=$TEST_ROOT/fail-bin
 mkdir -p "$fail_bin"
