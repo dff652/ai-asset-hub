@@ -42,6 +42,15 @@ print(collections.Counter(f['code'] for f in r['findings']).most_common())"
 
 ## 2. 本地预演发布产物
 
+先把 `scripts/install.sh`、`scripts/install.ps1` 和 README 的默认安装版本同步为
+本次版本；安装器默认版本必须指向一个实际存在的 Release，不能提前指向尚未发布的
+tag。运行两套安装器测试：
+
+```bash
+./scripts/test-install.sh
+pwsh -NoLogo -NoProfile -File ./scripts/test-install.ps1
+```
+
 ```bash
 VERSION=0.1.1 ./scripts/release-build.sh
 ./scripts/check-release-checksums.sh
@@ -105,5 +114,5 @@ workflow 的 `VERSION` 处理坏了，**先撤下 Release 再排查**。
 - **无包格式兼容矩阵**。旧资产包被新 `aiah` 读到什么程度还没有定论；
   `pkgload` 用 `DisallowUnknownFields`，所以**给包内 manifest 加字段是破坏性变更**，
   必须连 `schemaVersion` 一起抬。这条同时是 ADR-0003「启动 UI 门槛」第 2 条的前置。
-- **无安装渠道**。ADR-0003 定的顺序是 Releases → Homebrew → Scoop/winget →
-  可审查安装脚本；目前只做到第一步。
+- **包管理器渠道未接入**。当前已有 Release 与可审查的 `install.sh` /
+  `install.ps1`，尚未接 Homebrew、Scoop/winget。

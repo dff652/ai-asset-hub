@@ -5,7 +5,7 @@
 面向个人与小团队的 AI 编程资产管理、打包和跨设备部署工具。
 
 > **状态：Technical Preview。** 核心 CLI、只读 MCP、跨设备分发与 TUI Phase C
-> 已可用；安装脚本和 Windows 写入行为验收仍在路线图中。
+> 已可用；Windows 原生写入行为验收仍在路线图中。
 
 AI Asset Hub 解决 Skills、Rules、Memory、Agents、Hooks 与 MCP 模板散落在
 Claude Code、Codex、Grok 等工具目录，难以审计、迁移和回滚的问题。
@@ -39,43 +39,32 @@ Claude Code / Codex / Grok 目标目录
 
 ## 安装
 
-首个公开版本是
-[`v0.1.1`](https://github.com/dff652/ai-asset-hub/releases/tag/v0.1.1)。
-从 Release 下载与平台匹配的裸二进制和 `SHA256SUMS`，**校验后**再安装：
-
-| 系统 | amd64 | arm64 |
-|---|---|---|
-| Linux | `aiah_0.1.1_linux_amd64` | `aiah_0.1.1_linux_arm64` |
-| macOS | `aiah_0.1.1_darwin_amd64` | `aiah_0.1.1_darwin_arm64` |
-| Windows | `aiah_0.1.1_windows_amd64.exe` | `aiah_0.1.1_windows_arm64.exe` |
-
-Linux amd64 示例：
+Linux / macOS 一行安装：
 
 ```bash
-(
-set -eu
-AIAH_VERSION=0.1.1
-AIAH_ASSET="aiah_${AIAH_VERSION}_linux_amd64"
-AIAH_BASE="https://github.com/dff652/ai-asset-hub/releases/download/v${AIAH_VERSION}"
-AIAH_TMP="$(mktemp -d)"
-trap 'rm -rf "$AIAH_TMP"' EXIT
-
-curl -fL "$AIAH_BASE/$AIAH_ASSET" -o "$AIAH_TMP/$AIAH_ASSET"
-curl -fL "$AIAH_BASE/SHA256SUMS" -o "$AIAH_TMP/SHA256SUMS"
-AIAH_EXPECTED="$(awk -v name="$AIAH_ASSET" '$2 == name { print $1 }' \
-  "$AIAH_TMP/SHA256SUMS")"
-AIAH_ACTUAL="$(sha256sum "$AIAH_TMP/$AIAH_ASSET" | awk '{ print $1 }')"
-test -n "$AIAH_EXPECTED" && test "$AIAH_ACTUAL" = "$AIAH_EXPECTED"
-
-mkdir -p "$HOME/.local/bin"
-install -m 0755 "$AIAH_TMP/$AIAH_ASSET" "$HOME/.local/bin/aiah"
-"$HOME/.local/bin/aiah" version
-)
+curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh | sh
 ```
 
-Linux amd64 已完成端到端行为验证。其他目标经过交叉编译和产物校验，但在对应平台
-完成原生验收前，不把“有二进制”表述为“完整支持”。macOS 可用
-`shasum -a 256` 校验；Windows 写入语义仍待单独验收。
+Windows PowerShell：
+
+```powershell
+irm https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.ps1 | iex
+```
+
+安装器默认固定 `v0.1.1`，下载 Release 的 `SHA256SUMS` 和当前平台二进制，校验后
+在目标目录原子替换；默认安装到 `~/.local/bin`，不用 sudo，也不修改 profile。
+已安装同版本时零下载、零写入。可以显式选择版本和目录：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh |
+  AIAH_VERSION=0.1.1 AIAH_INSTALL_DIR="$HOME/.local/bin" sh
+```
+
+直接执行远程脚本前，推荐先下载、阅读再运行。Release 裸二进制的手动安装方法见
+[上手指南](docs/getting-started.md#安装)。
+
+Linux amd64 已完成端到端行为验证；其他 Release 目标经过交叉编译和产物校验，
+但在对应平台完成原生验收前，不把“有二进制”表述为“完整支持”。
 
 ## 五分钟上手
 
