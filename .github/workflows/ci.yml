@@ -49,6 +49,19 @@ jobs:
           LINT_BIN: ${{ runner.temp }}/aiah-bin/golangci-lint
         run: '"$LINT_BIN" run ./...'
 
+  install-shell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: ./scripts/test-install.sh
+
+  install-powershell:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - shell: pwsh
+        run: ./scripts/test-install.ps1
+
   # Cross-compilation only. Per ADR-0003 section 4 this proves the code builds
   # for a platform, never that its behaviour was verified there: Windows chmod,
   # shebang and config-root semantics need their own acceptance tests before

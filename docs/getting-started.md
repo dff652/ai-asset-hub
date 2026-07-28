@@ -4,6 +4,39 @@
 见[命令参考](cli-reference.md)；真实 HOME 的逐项检查见
 [真机 dry-run runbook](runbooks/real-home-dry-run.md)。
 
+## 安装
+
+推荐先下载并阅读安装器：
+
+```bash
+curl -fsSLo /tmp/aiah-install.sh \
+  https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh
+less /tmp/aiah-install.sh
+sh /tmp/aiah-install.sh
+```
+
+安装器默认固定 `0.1.1`，也可显式设置：
+
+```bash
+AIAH_VERSION=0.1.1 AIAH_INSTALL_DIR="$HOME/.local/bin" \
+  sh /tmp/aiah-install.sh
+```
+
+从 [Release](https://github.com/dff652/ai-asset-hub/releases/tag/v0.1.1)
+手动下载时，必须同时下载 `SHA256SUMS`。Linux amd64 示例：
+
+```bash
+sha256sum -c SHA256SUMS --ignore-missing
+chmod +x aiah_0.1.1_linux_amd64
+mkdir -p "$HOME/.local/bin"
+install -m 0755 aiah_0.1.1_linux_amd64 "$HOME/.local/bin/aiah"
+aiah version
+```
+
+macOS 使用 `shasum -a 256` 计算文件摘要并与 `SHA256SUMS` 中的精确文件名比对。
+Windows 用 `Get-FileHash -Algorithm SHA256` 比对后，将对应 `.exe` 复制为
+`$HOME\.local\bin\aiah.exe`。安装器不会修改 PATH；命令找不到时把该目录加入 PATH。
+
 ## 1. 三个目录
 
 | 目录 | 角色 | 谁写 |
