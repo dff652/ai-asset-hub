@@ -226,6 +226,24 @@ func TestRunRejectsNonTTYAndMissingTERM(t *testing.T) {
 	})
 }
 
+func TestRunRejectsNonTTYBeforeCreatingExplicitWorkspace(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "new-workspace")
+	err := run(
+		Options{
+			Home: t.TempDir(), Workspace: root,
+			Input: strings.NewReader(""), Output: &strings.Builder{},
+		},
+		func(string) string { return "xterm-256color" },
+		func(uintptr) bool { return false },
+	)
+	if !errors.Is(err, ErrNotTTY) {
+		t.Fatalf("error = %v, want ErrNotTTY", err)
+	}
+	if _, err := os.Stat(root); !os.IsNotExist(err) {
+		t.Fatalf("non-TTY invocation created the workspace: %v", err)
+	}
+}
+
 func TestInventoryViewGolden(t *testing.T) {
 	model := readyTestModel()
 	model.width = 100
