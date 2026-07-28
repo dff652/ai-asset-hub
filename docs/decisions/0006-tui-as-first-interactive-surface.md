@@ -58,6 +58,10 @@ Phase B 勾选 HOME 盘点结果后，做两件事：
 这条把写能力做成由用户显式确认的开关，而不是一个总是在场、靠运行时判断兜底的
 功能。
 
+工作区不得等于或位于 HOME/project 的 `.agents`、`.claude`、`.codex`、`.grok`
+目录内；软链指向这些目录也拒绝。路径确认阶段在创建目录前检查，`workspace.Compose`
+再次检查，避免「用户把工具目录误当工作区」绕过 §2 的零写入不变式。
+
 ### 3. 工作区文件 create-only
 
 已存在的工作区文件**不覆盖**，记 `workspace_file_exists` finding 交给人判断。
@@ -132,7 +136,8 @@ Phase C 复用 `apply.Diff` / `apply.Apply`，不复制业务规则。执行前�
 - publish/pull、doctor 和真正执行 rollback 不纳入本批，继续使用 CLI。
 
 工作区未创建、构建成功却未绑定 archive、`--targets` 在无显式 package 时丢失三项
-变异均能使对应行为测试变红；恢复后全量门禁通过。真实 PTY 已走通路径确认 → compose
+变异均能使对应行为测试变红；审查修复又增加工具目录禁入、compose 后旧包失效、重建
+失败后旧包失效三项变异验证。恢复后全量门禁通过。真实 PTY 已走通路径确认 → compose
 → profile → build → 自动 diff，并在 apply 前退出。
 
 ## 讨论过但不采用的方案

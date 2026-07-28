@@ -79,7 +79,8 @@ aiah ui --home "$HOME"
 
 进入后按 `w` 明确输入工作区路径，空格勾选资产，再按 `w` 写出；按 `b` 选择
 profile 后会自动校验、构建并进入只读 diff。只有按 `a` 后完整输入 `apply` 才会写
-目标目录。自查和真正需要恢复时运行界面给出的 `doctor` / `rollback` 命令。
+目标目录。部署后运行 `aiah doctor` 自查；真正需要恢复时复制界面给出的 rollback
+命令。
 
 自动化、跨设备和假 HOME 演练仍使用 CLI。完整教程、manifest 属性与安全边界见
 [上手指南](docs/getting-started.md)。

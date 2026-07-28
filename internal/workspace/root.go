@@ -1,15 +1,20 @@
 package workspace
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
+var managedToolDirectories = []string{".agents", ".claude", ".codex", ".grok"}
+
 // PrepareRoot opens or creates one workspace root that the user explicitly
-// named. It does not choose a default path.
-func PrepareRoot(candidate, home string) (string, bool, error) {
+// named. It does not choose a default path or allow a managed tool directory
+// to become the workspace.
+func PrepareRoot(candidate, home, project string) (string, bool, error) {
 	value := strings.TrimSpace(candidate)
 	if value == "" {
 		return "", false, ErrInvalidOptions
@@ -25,9 +30,16 @@ func PrepareRoot(candidate, home string) (string, bool, error) {
 		}
 	}
 
-	absolute, err := filepath.Abs(value)
+	absolute, err := resolveBoundaryPath(value)
 	if err != nil {
 		return "", false, fmt.Errorf("%w: resolve workspace root", ErrInvalidOptions)
+	}
+	managed, err := overlapsManagedToolDirectory(absolute, home, project)
+	if err != nil {
+		return "", false, fmt.Errorf("%w: resolve managed tool directories", ErrInvalidOptions)
+	}
+	if managed {
+		return "", false, fmt.Errorf("%w: workspace root overlaps a managed tool directory", ErrInvalidOptions)
 	}
 	created := false
 	info, err := os.Stat(absolute)
@@ -47,4 +59,56 @@ func PrepareRoot(candidate, home string) (string, bool, error) {
 		absolute = resolved
 	}
 	return filepath.Clean(absolute), created, nil
+}
+
+func overlapsManagedToolDirectory(candidate, home, project string) (bool, error) {
+	resolvedCandidate, err := resolveBoundaryPath(candidate)
+	if err != nil {
+		return false, err
+	}
+	for _, boundary := range []string{home, project} {
+		if strings.TrimSpace(boundary) == "" {
+			continue
+		}
+		for _, name := range managedToolDirectories {
+			root, err := resolveBoundaryPath(filepath.Join(boundary, name))
+			if err != nil {
+				return false, err
+			}
+			if Within(root, resolvedCandidate) {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
+// resolveBoundaryPath follows every existing symlink prefix while preserving
+// non-existent trailing components. The pre-create boundary check therefore
+// also catches paths such as <symlink-to-.claude>/new-workspace.
+func resolveBoundaryPath(value string) (string, error) {
+	absolute, err := filepath.Abs(value)
+	if err != nil {
+		return "", err
+	}
+	current := filepath.Clean(absolute)
+	trailing := make([]string, 0)
+	for {
+		resolved, err := filepath.EvalSymlinks(current)
+		if err == nil {
+			for index := len(trailing) - 1; index >= 0; index-- {
+				resolved = filepath.Join(resolved, trailing[index])
+			}
+			return filepath.Clean(resolved), nil
+		}
+		if !errors.Is(err, fs.ErrNotExist) {
+			return "", err
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			return filepath.Clean(absolute), nil
+		}
+		trailing = append(trailing, filepath.Base(current))
+		current = parent
+	}
 }

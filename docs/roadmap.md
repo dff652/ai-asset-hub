@@ -254,7 +254,8 @@ TUI 可以编辑那个文件，但不得引入私有设置存储。
 15. **TUI Phase D1：引导式本地闭环**。✅ **已实现（2026-07-28）**：
     `aiah ui` 内按 `w` 明确输入并创建/打开工作区，compose 后按 `b` 选择 profile；
     复用 `build.Build` 输出到工作区 `dist/`，成功自动进入既有 Phase C diff/apply。
-    没有隐式工作区或私有设置；3 项变异验证与真实 PTY 到 diff 均通过；
+    没有隐式工作区或私有设置；受管工具目录禁入，workspace 变化/重建失败会使旧包
+    失效；6 项变异验证与真实 PTY 到 diff 均通过；
     publish/pull、doctor 与执行 rollback 仍走 CLI。
 
 启动前置：ADR-0003 五项门槛第 3 条（跨设备分发）**已满足**（第 9 项，2026-07-28）。
