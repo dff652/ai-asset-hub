@@ -14,6 +14,7 @@ type keyMap struct {
 	Reload       key.Binding
 	Select       key.Binding
 	Write        key.Binding
+	Build        key.Binding
 	Diff         key.Binding
 	Apply        key.Binding
 	Help         key.Binding
@@ -34,6 +35,7 @@ func defaultKeys() keyMap {
 		Reload:       key.NewBinding(key.WithKeys("r")),
 		Select:       key.NewBinding(key.WithKeys(" ")),
 		Write:        key.NewBinding(key.WithKeys("w")),
+		Build:        key.NewBinding(key.WithKeys("b")),
 		Diff:         key.NewBinding(key.WithKeys("d")),
 		Apply:        key.NewBinding(key.WithKeys("a")),
 		Help:         key.NewBinding(key.WithKeys("?")),

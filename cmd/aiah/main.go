@@ -101,15 +101,15 @@ func runUI(args []string, stdout, stderr io.Writer) int {
 	}
 	home := flags.String("home", defaultHome, "home directory to scan")
 	project := flags.String("project", "", "optional project directory to scan")
-	// Without --workspace the UI stays read-only. There is no default: guessing
-	// where to write assets is exactly what this tool must not do.
+	// There is no default workspace: the flag is explicit, and otherwise the
+	// user must name a path inside the TUI before composition is enabled.
 	workspace := flags.String("workspace", "", "asset workspace root; enables composing a manifest")
 	pkg := flags.String("package", "", "package .tar or extracted directory; enables diff/apply review")
 	targets := flags.String("targets", "", "comma-separated deployment targets (claude,codex,grok)")
 	if ok, code := parseFlagSet(flags, args); !ok {
 		return code
 	}
-	if flags.NArg() != 0 || (*pkg == "" && *targets != "") {
+	if flags.NArg() != 0 {
 		_, _ = io.WriteString(stderr, usage)
 		return 2
 	}

@@ -58,24 +58,31 @@ const (
 )
 
 type Model struct {
-	options      inventory.Options
-	report       inventory.Report
-	filterInput  textinput.Model
-	filtering    bool
-	findingsOnly bool
-	cursor       int
-	expanded     map[string]bool
-	status       status
-	err          error
-	width        int
-	height       int
-	showHelp     bool
-	generation   int
-	keys         keyMap
-	plain        bool
+	options            inventory.Options
+	report             inventory.Report
+	filterInput        textinput.Model
+	filtering          bool
+	workspaceInput     textinput.Model
+	choosingWorkspace  bool
+	preparingWorkspace bool
+	profileInput       textinput.Model
+	choosingProfile    bool
+	availableProfiles  []string
+	building           bool
+	findingsOnly       bool
+	cursor             int
+	expanded           map[string]bool
+	status             status
+	err                error
+	width              int
+	height             int
+	showHelp           bool
+	generation         int
+	keys               keyMap
+	plain              bool
 
-	// workspace is empty unless the user named one on the command line. The UI
-	// is read-only until then: it will not guess where to write (ADR-0006 §2).
+	// workspace is empty until the user names one by flag or in the path
+	// prompt. The UI is read-only until then (ADR-0006 §2).
 	workspace    string
 	selected     map[string]bool
 	composing    bool
@@ -107,11 +114,23 @@ func NewModel(options inventory.Options) Model {
 	confirm.Placeholder = "apply"
 	confirm.CharLimit = 5
 	confirm.Width = 12
+	workspaceInput := textinput.New()
+	workspaceInput.Prompt = "> "
+	workspaceInput.Placeholder = "~/ai-assets"
+	workspaceInput.CharLimit = 512
+	workspaceInput.Width = 64
+	profileInput := textinput.New()
+	profileInput.Prompt = "> "
+	profileInput.Placeholder = "personal"
+	profileInput.CharLimit = 120
+	profileInput.Width = 36
 	return Model{
-		options:     options,
-		filterInput: input,
-		expanded:    make(map[string]bool),
-		selected:    make(map[string]bool),
+		options:        options,
+		filterInput:    input,
+		workspaceInput: workspaceInput,
+		profileInput:   profileInput,
+		expanded:       make(map[string]bool),
+		selected:       make(map[string]bool),
 		diffExpanded: map[string]bool{
 			"action:create":    true,
 			"action:update":    true,
@@ -138,11 +157,11 @@ func (m Model) WithWorkspace(root string) Model {
 // WithDeployment enables Phase C for one explicit package. It starts on the
 // read-only diff screen; apply still requires typing "apply" in the TUI.
 func (m Model) WithDeployment(options apply.Options) Model {
+	options.DryRun = false
+	m.deployOptions = options
 	if options.Package == "" {
 		return m
 	}
-	options.DryRun = false
-	m.deployOptions = options
 	m.screen = screenDeployment
 	m.diffStatus = statusLoading
 	return m
@@ -171,6 +190,7 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = message.Width
 		m.height = message.Height
 		m.filterInput.Width = max(10, min(48, message.Width-6))
+		m.workspaceInput.Width = max(10, min(64, message.Width-6))
 		return m, nil
 	case scanMsg:
 		if message.generation != m.generation {
@@ -201,6 +221,43 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, nil
+	case workspaceMsg:
+		m.preparingWorkspace = false
+		if message.err != nil {
+			m.notice = "工作区不可用：" + message.err.Error()
+			m.noticeIsWarn = true
+			return m, nil
+		}
+		m.workspace = message.root
+		m.workspaceInput.SetValue("")
+		m.notice = "已打开工作区：" + message.root
+		if message.created {
+			m.notice = "已创建工作区：" + message.root
+		}
+		m.noticeIsWarn = false
+		return m, nil
+	case buildMsg:
+		m.building = false
+		if message.err != nil {
+			m.notice = "构建失败：" + message.err.Error()
+			m.noticeIsWarn = true
+			return m, nil
+		}
+		if !message.report.Ok || message.report.Package == nil {
+			m.notice = buildFailureNotice(message.report)
+			m.noticeIsWarn = true
+			return m, nil
+		}
+		m.deployOptions.Package = message.packagePath
+		m.deployOptions.DryRun = false
+		m.screen = screenDeployment
+		m.diffStatus = statusLoading
+		m.deployErr = nil
+		m.applyResult = nil
+		m.diffCursor = 0
+		m.notice = "构建完成，已进入部署 diff"
+		m.noticeIsWarn = false
+		return m, diffCommand(m.deployOptions)
 	case diffMsg:
 		if message.err != nil {
 			m.diffStatus = statusFailed
@@ -257,6 +314,15 @@ func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if key.Matches(message, m.keys.ForceQuit) {
 		return m, tea.Quit
+	}
+	if m.preparingWorkspace || m.building {
+		return m, nil
+	}
+	if m.choosingWorkspace {
+		return m.updateWorkspaceInput(message)
+	}
+	if m.choosingProfile {
+		return m.updateProfileInput(message)
 	}
 	if m.confirming {
 		return m.updateConfirmation(message)
@@ -325,7 +391,12 @@ func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(message, m.keys.Select):
 		m.toggleSelection(rows)
 	case key.Matches(message, m.keys.Write):
+		if m.workspace == "" {
+			return m.startWorkspaceInput()
+		}
 		return m.startCompose()
+	case key.Matches(message, m.keys.Build):
+		return m.startProfileInput()
 	case key.Matches(message, m.keys.Diff):
 		return m.startDiff()
 	case key.Matches(message, m.keys.Expand):

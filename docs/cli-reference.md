@@ -128,17 +128,19 @@ HOME，但已验证的包保留在显式 `--out`。
 
 ## `ui`
 
-三种模式共用同一个 Core：
+引导式本地流程和三个显式入口共用同一个 Core：
 
 ```bash
-aiah ui --home "$HOME"                         # Phase A：只读盘点
+aiah ui --home "$HOME"                         # 引导式：盘点→工作区→build→diff/apply
 aiah ui --home "$HOME" --workspace ~/ai-assets # Phase B：组装工作区
 aiah ui --package <tar|dir> --home "$HOME"     # Phase C：审阅并部署
 ```
 
-- 没有 `--workspace` 时不显示工作区写能力。
+- 没有 `--workspace` 时初始只读；按 `w` 明确输入并确认路径后才创建/打开工作区。
 - Phase B 只写显式工作区，create-only，不写工具目录。
-- 没有 `--package` 时不显示部署入口。
+- 工作区内按 `b` 选择 profile，复用 `build` Core 写入 `dist/`，成功后自动进入 diff。
+- 没有 `--package` 且当前会话尚未成功构建时，不显示部署入口。
+- `--targets` 同时适用于显式包和当前会话构建出的包。
 - Phase C 必须完整输入 `apply`；成功后显示 `backupId` 和 rollback 命令。
 - stdin/stdout 不是 TTY，或 `TERM` 为空/`dumb` 时直接失败。
 

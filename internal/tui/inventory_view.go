@@ -9,6 +9,12 @@ import (
 
 func (m Model) View() string {
 	style := newStyles(m.plain)
+	if m.choosingWorkspace {
+		return m.workspaceInputView(style)
+	}
+	if m.choosingProfile {
+		return m.profileInputView(style)
+	}
 	if m.showHelp {
 		return m.helpView(style)
 	}
@@ -49,9 +55,9 @@ func (m Model) View() string {
 		body = m.inventoryBody(style)
 	}
 
-	keysHint := "↑↓/jk 导航 · / 搜索 · f findings · r 重扫 · ? 帮助 · q 退出"
+	keysHint := "↑↓/jk 导航 · w 选择工作区 · / 搜索 · f findings · r 重扫 · ? 帮助 · q 退出"
 	if m.workspace != "" {
-		keysHint = "↑↓/jk 导航 · 空格 勾选 · w 写出工作区 · / 搜索 · f findings · r 重扫 · ? 帮助 · q 退出"
+		keysHint = "↑↓/jk 导航 · 空格 勾选 · w 写出 · b 构建并部署 · / 搜索 · ? 帮助 · q 退出"
 	}
 	if m.deployOptions.Package != "" {
 		keysHint += " · d 部署 diff"
@@ -236,28 +242,70 @@ func (m Model) helpView(style styles) string {
 		"q / Ctrl+C    退出",
 	}
 	if m.workspace == "" {
-		lines = append(lines, "", "当前 inventory 只读。加 --workspace PATH 启动可勾选资产并写出 manifest。")
+		lines = append(lines,
+			"",
+			"当前 inventory 只读。按 w 输入一个明确的工作区路径，或用 --workspace PATH 启动。",
+			"路径确认前不会创建目录；aiah 不会猜测默认工作区。",
+		)
 	} else {
 		lines = append(lines,
 			"空格          勾选 / 取消勾选候选资产",
 			"w             把勾选项复制进工作区并登记进 manifest",
+			"b             选择 profile，构建到工作区 dist/ 并进入部署 diff",
 			"",
 			"工作区："+m.workspace,
 			"只写工作区：已存在的文件不覆盖，界面永不写 .claude / .codex / .grok。",
 			"校验不过则整单回滚，不留半成品。",
+			"部署前先展示只读 diff，且必须完整输入 apply 才会写目标目录。",
 		)
 		if findings := m.composeFindingLines(); len(findings) > 0 {
 			lines = append(lines, "", "上次写出的跳过原因：")
 			lines = append(lines, findings...)
 		}
 	}
-	if m.deployOptions.Package == "" {
-		lines = append(lines, "未指定 --package；apply 仍只在 CLI 执行。")
-	} else {
+	if m.deployOptions.Package != "" {
 		lines = append(lines,
 			"d             进入部署 diff 审阅",
 			"部署写入只在完整输入 apply 二次确认后发生。",
 		)
+	} else if m.workspace == "" {
+		lines = append(lines, "未选择工作区或指定 --package 时，TUI 不提供部署入口。")
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m Model) workspaceInputView(style styles) string {
+	lines := []string{
+		style.header.Render("aiah · 选择工作区"),
+		"",
+		"输入要打开或创建的工作区路径：",
+		m.workspaceInput.View(),
+		"",
+		"支持 ~/...；路径必须由你明确输入，不会使用隐藏默认值。",
+		"Enter 确认 · Esc 取消 · Ctrl+C 退出",
+	}
+	if m.notice != "" {
+		lines = append(lines, "", style.warning.Render(m.notice))
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m Model) profileInputView(style styles) string {
+	lines := []string{
+		style.header.Render("aiah · 构建工作区"),
+		"",
+		"工作区  " + m.workspace,
+		"输入 manifest.yaml 中的 profile 名称：",
+		m.profileInput.View(),
+		"",
+		"产物写入工作区 dist/；构建成功后自动进入只读 diff。",
+		"Enter 构建 · Esc 取消 · Ctrl+C 退出",
+	}
+	if len(m.availableProfiles) > 0 {
+		lines = append(lines, "可用 profile："+strings.Join(m.availableProfiles, "、"))
+	}
+	if m.notice != "" {
+		lines = append(lines, "", style.warning.Render(m.notice))
 	}
 	return strings.Join(lines, "\n")
 }

@@ -1,7 +1,8 @@
 # 上手指南
 
-本指南从现有工具目录的只读盘点开始，走到可审计、可回滚的首次部署。命令参数总表
-见[命令参考](cli-reference.md)；真实 HOME 的逐项检查见
+这是完整的用户教程。日常本地使用优先走一条 TUI 主线；CLI 留给自动化、假 HOME
+演练和跨设备分发。本指南从只读盘点走到可审计、可回滚的首次部署。命令参数总表见
+[命令参考](cli-reference.md)；真实 HOME 的逐项检查见
 [真机 dry-run runbook](runbooks/real-home-dry-run.md)。
 
 ## 安装
@@ -50,32 +51,48 @@ aiah version
 目标目录是产物，不是源头。建立工作区后，应修改工作区再重新 build/apply，而不是
 继续直接编辑目标目录。
 
-## 2. 只读盘点
+## 2. 推荐：一个 TUI 完成本地流程
 
 ```bash
-aiah scan --home "$HOME" --output json > /tmp/aiah-scan.json
-aiah ui
+aiah ui --home "$HOME"
 ```
 
-`scan` 和不带写参数的 `ui` 不写 HOME/project、不执行 hook，也不跟随逃逸软链接。
-TUI 提供 source → type → asset 树、详情、`/` 过滤、`f` findings-only 和 `r`
-重扫。非 TTY 环境应使用 JSON 命令。
+启动后按以下顺序操作：
+
+1. 用方向键浏览，`/` 过滤，`f` 只看 findings；此时界面只读。
+2. 按 `w`，明确输入要打开或创建的工作区，例如 `~/ai-assets`，回车确认。
+3. 用空格勾选候选资产，按 `w` 复制到工作区并登记进 `manifest.yaml`。
+4. 按 `b`，确认或输入 profile；TUI 自动校验并构建到 `<工作区>/dist/`。
+5. 构建成功后自动进入只读 diff。按 `a` 只打开确认页；完整输入 `apply` 并回车才写
+   目标目录。
+6. 成功后记录界面展示的 `backupId` 和完整 rollback 命令。
+
+没有确认工作区前，TUI 不显示复选框，也不会创建目录；它没有隐藏的默认工作区。
+也可以在启动时显式传入 `--workspace ~/ai-assets`。构建、diff 和 apply 都调用与
+CLI 相同的 Core，不另做一套规则。
+
+当前这条 TUI 主线覆盖本地的盘点、组装、校验、构建、diff 和 apply。`doctor`、
+真正执行 rollback、publish/pull 与跨设备传输仍使用下文 CLI；界面会给出可复制的
+rollback 命令。非 TTY 环境也应使用 JSON 命令。
 
 盘点结果中的 `candidate` 只是迁移候选，不代表应原样打包。凭据、session、cache、
 数据库和疑似 secret 会被排除或脱敏报告。
 
-## 3. 建立工作区
+## 3. CLI：只读盘点与建立工作区
 
-工作区布局与 manifest 字段见[资产模型](asset-model.md)。可以手工整理，也可以显式
-让 TUI 组装：
+需要脚本化时：
 
 ```bash
+aiah scan --home "$HOME" --output json > /tmp/aiah-scan.json
 aiah ui --home "$HOME" --workspace ~/ai-assets
 ```
 
-只有给出 `--workspace` 才会出现勾选和 `w` 写出能力。TUI 把选中资产复制进工作区并
-登记到 `manifest.yaml`；已有文件 create-only，不覆盖。校验失败会回滚本次创建的
-文件和目录。
+`scan` 不写 HOME/project、不执行 hook，也不跟随逃逸软链接。TUI 把选中资产复制进
+工作区并登记到 `manifest.yaml`；已有文件 create-only，不覆盖。校验失败会回滚
+本次创建的文件和目录。
+
+工作区布局与 manifest 字段见[资产模型](asset-model.md)。可以手工整理，也可以显式
+让 TUI 组装。
 
 每条资产的四个属性决定后续行为：
 
@@ -88,7 +105,7 @@ aiah ui --home "$HOME" --workspace ~/ai-assets
 shadowing，但不会替项目自动初始化、复制、删除或改名。完整边界见
 [资产模型 §4.1](asset-model.md#41-claudemd-与-agentsmd-的处理)。
 
-## 4. 校验并构建
+## 4. CLI：校验并构建
 
 ```bash
 aiah validate --manifest ~/ai-assets/manifest.yaml --output json
@@ -108,7 +125,7 @@ aiah build --manifest ~/ai-assets/manifest.yaml --profile personal \
 
 相同输入应得到相同 archive 字节与 digest。构建不修改源工作区，也不写工具目录。
 
-## 5. 先走假 HOME 闭环
+## 5. 可选但推荐：先走假 HOME 闭环
 
 不要拿真实 HOME 做第一次全写测试：
 
@@ -132,7 +149,7 @@ aiah rollback --home "$WORK/home" --project "$WORK/project" --output json
 
 验收目标是 apply 成功、再次 apply 幂等、doctor 无错误、rollback 后回到原状。
 
-## 6. 真机先 diff，再 apply
+## 6. CLI：真机先 diff，再 apply
 
 ```bash
 aiah diff --package "$PKG" --home "$HOME" --output json
