@@ -13,11 +13,6 @@ bash -n "$ROOT"/scripts/*.sh
 "$ROOT/scripts/generate-third-party-licenses.sh" --check
 "$ROOT/scripts/test-release-checksums.sh"
 "$ROOT/scripts/test-install.sh"
-if command -v pwsh >/dev/null 2>&1; then
-  pwsh -NoLogo -NoProfile -File "$ROOT/scripts/test-install.ps1"
-else
-  echo "install.ps1: skipped (pwsh not found)"
-fi
 go test ./...
 go test -race ./...
 go vet ./...

@@ -1,8 +1,8 @@
 # 第三方依赖许可证清单
 
-- 更新时间：2026-07-26
+- 更新时间：2026-07-28
 - 本项目许可证：Apache-2.0（仓库根 `LICENSE`，署名见 `NOTICE`）
-- 生成依据：`go list -m all`（模块图）与六个平台的 `go list -deps ./cmd/aiah`
+- 生成依据：`go list -m all`（模块图）与 Linux amd64 的 `go list -deps ./cmd/aiah`
   （实际链接进二进制的包）；发布所带 `THIRD_PARTY_LICENSES.txt` 由
   `scripts/generate-third-party-licenses.sh` 从 `$GOMODCACHE` 的原始
   `LICENSE` / `NOTICE` 生成
@@ -24,7 +24,7 @@
 | `github.com/santhosh-tekuri/jsonschema/v6` | v6.0.2 | Apache-2.0 | manifest / report schema 校验 | 直接 |
 | `gopkg.in/yaml.v3` | v3.0.1 | Apache-2.0（libyaml 移植文件为 MIT） | manifest YAML 解析 | 直接 |
 
-六个平台（linux / darwin / windows × amd64 / arm64）发布构建的传递依赖并集：
+Linux amd64 发布构建的传递依赖：
 
 | 模块 | 版本 | 协议 | 用途 |
 |---|---|---|---|
@@ -36,10 +36,8 @@
 | `github.com/clipperhouse/displaywidth` | v0.9.0 | MIT | Unicode 显示宽度 |
 | `github.com/clipperhouse/stringish` | v0.1.1 | MIT | 显示宽度辅助 |
 | `github.com/clipperhouse/uax29/v2` | v2.5.0 | MIT | Unicode grapheme 分段 |
-| `github.com/erikgeiser/coninput` | 2021-10-04 pseudo-version | MIT | Windows 控制台输入 |
 | `github.com/lucasb-eyer/go-colorful` | v1.3.0 | MIT | 色彩转换 |
 | `github.com/mattn/go-isatty` | v0.0.20 | MIT | 终端能力探测 |
-| `github.com/mattn/go-localereader` | v0.0.1 | MIT | Windows code page reader |
 | `github.com/mattn/go-runewidth` | v0.0.19 | MIT | Unicode rune 宽度 |
 | `github.com/muesli/ansi` | 2023-03-16 pseudo-version | MIT | ANSI reader |
 | `github.com/muesli/cancelreader` | v0.2.2 | MIT | 可取消终端输入 |
@@ -58,13 +56,9 @@
   `NOTICE`。
 - `github.com/santhosh-tekuri/jsonschema/v6` 自身不带 `NOTICE` 文件，只需保留
   其 Apache-2.0 协议文本与版权声明。
-- `github.com/mattn/go-localereader@v0.0.1` 只在 `README.md` 声明 MIT、没有独立
-  LICENSE；发布 bundle 使用仓库内
-  `docs/licenses/overrides/github.com_mattn_go-localereader@v0.0.1.LICENSE` 补齐
-  标准 MIT 正文与上游作者署名；override 带精确版本，依赖升级时不会静默复用。
 - TUI 依赖均为 MIT / BSD-3-Clause；没有引入 GPL / AGPL / LGPL。
-- 上表取六个平台依赖并集，而不是只看当前 Linux 主机，避免漏掉 Windows
-  build-tag 才链接的 `coninput` / `go-localereader`。
+- 当前清单只覆盖实际分发的 Linux amd64 二进制。其他平台恢复分发时，必须同步
+  扩展生成范围并重新审计 build-tag 依赖。
 
 ## 2. 仅出现在模块图、未链接进二进制的模块
 
@@ -105,11 +99,7 @@
 
 ```bash
 go list -m all                      # 模块图
-for goos in linux darwin windows; do
-  for goarch in amd64 arm64; do
-    GOOS="$goos" GOARCH="$goarch" CGO_ENABLED=0 \
-      go list -deps ./cmd/aiah
-  done
-done                                # 六个平台实际链接包的并集
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
+  go list -deps ./cmd/aiah          # 实际发布目标链接包
 ls "$(go env GOMODCACHE)"/<module>@<version>/LICENSE
 ```

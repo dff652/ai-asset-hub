@@ -6,7 +6,7 @@
 
 ## 安装
 
-推荐先下载并阅读安装器：
+当前安装和 Release 支持范围为 **Linux amd64**。推荐先下载并阅读安装器：
 
 ```bash
 curl -fsSLo /tmp/aiah-install.sh \
@@ -33,9 +33,11 @@ install -m 0755 aiah_0.1.1_linux_amd64 "$HOME/.local/bin/aiah"
 aiah version
 ```
 
-macOS 使用 `shasum -a 256` 计算文件摘要并与 `SHA256SUMS` 中的精确文件名比对。
-Windows 用 `Get-FileHash -Algorithm SHA256` 比对后，将对应 `.exe` 复制为
-`$HOME\.local\bin\aiah.exe`。安装器不会修改 PATH；命令找不到时把该目录加入 PATH。
+安装器不会修改 PATH；命令找不到时把 `~/.local/bin` 加入 PATH。
+
+`v0.1.1` 中现存的 macOS、Windows 和 arm64 文件是发布范围收口前生成的历史
+交叉编译产物，未做对应平台原生验收。它们不是安装器或当前支持范围的一部分；
+后续 Release 只发布 Linux amd64，其他平台通过原生验收后再恢复。
 
 ## 1. 三个目录
 

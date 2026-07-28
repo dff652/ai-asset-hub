@@ -20,20 +20,17 @@ cleanup() {
 }
 trap cleanup EXIT
 
-for goos in linux darwin windows; do
-  for goarch in amd64 arm64; do
-    GOOS="$goos" GOARCH="$goarch" CGO_ENABLED=0 \
-      go list -deps -f \
-      '{{with .Module}}{{if not .Main}}{{.Path}}{{"\t"}}{{.Version}}{{"\t"}}{{.Dir}}{{end}}{{end}}' \
-      ./cmd/aiah
-  done
-done | awk 'NF' | sort -u >"$modules"
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
+  go list -deps -f \
+  '{{with .Module}}{{if not .Main}}{{.Path}}{{"\t"}}{{.Version}}{{"\t"}}{{.Dir}}{{end}}{{end}}' \
+  ./cmd/aiah |
+  awk 'NF' | sort -u >"$modules"
 
 {
   echo "AI Asset Hub - Third-Party License Texts"
   echo
-  echo "This file is generated from the union of modules linked into the supported"
-  echo "linux, darwin, and windows amd64/arm64 release binaries."
+  echo "This file is generated from modules linked into the supported Linux amd64"
+  echo "release binary."
   echo
 
   first_license=1

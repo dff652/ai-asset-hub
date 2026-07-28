@@ -49,17 +49,12 @@ esac
 
 need uname
 case "$(uname -s)" in
-  Linux) goos=linux ;;
-  Darwin) goos=darwin ;;
-  MINGW* | MSYS* | CYGWIN*)
-    die "use scripts/install.ps1 on Windows"
-    ;;
-  *) die "unsupported operating system: $(uname -s)" ;;
+  Linux) ;;
+  *) die "only Linux amd64 is currently supported" ;;
 esac
 case "$(uname -m)" in
-  x86_64 | amd64) goarch=amd64 ;;
-  arm64 | aarch64) goarch=arm64 ;;
-  *) die "unsupported architecture: $(uname -m)" ;;
+  x86_64 | amd64) ;;
+  *) die "only Linux amd64 is currently supported" ;;
 esac
 
 target=$install_dir/aiah
@@ -94,7 +89,7 @@ fi
 # shellcheck source=scripts/_sha256.sh
 . "$sha_helper"
 
-asset=aiah_${version}_${goos}_${goarch}
+asset=aiah_${version}_linux_amd64
 release_base=https://github.com/dff652/ai-asset-hub/releases/download/v$version
 checksums=$tmp_dir/SHA256SUMS
 binary=$tmp_dir/$asset
