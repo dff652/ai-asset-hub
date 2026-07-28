@@ -43,18 +43,18 @@ print(collections.Counter(f['code'] for f in r['findings']).most_common())"
 
 ## 2. 本地预演发布产物
 
-先把 `scripts/install.sh` 和 README 的默认安装版本同步为
-本次版本；安装器默认版本必须指向一个实际存在的 Release，不能提前指向尚未发布的
-tag。运行安装器测试：
+安装器默认版本必须始终指向一个实际存在且已验收的 Release，不能提前指向尚未发布
+的 tag。因此发布新版本时先保留上一个已验收版本；新 Release 通过 §4 验收后，再用
+独立 PR 同步 `scripts/install.sh`、README 和上手指南的默认版本。运行安装器测试：
 
 ```bash
 ./scripts/test-install.sh
 ```
 
 ```bash
-VERSION=0.1.1 ./scripts/release-build.sh
+VERSION=0.1.2 ./scripts/release-build.sh
 ./scripts/check-release-checksums.sh
-cd dist/release && file aiah_0.1.1_* | cut -c1-80
+cd dist/release && file aiah_0.1.2_* | cut -c1-80
 ```
 
 必须看到：
@@ -71,24 +71,23 @@ CI 的跨平台目标只证明**可构建**，不代表在那些平台上验证�
 
 ## 3. 打 tag 并发布
 
-先推 `dev` 并等同一 commit 的 CI 全绿，再创建和推送 tag。tag push 会直接触发
-Release，不能拿 Release job 代替 dev 门禁。
+先把 `dev` 通过 PR 提升到 `main`，并等 `main` 上同一 commit 的 CI 全绿，再创建
+和推送 tag。tag push 会直接触发 Release，不能拿 Release job 代替主分支门禁。
 
 ```bash
-git push origin dev
-gh run list --branch dev --limit 1
+gh run list --branch main --limit 1
 gh run watch <run-id> --exit-status
-git tag -a v0.1.1 -m "aiah v0.1.1"
-git rev-parse v0.1.1^{}      # 必须等于刚通过 CI 的 dev commit
-git push origin v0.1.1        # 这一步触发 Release
+git tag -a v0.1.2 -m "aiah v0.1.2"
+git rev-parse v0.1.2^{}      # 必须等于刚通过 CI 的 main commit
+git push origin v0.1.2        # 这一步触发 Release
 ```
 
 ## 4. 发布后验收
 
 ```bash
-gh release view v0.1.1
+gh release view v0.1.2
 # 下载并校验（换成实际平台）
-gh release download v0.1.1 \
+gh release download v0.1.2 \
   -p 'aiah_*_linux_amd64' -p 'LICENSE' -p 'NOTICE' \
   -p 'THIRD_PARTY_*' -p 'SHA256SUMS' -D /tmp/rel-check
 cd /tmp/rel-check && sha256sum -c SHA256SUMS --ignore-missing
