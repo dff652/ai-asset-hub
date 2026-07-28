@@ -1,7 +1,8 @@
 # ADR-0006：TUI 作为第一个交互界面，及其写操作边界
 
 - 状态：Accepted
-- 实施：Phase A 已实现（2026-07-26）；Phase B/C 于 2026-07-28 落地
+- 实施：Phase A 已实现（2026-07-26）；Phase B/C 与 Phase D1 引导式本地闭环于
+  2026-07-28 落地
 - 日期：2026-07-28
 - 取代：[ADR-0003](0003-cli-first-go-core-and-product-surfaces.md) §5（本地只读
   Web UI → 本地 TUI）
@@ -47,14 +48,15 @@ Phase B 勾选 HOME 盘点结果后，做两件事：
 **工具目录零写入是行为级不变式**，与 ADR-0005 同款：测试对真实 `.claude` /
 `.codex` / `.grok` 做前后快照比对，任何越界都变红。
 
-### 2.1 没有 `--workspace` 就没有写能力
+### 2.1 没有明确确认工作区就没有写能力
 
-`aiah ui` 默认**只读**：不给 `--workspace PATH` 时界面不显示复选框、空格不可勾选、
-`w` 明确拒绝并提示如何开启。**没有默认工作区路径**——猜一个写入目标正是本项目最
-不该做的事。
+`aiah ui` 默认**只读**：不给 `--workspace PATH` 时界面不显示复选框、空格不可勾选。
+用户按 `w` 后必须自己输入路径并回车确认，TUI 才创建/打开该目录并开启勾选能力；
+也可以在启动时显式给出 `--workspace PATH`。非 TTY 检查发生在目录创建之前。
 
-这条把写能力做成了结构性的、由用户显式开启的开关，而不是一个总是在场、靠运行时
-判断兜底的功能。
+**没有默认工作区路径**，输入框中的 `~/ai-assets` 只是 placeholder，不会自动采用。
+这条把写能力做成由用户显式确认的开关，而不是一个总是在场、靠运行时判断兜底的
+功能。
 
 ### 3. 工作区文件 create-only
 
@@ -114,6 +116,24 @@ Phase C 复用 `apply.Diff` / `apply.Apply`，不复制业务规则。执行前�
 `apply` 再按 Enter；完成后显著展示 `backupId` 与包含所有安装根的回滚命令；失败时
 原样显示 finding，不做美化。10 项变异验证和真实 PTY diff → apply → rollback 提示
 链路均已通过。
+
+### 8. Phase D1 只串联既有本地 Core
+
+为降低首次使用门槛，TUI 在工作区写出后增加一条本地引导链：
+
+```text
+明确工作区 → 勾选并 compose → 选择 manifest profile → build 到 <workspace>/dist
+           → 自动进入既有 diff → typed apply
+```
+
+- profile 仍来自 `manifest.yaml`；TUI 不保存偏好或私有设置；
+- 构建直接调用 `build.Build`，输出目录固定在已确认工作区的 `dist/`；
+- 成功后只把生成的 archive 路径交给既有 Phase C，不复制 diff/apply/确认逻辑；
+- publish/pull、doctor 和真正执行 rollback 不纳入本批，继续使用 CLI。
+
+工作区未创建、构建成功却未绑定 archive、`--targets` 在无显式 package 时丢失三项
+变异均能使对应行为测试变红；恢复后全量门禁通过。真实 PTY 已走通路径确认 → compose
+→ profile → build → 自动 diff，并在 apply 前退出。
 
 ## 讨论过但不采用的方案
 

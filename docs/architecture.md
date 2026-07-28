@@ -164,7 +164,8 @@ TUI Phase C 展示 diff，只有完整输入 `apply` 才安装。它没有 `--ye
 - 当前不增加 npm/TypeScript launcher；优先发布原生 Release 与系统包管理器；
 - 界面：`aiah ui` 是**本地 TUI**，不是 Web UI（[ADR-0006](decisions/0006-tui-as-first-interactive-surface.md)
   已取代 ADR-0003 §5 的 Web UI 规划）——不开监听端口、不引入 TypeScript，
-  SSH 与新装机器上单二进制即可用；
+  SSH 与新装机器上单二进制即可用；当前可在一次会话内从显式工作区组装、构建并
+  进入 diff/apply；
 - TypeScript 只在将来真做 Web UI 或 VS Code 扩展时引入，不迁移 Go Core。
 
 Go 的交叉编译能力不等于所有平台语义已经验证。Windows apply/rollback/hooks

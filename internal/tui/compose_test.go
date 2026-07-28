@@ -8,6 +8,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/dff652/ai-asset-hub/internal/apply"
 	"github.com/dff652/ai-asset-hub/internal/inventory"
 	"github.com/dff652/ai-asset-hub/internal/workspace"
 )
@@ -34,15 +35,16 @@ func TestSelectionRequiresAWorkspace(t *testing.T) {
 	}
 }
 
-func TestWriteWithoutWorkspaceRefusesLoudly(t *testing.T) {
+func TestWriteWithoutWorkspaceOpensExplicitPathPrompt(t *testing.T) {
 	model := composeModel(t, "")
 	updated, command := model.Update(keyPress("w"))
-	if command != nil {
-		t.Fatal("a write was attempted without a workspace")
-	}
 	next := updated.(Model)
-	if !next.noticeIsWarn || !strings.Contains(next.notice, "--workspace") {
-		t.Fatalf("notice = %q, warn=%v", next.notice, next.noticeIsWarn)
+	if command == nil || !next.choosingWorkspace || next.workspace != "" {
+		t.Fatalf("workspace prompt state = choosing %v workspace %q command nil=%v",
+			next.choosingWorkspace, next.workspace, command == nil)
+	}
+	if _, err := os.Stat(filepath.Join(next.options.Home, "ai-assets")); !os.IsNotExist(err) {
+		t.Fatalf("opening the prompt wrote a workspace: %v", err)
 	}
 }
 
@@ -153,7 +155,9 @@ func composeModel(t *testing.T, workspaceRoot string) Model {
 		t.Fatal(err)
 	}
 
-	model := NewModel(inventory.Options{Home: home}).WithWorkspace(workspaceRoot)
+	model := NewModel(inventory.Options{Home: home}).
+		WithWorkspace(workspaceRoot).
+		WithDeployment(apply.Options{Home: home})
 	model.plain = true
 	report, err := inventory.Scan(inventory.Options{Home: home})
 	if err != nil {

@@ -1,6 +1,7 @@
 # TUI 技术方案（2026-07-25）
 
-- 状态：**Phase A 已实现**（2026-07-26）、**Phase B/C 已实现**（2026-07-28，
+- 状态：**Phase A 已实现**（2026-07-26）、**Phase B/C 与 Phase D1 已实现**
+  （2026-07-28，
   见 [ADR-0006](../decisions/0006-tui-as-first-interactive-surface.md)）；跨设备
   分发前置由 ADR-0007 满足
 - 前置结论：[TUI 界面评估](../research/tui-surface-assessment.md)
@@ -9,7 +10,7 @@
   §2「UI 不得复制业务规则」、§5「先只读、再受控写入」
 
 本文只回答「怎么做」。「要不要做、什么时候做」在评估文档里；分发前置满足后，
-Phase A/B/C 已按顺序全部落地。
+Phase A/B/C/D1 已按顺序全部落地。
 
 ## 0. 定位：工作流操作台，不是控制面板
 
@@ -142,7 +143,8 @@ loading 态，避免阻塞事件循环。
 ### Phase C：diff 审阅与执行
 
 **实现状态：已完成（2026-07-28）。** CLI 为
-`aiah ui --package PATH [--targets LIST]`；`--targets` 没有 `--package` 时拒绝。
+`aiah ui --package PATH [--targets LIST]`；D1 也允许先给 `--targets`，再把它用于
+当前会话构建出的包。
 前置由 [ADR-0007](../decisions/0007-immutable-channel-distribution.md) 满足，执行
 边界见 [ADR-0006 §7](../decisions/0006-tui-as-first-interactive-surface.md)。
 
@@ -162,6 +164,16 @@ diff → 输入 `apply` → 展示 backup / rollback → 退出。
 `aiah bootstrap`（ADR-0008）直接复用这一阶段：先由 channel Core 取回包，再调用
 同一 deployment model。TUI 退出 alternate screen 时把最终 diff/apply Core report
 交回 CLI，使 backup/rollback 能持久留在普通终端；bootstrap 不另做确认逻辑。
+
+### Phase D1：引导式本地闭环
+
+**实现状态：已完成（2026-07-28）。** `aiah ui` 仍以只读 inventory 启动；按 `w`
+明确输入工作区路径后才创建/打开目录。完成 compose 后按 `b` 选择 manifest profile，
+TUI 调 `build.Build` 写到 `<workspace>/dist/`，成功即把 archive 交给 Phase C。
+
+该阶段只做状态编排，不增加业务规则、私有设置或隐式工作区。publish/pull、doctor
+与真正执行 rollback 仍留在 CLI。3 项逐项变异验证和真实 PTY 的
+workspace → compose → build → diff 链路均通过。
 
 ## 5. 代码落位与状态模型
 

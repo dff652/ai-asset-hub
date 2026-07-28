@@ -134,10 +134,10 @@ func TestRunUIDeploymentRejectsNonTTYWithDiffAlternative(t *testing.T) {
 	}
 }
 
-func TestRunUIRejectsTargetsWithoutPackage(t *testing.T) {
+func TestRunUIAcceptsTargetsForGuidedBuild(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	code := run([]string{"ui", "--home", t.TempDir(), "--targets", "claude"}, &stdout, &stderr)
-	if code != 2 || !strings.Contains(stderr.String(), "usage:") {
+	if code != 1 || !strings.Contains(stderr.String(), "interactive TTY") {
 		t.Fatalf("exit code=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 	}
 }
