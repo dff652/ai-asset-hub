@@ -1,5 +1,13 @@
 # 文档索引
 
+## 用户指南
+
+- [上手指南](getting-started.md)（盘点 → 工作区 → build → 假 HOME → 真机部署）
+- [CLI 命令参考](cli-reference.md)
+- [跨设备迁移 runbook](runbooks/cross-device-transfer.md)（发布 → 搬运 → 取回 → 安装）
+- [真机 dry-run runbook](runbooks/real-home-dry-run.md)
+- [AI 资产管理踩坑清单](troubleshooting/ai-asset-pitfalls.md)
+
 ## 现行设计
 
 - [项目协作说明](../CLAUDE.md)（Claude Code / Codex 共用单一事实源）
@@ -10,7 +18,6 @@
 - [开发环境搭建 SOP](runbooks/development-environment.md)
 - [MVP 路线图](roadmap.md)
 - [假 HOME 闭环 runbook](runbooks/fake-home-loop.md)
-- [跨设备迁移 runbook](runbooks/cross-device-transfer.md)（发布 → 搬运 → 取回 → 安装）
 - [Public 发布 runbook](runbooks/public-launch.md)
 - [漏洞报告政策](../SECURITY.md)
 
@@ -51,10 +58,6 @@
 - [产品形态与分发边界评估](research/product-form-and-distribution-assessment.md)
   （服务端 docker / 内网多用户 / curl 安装 / MCP server 四问收口；结论未冻结为 ADR）
 - [外部参考](references.md)
-
-## 排障
-
-- [AI 资产管理踩坑清单](troubleshooting/ai-asset-pitfalls.md)
 
 ## 许可证
 
