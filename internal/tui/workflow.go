@@ -23,9 +23,9 @@ type buildMsg struct {
 	err         error
 }
 
-func prepareWorkspaceCommand(candidate, home string) tea.Cmd {
+func prepareWorkspaceCommand(candidate, home, project string) tea.Cmd {
 	return func() tea.Msg {
-		root, created, err := workspace.PrepareRoot(candidate, home)
+		root, created, err := workspace.PrepareRoot(candidate, home, project)
 		return workspaceMsg{root: root, created: created, err: err}
 	}
 }
@@ -68,7 +68,7 @@ func (m Model) updateWorkspaceInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.workspaceInput.Blur()
 		m.notice = "正在打开工作区…"
 		m.noticeIsWarn = false
-		return m, prepareWorkspaceCommand(candidate, m.options.Home)
+		return m, prepareWorkspaceCommand(candidate, m.options.Home, m.options.Project)
 	}
 	var command tea.Cmd
 	m.workspaceInput, command = m.workspaceInput.Update(message)
@@ -124,6 +124,7 @@ func (m Model) updateProfileInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		m.choosingProfile = false
 		m.profileInput.Blur()
+		m.invalidateBuiltPackage()
 		m.building = true
 		m.notice = "正在校验并构建…"
 		m.noticeIsWarn = false

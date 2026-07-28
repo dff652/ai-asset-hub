@@ -172,8 +172,9 @@ diff → 输入 `apply` → 展示 backup / rollback → 退出。
 TUI 调 `build.Build` 写到 `<workspace>/dist/`，成功即把 archive 交给 Phase C。
 
 该阶段只做状态编排，不增加业务规则、私有设置或隐式工作区。publish/pull、doctor
-与真正执行 rollback 仍留在 CLI。3 项逐项变异验证和真实 PTY 的
-workspace → compose → build → diff 链路均通过。
+与真正执行 rollback 仍留在 CLI。工作区禁入受管工具目录；workspace compose 或重建
+失败后会使当前会话生成的旧包失效，显式 `--package` 不受影响。6 项逐项变异验证和
+真实 PTY 的 workspace → compose → build → diff 链路均通过。
 
 ## 5. 代码落位与状态模型
 

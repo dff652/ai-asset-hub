@@ -91,6 +91,32 @@ func TestComposeNeverWritesToolDirectories(t *testing.T) {
 	}
 }
 
+func TestComposeRejectsManagedToolDirectoryAsWorkspace(t *testing.T) {
+	home := fakeHome(t, map[string]string{
+		".claude/skills/review/SKILL.md": "# review\n",
+	})
+	managedRoot := filepath.Join(home, ".claude")
+	link := filepath.Join(t.TempDir(), "workspace-link")
+	if err := os.Symlink(managedRoot, link); err != nil {
+		t.Fatal(err)
+	}
+	before := snapshotTree(t, managedRoot)
+
+	for _, root := range []string{managedRoot, link} {
+		result, err := Compose(ComposeOptions{
+			WorkspaceRoot: root,
+			Home:          home,
+			Assets:        []inventory.Asset{skillAsset("home/.claude/skills/review")},
+		}, nil)
+		if !errors.Is(err, ErrComposeBlocked) || result.Ok {
+			t.Fatalf("managed workspace %s result=%#v err=%v, want ErrComposeBlocked", root, result, err)
+		}
+	}
+	if diff := treeDiff(before, snapshotTree(t, managedRoot)); diff != "" {
+		t.Fatalf("managed tool directory changed:\n%s", diff)
+	}
+}
+
 // TestComposeDoesNotOverwriteWorkspaceFiles anchors create-only (ADR-0006 §3).
 func TestComposeDoesNotOverwriteWorkspaceFiles(t *testing.T) {
 	home := fakeHome(t, map[string]string{".claude/skills/review/SKILL.md": "from home\n"})

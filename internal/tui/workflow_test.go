@@ -104,9 +104,9 @@ func TestGuidedComposeBuildEntersDeploymentDiff(t *testing.T) {
 	updated, diff := model.Update(message)
 	model = updated.(Model)
 	if diff == nil || model.screen != screenDeployment ||
-		model.deployOptions.Package != message.packagePath {
-		t.Fatalf("build did not enter diff: screen=%d package=%q command nil=%v",
-			model.screen, model.deployOptions.Package, diff == nil)
+		model.deployOptions.Package != message.packagePath || !model.packageFromBuild {
+		t.Fatalf("build did not enter diff: screen=%d package=%q generated=%v command nil=%v",
+			model.screen, model.deployOptions.Package, model.packageFromBuild, diff == nil)
 	}
 	if !strings.HasPrefix(message.packagePath, filepath.Join(workspaceRoot, "dist")+string(filepath.Separator)) {
 		t.Fatalf("package escaped workspace dist: %q", message.packagePath)
@@ -122,14 +122,22 @@ func TestGuidedComposeBuildEntersDeploymentDiff(t *testing.T) {
 
 func TestBuildFailureStaysInInventory(t *testing.T) {
 	model := composeModel(t, t.TempDir())
+	model.deployOptions.Package = "/tmp/old-generated.tar"
+	model.packageFromBuild = true
 	updated, _ := model.Update(buildMsg{
 		report: buildFailureReport(),
 	})
 	next := updated.(Model)
 	if next.screen != screenInventory || !next.noticeIsWarn ||
-		!strings.Contains(next.notice, "unknown_profile") {
-		t.Fatalf("failed build state = screen %d notice %q warn=%v",
-			next.screen, next.notice, next.noticeIsWarn)
+		!strings.Contains(next.notice, "unknown_profile") ||
+		next.deployOptions.Package != "" || next.packageFromBuild {
+		t.Fatalf("failed build state = screen %d notice %q warn=%v package=%q generated=%v",
+			next.screen, next.notice, next.noticeIsWarn,
+			next.deployOptions.Package, next.packageFromBuild)
+	}
+	updated, command := next.Update(keyPress("d"))
+	if command != nil || !strings.Contains(updated.(Model).notice, "未指定部署包") {
+		t.Fatal("failed rebuild still allowed the old generated package to enter diff")
 	}
 }
 
