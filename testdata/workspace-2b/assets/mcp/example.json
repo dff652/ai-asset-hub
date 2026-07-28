@@ -1,0 +1,8 @@
+{
+  "name": "example",
+  "command": "example-mcp",
+  "args": [],
+  "env": {
+    "SERVICE_TOKEN": "${ENV:EXAMPLE_SERVICE_TOKEN}"
+  }
+}

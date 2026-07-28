@@ -1,0 +1,5 @@
+[mcp_servers.unsafe]
+command = "fixture-server"
+
+[mcp_servers.unsafe.env]
+SERVICE_TOKEN = "fixture-token-that-must-never-appear"

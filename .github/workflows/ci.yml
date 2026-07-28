@@ -1,0 +1,72 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go test ./...
+      - run: go test -race ./...
+      - run: go vet ./...
+      # gofmt drift reached the repository once already and sat there unnoticed,
+      # because nothing checked it.
+      - name: gofmt
+        run: ./scripts/check-gofmt.sh
+      # The only check that exercises build -> apply -> scan -> rollback as one
+      # chain. It runs entirely inside a temporary directory.
+      - name: closed loop
+        run: ./scripts/demo-apply-scan-loop.sh
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+      # golangci-lint-action v7+ requires golangci-lint v2, while v6 still
+      # runs on deprecated Node.js 20. Install the pinned v1 linter directly
+      # with the setup-go toolchain, matching scripts/bootstrap-dev.sh.
+      - name: install golangci-lint
+        env:
+          GOBIN: ${{ runner.temp }}/aiah-bin
+          GOTOOLCHAIN: local
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2
+      - name: lint
+        env:
+          LINT_BIN: ${{ runner.temp }}/aiah-bin/golangci-lint
+        run: '"$LINT_BIN" run ./...'
+
+  # Cross-compilation only. Per ADR-0003 section 4 this proves the code builds
+  # for a platform, never that its behaviour was verified there: Windows chmod,
+  # shebang and config-root semantics need their own acceptance tests before
+  # Windows can be called supported.
+  build-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+      - env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: go build -trimpath -o /dev/null ./cmd/aiah

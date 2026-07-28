@@ -1,0 +1,5 @@
+[models]
+default = "grok-build"
+
+[mcp_servers.example]
+command = "fixture-mcp"

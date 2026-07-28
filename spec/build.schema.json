@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-asset-hub.local/spec/build.schema.json",
+  "title": "AI Asset Hub Build Report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "producedBy",
+    "ok",
+    "summary",
+    "findings"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "build"
+    },
+    "producedBy": {
+      "type": "string",
+      "description": "Binary that produced this report, e.g. \"aiah 0.1.0+abc123def456\"."
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "profile": {
+      "type": "string"
+    },
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version",
+        "archive",
+        "manifest",
+        "lock",
+        "sha256File",
+        "archiveSha256"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "archive": {
+          "type": "string"
+        },
+        "manifest": {
+          "type": "string"
+        },
+        "lock": {
+          "type": "string"
+        },
+        "sha256File": {
+          "type": "string"
+        },
+        "archiveSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assetCount",
+        "fileCount",
+        "targets"
+      ],
+      "properties": {
+        "assetCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fileCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "severity",
+          "message",
+          "paths"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "warning",
+              "error"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "paths": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ok",
+        "errorCount"
+      ],
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "errorCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

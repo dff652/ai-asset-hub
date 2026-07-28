@@ -1,0 +1,48 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # scripts/release-build.sh needs tags for git describe
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # A release must not ship what CI would reject.
+      - run: go test ./...
+      - run: go vet ./...
+      - name: gofmt
+        run: ./scripts/check-gofmt.sh
+
+      - name: build artifacts
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          # Tags are vX.Y.Z; the version stamped into the binary drops the v.
+          export VERSION="${VERSION#v}"
+          ./scripts/release-build.sh
+
+      - name: publish
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            dist/release/aiah_*
+            dist/release/LICENSE
+            dist/release/NOTICE
+            dist/release/SHA256SUMS
+            dist/release/THIRD_PARTY_LICENSES.txt
+            dist/release/THIRD_PARTY_DEPENDENCIES.md
+          generate_release_notes: true
+          fail_on_unmatched_files: true

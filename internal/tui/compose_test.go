@@ -1,0 +1,188 @@
+package tui
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/dff652/ai-asset-hub/internal/inventory"
+	"github.com/dff652/ai-asset-hub/internal/workspace"
+)
+
+func TestSelectionRequiresAWorkspace(t *testing.T) {
+	// Without --workspace the UI is read-only, so it must not offer checkboxes
+	// it cannot honour.
+	model := composeModel(t, "")
+	rows := model.visibleRows()
+	assetRow := firstAssetRow(t, rows)
+	if model.selectableAsset(assetRow) {
+		t.Fatal("assets are selectable without a workspace")
+	}
+	if strings.Contains(model.View(), "[ ]") {
+		t.Fatal("read-only view rendered checkboxes")
+	}
+
+	withWorkspace := composeModel(t, t.TempDir())
+	if !withWorkspace.selectableAsset(firstAssetRow(t, withWorkspace.visibleRows())) {
+		t.Fatal("assets are not selectable with a workspace")
+	}
+	if !strings.Contains(withWorkspace.View(), "[ ]") {
+		t.Fatal("compose view did not render checkboxes")
+	}
+}
+
+func TestWriteWithoutWorkspaceRefusesLoudly(t *testing.T) {
+	model := composeModel(t, "")
+	updated, command := model.Update(keyPress("w"))
+	if command != nil {
+		t.Fatal("a write was attempted without a workspace")
+	}
+	next := updated.(Model)
+	if !next.noticeIsWarn || !strings.Contains(next.notice, "--workspace") {
+		t.Fatalf("notice = %q, warn=%v", next.notice, next.noticeIsWarn)
+	}
+}
+
+func TestWriteWithoutSelectionRefuses(t *testing.T) {
+	model := composeModel(t, t.TempDir())
+	updated, command := model.Update(keyPress("w"))
+	if command != nil {
+		t.Fatal("a write was attempted with nothing selected")
+	}
+	if next := updated.(Model); !next.noticeIsWarn || next.notice == "" {
+		t.Fatalf("empty selection was not reported: %q", next.notice)
+	}
+}
+
+func TestSpaceTogglesSelection(t *testing.T) {
+	model := composeModel(t, t.TempDir())
+	model.cursor = assetRowIndex(t, model.visibleRows())
+
+	updated, _ := model.Update(keyPress(" "))
+	selected := updated.(Model)
+	if len(selected.selected) != 1 {
+		t.Fatalf("space did not select: %#v", selected.selected)
+	}
+	if !strings.Contains(selected.View(), "[x]") {
+		t.Fatal("selected asset is not marked in the view")
+	}
+
+	updated, _ = selected.Update(keyPress(" "))
+	if cleared := updated.(Model); len(cleared.selected) != 0 {
+		t.Fatalf("space did not deselect: %#v", cleared.selected)
+	}
+}
+
+func TestSelectionSurvivesOnlyForStillReportedAssets(t *testing.T) {
+	model := composeModel(t, t.TempDir())
+	model.selected = map[string]bool{
+		"home/.claude/skills/review": true,
+		"home/.claude/skills/gone":   true,
+	}
+	model.pruneSelection()
+	if model.selected["home/.claude/skills/gone"] {
+		t.Fatal("a selection survived its asset disappearing from the report")
+	}
+	if !model.selected["home/.claude/skills/review"] {
+		t.Fatal("a still-reported selection was dropped")
+	}
+}
+
+func TestComposeNoticeReportsRollbackOnFailure(t *testing.T) {
+	notice, warn := composeNotice(composeMsg{err: workspace.ErrComposeBlocked})
+	if !warn || !strings.Contains(notice, "回滚") {
+		t.Fatalf("notice = %q warn=%v; a failed write must say the workspace was rolled back", notice, warn)
+	}
+}
+
+func TestComposeSuccessClearsSelection(t *testing.T) {
+	model := composeModel(t, t.TempDir())
+	model.selected = map[string]bool{"home/.claude/skills/review": true}
+	model.composing = true
+
+	updated, _ := model.Update(composeMsg{result: workspace.ComposeResult{
+		Ok: true, Registered: []string{"skill.review"}, ManifestPath: "/w/manifest.yaml",
+	}})
+	next := updated.(Model)
+	if len(next.selected) != 0 {
+		t.Fatalf("selection survived a successful write: %#v", next.selected)
+	}
+	if next.composing {
+		t.Fatal("composing flag was not cleared")
+	}
+}
+
+func TestComposeFailureKeepsSelection(t *testing.T) {
+	// Nothing landed, so the user must not have to tick everything again.
+	model := composeModel(t, t.TempDir())
+	model.selected = map[string]bool{"home/.claude/skills/review": true}
+	model.composing = true
+
+	updated, _ := model.Update(composeMsg{err: workspace.ErrComposeBlocked})
+	if next := updated.(Model); len(next.selected) != 1 {
+		t.Fatalf("a failed write discarded the selection: %#v", next.selected)
+	}
+}
+
+func TestHelpStatesTheWriteBoundary(t *testing.T) {
+	readOnly := composeModel(t, "").helpView(newStyles(true))
+	if !strings.Contains(readOnly, "--workspace") {
+		t.Fatalf("read-only help does not explain how to enable writing:\n%s", readOnly)
+	}
+	composing := composeModel(t, "/tmp/ws").helpView(newStyles(true))
+	for _, needle := range []string{".claude", "不覆盖", "apply"} {
+		if !strings.Contains(composing, needle) {
+			t.Fatalf("compose help omits %q:\n%s", needle, composing)
+		}
+	}
+}
+
+// --- helpers ---
+
+func composeModel(t *testing.T, workspaceRoot string) Model {
+	t.Helper()
+	home := t.TempDir()
+	skill := filepath.Join(home, ".claude", "skills", "review")
+	if err := os.MkdirAll(skill, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(skill, "SKILL.md"), []byte("# review\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	model := NewModel(inventory.Options{Home: home}).WithWorkspace(workspaceRoot)
+	model.plain = true
+	report, err := inventory.Scan(inventory.Options{Home: home})
+	if err != nil {
+		t.Fatal(err)
+	}
+	updated, _ := model.Update(scanMsg{generation: model.generation, report: report})
+	return updated.(Model)
+}
+
+func firstAssetRow(t *testing.T, rows []treeRow) treeRow {
+	t.Helper()
+	return rows[assetRowIndex(t, rows)]
+}
+
+func assetRowIndex(t *testing.T, rows []treeRow) int {
+	t.Helper()
+	for index, row := range rows {
+		if row.kind == rowAsset && row.asset != nil &&
+			row.asset.Status == inventory.AssetCandidate {
+			return index
+		}
+	}
+	t.Fatal("fixture produced no candidate asset row")
+	return 0
+}
+
+func keyPress(value string) tea.KeyMsg {
+	if value == " " {
+		return tea.KeyMsg{Type: tea.KeySpace, Runes: []rune{' '}}
+	}
+	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(value)}
+}

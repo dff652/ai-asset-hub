@@ -1,0 +1,21 @@
+# Build output
+/dist/
+/build/
+
+# Rebuildable local state
+/.aiah/
+*.db
+*.db-shm
+*.db-wal
+
+# Secrets and device-local configuration
+.env
+.env.*
+!.env.example
+/secrets/
+/profiles/devices/local.*
+
+# IDE and OS
+.DS_Store
+.idea/
+.vscode/

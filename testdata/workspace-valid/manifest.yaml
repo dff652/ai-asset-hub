@@ -1,0 +1,27 @@
+schemaVersion: 1
+name: fixture-personal
+version: "2026.07.1"
+
+assets:
+  - id: skill.shared-review
+    type: skill
+    path: assets/skills/shared-review
+    targets: [claude, codex]
+    scope: global
+    portability: adapter-required
+    sensitivity: private
+  - id: rules.common
+    type: rules
+    path: assets/rules/common.md
+    targets: [claude, codex]
+    scope: global
+    portability: portable
+    sensitivity: private
+    dependencies: [skill.shared-review]
+
+profiles:
+  personal:
+    include:
+      - skill.shared-review
+      - rules.common
+    targets: [claude, codex]

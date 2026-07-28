@@ -1,0 +1,4 @@
+project_doc_fallback_filenames = ["CLAUDE.md"]
+
+[mcp_servers.example]
+command = "example-mcp"

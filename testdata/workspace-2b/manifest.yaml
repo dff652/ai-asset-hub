@@ -1,0 +1,58 @@
+schemaVersion: 1
+name: fixture-phase2b
+version: "2026.07.2"
+
+assets:
+  - id: skill.review
+    type: skill
+    path: assets/skills/review
+    targets: [claude, codex, grok]
+    scope: global
+    portability: adapter-required
+    sensitivity: private
+  - id: rules.common
+    type: rules
+    path: assets/rules/common.md
+    targets: [claude, codex]
+    scope: global
+    portability: portable
+    sensitivity: private
+  - id: rules.project-claude
+    type: rules
+    path: assets/rules/CLAUDE.md
+    targets: [claude]
+    scope: project
+    portability: portable
+    sensitivity: private
+  - id: agent.reviewer
+    type: agent
+    path: assets/agents/reviewer.md
+    targets: [claude]
+    scope: global
+    portability: adapter-required
+    sensitivity: private
+  - id: hook.pre-tool
+    type: hook
+    path: assets/hooks/pre-tool.sh
+    targets: [claude, codex]
+    scope: global
+    portability: adapter-required
+    sensitivity: private
+  - id: mcp.example
+    type: mcp
+    path: assets/mcp/example.json
+    targets: [claude, codex]
+    scope: global
+    portability: adapter-required
+    sensitivity: sensitive
+
+profiles:
+  personal:
+    include:
+      - skill.review
+      - rules.common
+      - rules.project-claude
+      - agent.reviewer
+      - hook.pre-tool
+      - mcp.example
+    targets: [claude, codex, grok]

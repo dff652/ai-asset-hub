@@ -1,0 +1,138 @@
+# ADR-0007：不可变分发通道，传输不归 aiah 管
+
+- 状态：Accepted
+- 实施：`internal/channel` + `aiah publish` / `aiah pull` / `aiah versions`，2026-07-28
+- 日期：2026-07-28
+- 关联：[architecture.md §4](../architecture.md)（包与同步）、
+  [roadmap 第 9 项](../roadmap.md)、
+  [产品形态与分发边界评估 §2.3 / §3](../research/product-form-and-distribution-assessment.md)、
+  [ADR-0006](0006-tui-as-first-interactive-surface.md)（Phase C 被本项挡住）
+
+## 背景
+
+`build` 已经产出四件套（`.tar` / `.lock.json` / `.manifest.json` / `.sha256`），
+`apply` 已经能从本地路径安装。缺的那一段是**跨设备**：把包放到一个另一台机器
+够得着的地方，并在取回时确认它没被改过。
+
+这一段没做，直接后果有三个：立项要解决的「换设备一键恢复」始终差最后一跳；
+`.sha256` 只是躺在那里，没有任何命令真的去核对它；ADR-0003 五项 UI 门槛的第 3 条
+一直缺，TUI Phase C 因此无法启动。
+
+## 决策
+
+### 1. 通道就是一个目录，aiah 不做网络传输
+
+`--channel` 指向一个普通目录。它可以在 U 盘上、挂载的 NAS / 网盘上、或者一个
+git checkout 里。
+
+**aiah 不实现 HTTP、git、rsync、WebDAV 或任何网络协议。** 这不是删减，是
+architecture.md §4 早就写下的分工——「网盘、NAS、Git Release、WebDAV 或移动介质
+**只负责传输**这些不可变产物」。把字节搬过网络是 `git` / `gh` / `rsync` / `scp`
+或者一张 U 盘的工作，它们做得比我们好，而且用户已经有凭据和代理配置。
+
+aiah 负责的是它们都不负责的那部分：**不可变性、布局、完整性校验**。
+
+这条同时避免了一整类负担：TLS、重试、代理、超时、认证、供应链依赖。
+
+### 2. 通道布局是内容寻址的目录树
+
+```text
+<channel>/
+├── channel.json                      # 索引，追加顺序即发布顺序
+└── packages/
+    └── <name>/<version>/<profile>/
+        ├── <name>-<version>-<profile>.tar
+        ├── <name>-<version>-<profile>.lock.json
+        ├── <name>-<version>-<profile>.manifest.json
+        └── <name>-<version>-<profile>.sha256
+```
+
+键是 **(name, version, profile) 三元组**。profile 必须进路径：P8 把 profile 加进
+文件名正是因为不同 profile 会互相覆盖，通道层不能把那个坑再挖一遍。
+
+布局是普通目录和普通文件，用 `ls`、`cp`、`git` 就能查看和搬运，不需要 aiah 才能
+读懂。这是「文件优先」在分发层的同一条原则。
+
+### 3. 发布不可变：重复发布要么幂等，要么拒绝
+
+同一个 (name, version, profile) 已经存在时：
+
+- **逐字节相同** → 幂等，不写盘，报 `unchanged`；
+- **内容不同** → **拒绝**，一个字节都不写。
+
+不提供 `--force`。想改内容就换 version——这正是版本号的用途。允许原地覆盖会让
+「某台机器上的 2026.07.1」和「另一台机器上的 2026.07.1」变成两个东西，而整个
+回滚与审计链条都建立在版本号能唯一确定内容之上。
+
+### 4. 两端都校验，失败不留半成品
+
+- **发布前**校验源包：`.sha256` 与 tar 实际摘要必须一致，且包要能被
+  `pkgload.Open` 正常读出。**决不发布一个已经损坏的包**——通道是别人信任的来源。
+- **拉取后**校验目标：比对摘要，不一致就删掉刚落的文件并 fail-closed。
+
+发布是先写进同目录下的临时目录、全部就位后再 rename；中途失败会清理临时目录，
+通道里不会出现半个版本。
+
+### 5. 不发明版本序，`latest` = 最近发布
+
+`2026.07.1` 与 `2026.07.10` 的字典序是错的，而 manifest 的 `version` 只要求是
+非空字符串，不保证 semver。因此 aiah **不解析、不比较版本号**。
+
+`--version` 省略时解析为**索引中该 name 最后一条**，也就是最近一次发布的那个，
+并且报告里明确回报解析到了哪个版本。这是「发布顺序」不是「版本高低」，文档与
+`--help` 都这么写。
+
+用户想要确定性就显式传 `--version`。
+
+### 6. 不做同步
+
+只有发布与拉取，没有双向同步、没有冲突解决、没有增量 diff 传输。通道是只追加的
+产物库，不是共享可变状态——这与「网盘不同步正在使用的数据库」是同一条原则。
+
+### 7. 拉取不碰 HOME
+
+`pull` 只把包放进 `--out` 指定的目录，随后由用户自己跑 `diff` / `apply`。
+拉取和安装是两步，中间那一步是人看 diff。合并成一步会把「取回」变成「部署」，
+而部署必须有人确认。
+
+`aiah bootstrap`（roadmap 第 7 项）已在此之上由
+[ADR-0008](0008-interactive-bootstrap.md) 定义：pull 前 TTY 预检，取回后强制
+进入 Phase C 人审，不改变本 ADR 的通道语义。
+
+## 讨论过但不采用的方案
+
+### 内置 HTTPS / GitHub Release 客户端
+
+要处理 TLS、代理、重试、限流、token 存储和一族依赖，而收益只是省掉一句
+`gh release download`。若日后确实需要，加的也应该是**只读的取回**，且是本 ADR
+之上的一层，不改变通道语义。
+
+### 自建服务端索引
+
+见[形态评估 §2.3 / §3](../research/product-form-and-distribution-assessment.md)：
+包是不可变 tar + SHA256，Git / 网盘 / S3 / OCI registry 都能存，自建 server 是
+纯负债。
+
+### 允许 `--force` 覆盖已发布版本
+
+会打破「版本号唯一确定内容」这条支撑回滚与审计的不变式。
+
+### 解析版本号取最大值
+
+需要在 manifest schema 里强制 semver，是破坏性变更；而且猜错版本序会让用户装上
+不是他要的那个包，属于静默错误。
+
+## 影响
+
+正面：
+
+- 「换设备一键恢复」的最后一跳打通，且全程有摘要校验；
+- 通道可以是 U 盘、NAS、网盘或 git 仓库，不引入任何新基础设施与依赖；
+- ADR-0003 五项 UI 门槛的第 3 条得到满足，TUI Phase C 解除阻塞；
+- 通道布局是普通文件，脱离 aiah 也能读懂和搬运。
+
+代价：
+
+- 跨网络那一跳要用户自己用 git / rsync / gh / U 盘完成；
+- `latest` 语义是发布顺序而非版本高低，需要在文档里反复说清；
+- 改内容必须换版本号，不能原地修补。

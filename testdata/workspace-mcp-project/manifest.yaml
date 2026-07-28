@@ -1,0 +1,17 @@
+schemaVersion: 1
+name: fixture-project-mcp
+version: "2026.07.3"
+
+assets:
+  - id: mcp.project-example
+    type: mcp
+    path: assets/mcp/project-example.json
+    targets: [claude]
+    scope: project
+    portability: adapter-required
+    sensitivity: sensitive
+
+profiles:
+  personal:
+    include: [mcp.project-example]
+    targets: [claude]

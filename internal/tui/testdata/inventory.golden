@@ -1,0 +1,14 @@
+aiah · inventory                                                        候选 3 · 排除 1 · findings 1
+/ 过滤路径、类型或 finding
+▾ claude                                      │ home/.codex/skills/review
+  ▾ rules                                     │ type        skill
+      home/.claude/CLAUDE.md                  │ source      codex
+▾ codex                                       │ scope       global
+  ▾ skill                                     │ portability adapter-required
+      home/.codex/skills/review               │ sensitivity private
+▾ grok (1)                                    │ status      candidate
+  ▾ config (1)                                │ files       1
+    ⚠ home/.grok/config.toml                  │   home/.codex/skills/review/SKILL.md
+▾ shared                                      │ findings    —
+  ▾ skill                                     │
+↑↓/jk 导航 · / 搜索 · f findings · r 重扫 · ? 帮助 · q 退出

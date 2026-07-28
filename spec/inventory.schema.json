@@ -1,0 +1,434 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-asset-hub.local/spec/inventory.schema.json",
+  "title": "AI Asset Hub Inventory v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "producedBy",
+    "roots",
+    "summary",
+    "assets",
+    "entries",
+    "findings"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "inventory"
+    },
+    "producedBy": {
+      "type": "string",
+      "description": "Binary that produced this report, e.g. \"aiah 0.1.0+abc123def456\"."
+    },
+    "roots": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/root"
+      }
+    },
+    "summary": {
+      "$ref": "#/$defs/summary"
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/asset"
+      }
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entry"
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    }
+  },
+  "$defs": {
+    "root": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "present"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/rootID"
+        },
+        "kind": {
+          "$ref": "#/$defs/rootID"
+        },
+        "present": {
+          "type": "boolean"
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "totalAssets",
+        "candidateAssets",
+        "excludedAssets",
+        "unreadableAssets",
+        "totalEntries",
+        "includedEntries",
+        "reportedEntries",
+        "excludedEntries",
+        "unreadableEntries",
+        "candidateByType",
+        "projectMigration",
+        "deviceMigration"
+      ],
+      "properties": {
+        "totalAssets": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "candidateAssets": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "excludedAssets": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unreadableAssets": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalEntries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "includedEntries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reportedEntries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "excludedEntries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unreadableEntries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "candidateByType": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/assetType"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "projectMigration": {
+          "enum": [
+            "not-scanned",
+            "no-assets",
+            "partial",
+            "dual-tool-configured",
+            "conflicted"
+          ]
+        },
+        "deviceMigration": {
+          "enum": [
+            "no-assets",
+            "blocked",
+            "inventory-only"
+          ]
+        }
+      }
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "logicalPath",
+        "source",
+        "scope",
+        "type",
+        "portability",
+        "sensitivity",
+        "status",
+        "files"
+      ],
+      "properties": {
+        "logicalPath": {
+          "$ref": "#/$defs/logicalPath"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "scope": {
+          "$ref": "#/$defs/scope"
+        },
+        "type": {
+          "$ref": "#/$defs/assetType"
+        },
+        "portability": {
+          "$ref": "#/$defs/portability"
+        },
+        "sensitivity": {
+          "$ref": "#/$defs/sensitivity"
+        },
+        "status": {
+          "enum": [
+            "candidate",
+            "excluded",
+            "unreadable"
+          ]
+        },
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/logicalPath"
+          }
+        },
+        "configState": {
+          "$ref": "#/$defs/configState"
+        },
+        "features": {
+          "$ref": "#/$defs/features"
+        }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "logicalPath",
+        "source",
+        "scope",
+        "type",
+        "fileType",
+        "size",
+        "mode",
+        "portability",
+        "sensitivity",
+        "status"
+      ],
+      "properties": {
+        "logicalPath": {
+          "$ref": "#/$defs/logicalPath"
+        },
+        "assetPath": {
+          "$ref": "#/$defs/logicalPath"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "scope": {
+          "$ref": "#/$defs/scope"
+        },
+        "type": {
+          "$ref": "#/$defs/assetType"
+        },
+        "fileType": {
+          "enum": [
+            "file",
+            "directory",
+            "symlink",
+            "special",
+            "unknown"
+          ]
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mode": {
+          "type": "string",
+          "pattern": "^[0-7]{4}$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "portability": {
+          "$ref": "#/$defs/portability"
+        },
+        "sensitivity": {
+          "$ref": "#/$defs/sensitivity"
+        },
+        "status": {
+          "enum": [
+            "included",
+            "reported",
+            "excluded",
+            "unreadable"
+          ]
+        },
+        "exclusionReason": {
+          "enum": [
+            "credential",
+            "database",
+            "native-session",
+            "cache",
+            "device-state",
+            "native-memory",
+            "symlink",
+            "broken-symlink",
+            "symlink-escape",
+            "special-file",
+            "unreadable",
+            "too-large",
+            "binary",
+            "suspected-secret"
+          ]
+        },
+        "symlinkState": {
+          "enum": [
+            "internal",
+            "escape",
+            "broken"
+          ]
+        },
+        "configState": {
+          "$ref": "#/$defs/configState"
+        },
+        "features": {
+          "$ref": "#/$defs/features"
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "severity",
+        "message",
+        "paths"
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "broken_symlink",
+            "incomplete_skill",
+            "invalid_config",
+            "large_file",
+            "rules_shadowing",
+            "suspected_secret",
+            "symlink_escape",
+            "unreadable"
+          ]
+        },
+        "severity": {
+          "enum": [
+            "info",
+            "warning",
+            "error"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/logicalPath"
+          }
+        }
+      }
+    },
+    "rootID": {
+      "enum": [
+        "home",
+        "project"
+      ]
+    },
+    "logicalPath": {
+      "type": "string",
+      "pattern": "^(home|project)/"
+    },
+    "source": {
+      "enum": [
+        "claude",
+        "codex",
+        "grok",
+        "shared",
+        "project"
+      ]
+    },
+    "scope": {
+      "enum": [
+        "global",
+        "project",
+        "device-private"
+      ]
+    },
+    "assetType": {
+      "enum": [
+        "rules",
+        "skill",
+        "agent",
+        "hook",
+        "plugin",
+        "config",
+        "mcp-config",
+        "memory",
+        "credential",
+        "session",
+        "cache",
+        "database",
+        "device-state",
+        "project-source",
+        "unknown"
+      ]
+    },
+    "portability": {
+      "enum": [
+        "adapter-required",
+        "excluded",
+        "unknown"
+      ]
+    },
+    "sensitivity": {
+      "enum": [
+        "public",
+        "private",
+        "sensitive",
+        "secret",
+        "unknown"
+      ]
+    },
+    "configState": {
+      "enum": [
+        "valid",
+        "invalid"
+      ]
+    },
+    "features": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "codex-project-doc-fallback",
+          "hooks",
+          "mcp",
+          "plugins"
+        ]
+      }
+    }
+  }
+}

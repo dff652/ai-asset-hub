@@ -1,0 +1,113 @@
+AI Asset Hub
+Copyright 2026 ff.dou
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+--------------------------------------------------------------------------
+Third-party components
+--------------------------------------------------------------------------
+
+Released binaries statically link the Go dependencies listed in
+THIRD_PARTY_DEPENDENCIES.md (source: docs/licenses/third-party.md).
+Attribution notices required by those licenses follow. Complete third-party
+license conditions and disclaimers are distributed with each release as
+THIRD_PARTY_LICENSES.txt.
+
+gopkg.in/yaml.v3
+Copyright 2011-2016 Canonical Ltd.
+Licensed under the Apache License, Version 2.0; the libyaml-derived files
+remain under the MIT License. See the project's LICENSE and NOTICE.
+
+github.com/santhosh-tekuri/jsonschema/v6
+Licensed under the Apache License, Version 2.0.
+
+github.com/pelletier/go-toml/v2
+Copyright (c) 2021 - 2023 Thomas Pelletier
+Licensed under the MIT License.
+
+github.com/charmbracelet/bubbletea and github.com/charmbracelet/bubbles
+Copyright (c) 2020-2025 Charmbracelet, Inc
+Licensed under the MIT License.
+
+github.com/charmbracelet/lipgloss
+Copyright (c) 2021-2023 Charmbracelet, Inc
+Licensed under the MIT License.
+
+github.com/charmbracelet/colorprofile
+Copyright (c) 2020-2024 Charmbracelet, Inc
+Licensed under the MIT License.
+
+github.com/charmbracelet/x/ansi, github.com/charmbracelet/x/cellbuf, and
+github.com/charmbracelet/x/term
+Copyright (c) 2023 Charmbracelet, Inc.
+Licensed under the MIT License.
+
+github.com/atotto/clipboard
+Copyright (c) 2013 Ato Araki. All rights reserved.
+Licensed under the BSD 3-Clause License.
+
+github.com/aymanbagabas/go-osc52/v2
+Copyright (c) 2022 Ayman Bagabas
+Licensed under the MIT License.
+
+github.com/clipperhouse/displaywidth and github.com/clipperhouse/stringish
+Copyright (c) 2025 Matt Sherman
+Licensed under the MIT License.
+
+github.com/clipperhouse/uax29/v2
+Copyright (c) 2020 Matt Sherman
+Licensed under the MIT License.
+
+github.com/erikgeiser/coninput
+Copyright (c) 2021 Erik G.
+Licensed under the MIT License.
+
+github.com/lucasb-eyer/go-colorful
+Copyright (c) 2013 Lucas Beyer
+Licensed under the MIT License.
+
+github.com/mattn/go-isatty and github.com/mattn/go-localereader
+Copyright (c) Yasuhiro MATSUMOTO
+Licensed under the MIT License.
+
+github.com/mattn/go-runewidth
+Copyright (c) 2016 Yasuhiro Matsumoto
+Licensed under the MIT License.
+
+github.com/muesli/ansi
+Copyright (c) 2021 Christian Muehlhaeuser
+Licensed under the MIT License.
+
+github.com/muesli/cancelreader
+Copyright (c) 2022 Erik Geiser and Christian Muehlhaeuser
+Licensed under the MIT License.
+
+github.com/muesli/termenv
+Copyright (c) 2019 Christian Muehlhaeuser
+Licensed under the MIT License.
+
+github.com/rivo/uniseg
+Copyright (c) 2019 Oliver Kuederle
+Licensed under the MIT License.
+
+github.com/xo/terminfo
+Copyright (c) 2016 Anmol Sethi
+Licensed under the MIT License.
+
+golang.org/x/sys
+Copyright (c) 2009 The Go Authors. All rights reserved.
+Licensed under the BSD 3-Clause License.
+
+golang.org/x/text
+Copyright (c) 2009 The Go Authors. All rights reserved.
+Licensed under the BSD 3-Clause License.

@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-asset-hub.local/spec/validation.schema.json",
+  "title": "AI Asset Hub Validation Report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "producedBy",
+    "ok",
+    "summary",
+    "findings"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "validation"
+    },
+    "producedBy": {
+      "type": "string",
+      "description": "Binary that produced this report, e.g. \"aiah 0.1.0+abc123def456\"."
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "summary": {
+      "$ref": "#/$defs/summary"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    }
+  },
+  "$defs": {
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assetCount",
+        "profileCount",
+        "checkedPaths",
+        "errorCount",
+        "warningCount"
+      ],
+      "properties": {
+        "assetCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "profileCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "checkedPaths": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "errorCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warningCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "severity",
+        "message",
+        "paths"
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "binary",
+            "broken_symlink",
+            "duplicate_asset_id",
+            "invalid_manifest",
+            "missing_asset_path",
+            "missing_conflict_ref",
+            "missing_dependency",
+            "missing_profile_ref",
+            "path_escape",
+            "suspected_secret",
+            "symlink_escape",
+            "symlink_not_packable",
+            "too-large",
+            "unreadable"
+          ]
+        },
+        "severity": {
+          "enum": [
+            "warning",
+            "error"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

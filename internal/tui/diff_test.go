@@ -1,0 +1,303 @@
+package tui
+
+import (
+	"os"
+	"path/filepath"
+	"reflect"
+	"strings"
+	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/dff652/ai-asset-hub/internal/apply"
+	"github.com/dff652/ai-asset-hub/internal/build"
+	"github.com/dff652/ai-asset-hub/internal/inventory"
+)
+
+func TestDeploymentRequiresTypedApplyConfirmation(t *testing.T) {
+	options := apply.Options{Package: "fixture.tar", Home: t.TempDir(), Targets: []string{"claude"}}
+	model := deploymentModel(options, successfulDiffReport())
+
+	updated, command := model.Update(keyPress("a"))
+	model = updated.(Model)
+	if command != nil || !model.confirming || model.applying {
+		t.Fatalf("single a reached apply: confirming=%v applying=%v command=%v",
+			model.confirming, model.applying, command != nil)
+	}
+
+	for _, character := range "apply" {
+		updated, _ = model.Update(keyPress(string(character)))
+		model = updated.(Model)
+	}
+	updated, command = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(Model)
+	if command == nil || model.confirming || !model.applying {
+		t.Fatalf("typed confirmation did not start apply: confirming=%v applying=%v command=%v",
+			model.confirming, model.applying, command != nil)
+	}
+
+	updated, second := model.Update(keyPress("a"))
+	if second != nil || !updated.(Model).applying {
+		t.Fatal("apply could be triggered again while already running")
+	}
+}
+
+func TestDeploymentRejectsWrongConfirmation(t *testing.T) {
+	model := deploymentModel(
+		apply.Options{Package: "fixture.tar", Home: t.TempDir()},
+		successfulDiffReport(),
+	)
+	updated, _ := model.Update(keyPress("a"))
+	model = updated.(Model)
+	for _, character := range "yes" {
+		updated, _ = model.Update(keyPress(string(character)))
+		model = updated.(Model)
+	}
+	updated, command := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(Model)
+	if command != nil || !model.confirming || model.applying ||
+		!model.noticeIsWarn || !strings.Contains(model.notice, "apply") {
+		t.Fatalf("wrong confirmation was not rejected: %#v command=%v", model, command != nil)
+	}
+}
+
+func TestDeploymentGroupsChangesAndCollapses(t *testing.T) {
+	report := successfulDiffReport()
+	report.Summary = apply.Summary{Staged: 4, Create: 1, Update: 1, Unchanged: 1, Skipped: 1}
+	report.Changes = []apply.Change{
+		{Path: "home/create", Action: "create"},
+		{Path: "home/update", Action: "update"},
+		{Path: "home/unchanged", Action: "unchanged"},
+		{Path: "home/skipped", Action: "skipped"},
+	}
+	model := deploymentModel(apply.Options{Package: "fixture.tar", Home: t.TempDir()}, report)
+	rows := model.deploymentRows()
+	for _, group := range []string{
+		"action:create", "action:update", "action:unchanged", "action:skipped",
+	} {
+		found := false
+		for _, row := range rows {
+			if row.kind == deploymentGroupRow && row.key == group {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("missing change group %q in %#v", group, rows)
+		}
+	}
+
+	model.diffCursor = 0
+	before := len(model.deploymentRows())
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyLeft})
+	if after := len(updated.(Model).deploymentRows()); after >= before {
+		t.Fatalf("collapse kept %d rows, before %d", after, before)
+	}
+}
+
+func TestDiffCommandMatchesCoreAndWritesNothing(t *testing.T) {
+	pkg := buildTUIFixturePackage(t, "workspace-valid")
+	home := t.TempDir()
+	options := apply.Options{
+		Package: pkg,
+		Home:    home,
+		Targets: []string{"claude", "codex"},
+	}
+	before := snapshotTree(t, home)
+	expected, err := apply.Diff(options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw := diffCommand(options)()
+	message, ok := raw.(diffMsg)
+	if !ok {
+		t.Fatalf("message type = %T, want diffMsg", raw)
+	}
+	if message.err != nil || !reflect.DeepEqual(message.report, expected) {
+		t.Fatalf("TUI diff diverged from core:\n got=%#v\nwant=%#v\nerr=%v",
+			message.report, expected, message.err)
+	}
+	if after := snapshotTree(t, home); !reflect.DeepEqual(after, before) {
+		t.Fatalf("diff command wrote to home:\nbefore=%#v\nafter=%#v", before, after)
+	}
+}
+
+func TestApplySuccessShowsBackupAndRollbackCommand(t *testing.T) {
+	pkg := buildTUIFixturePackage(t, "workspace-valid")
+	home := t.TempDir()
+	options := apply.Options{Package: pkg, Home: home, Targets: []string{"claude"}}
+	diff := diffCommand(options)().(diffMsg)
+	if diff.err != nil || !diff.report.Ok {
+		t.Fatalf("diff: err=%v report=%#v", diff.err, diff.report)
+	}
+	model := deploymentModel(options, diff.report)
+
+	updated, _ := model.Update(keyPress("a"))
+	model = updated.(Model)
+	for _, character := range "apply" {
+		updated, _ = model.Update(keyPress(string(character)))
+		model = updated.(Model)
+	}
+	updated, command := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(Model)
+	if command == nil {
+		t.Fatal("typed confirmation returned no apply command")
+	}
+	raw := command()
+	message, ok := raw.(applyMsg)
+	if !ok {
+		t.Fatalf("message type = %T, want applyMsg", raw)
+	}
+	if message.err != nil || !message.report.Ok || message.report.BackupID == "" {
+		t.Fatalf("apply: err=%v report=%#v", message.err, message.report)
+	}
+	if !reflect.DeepEqual(message.report.Targets, []string{"claude"}) {
+		t.Fatalf("TUI apply changed selected targets: %#v", message.report.Targets)
+	}
+	updated, refresh := model.Update(message)
+	model = updated.(Model)
+	if refresh == nil || model.status != statusLoading {
+		t.Fatal("successful apply did not schedule an inventory refresh")
+	}
+
+	view := model.View()
+	for _, want := range []string{
+		"backupId  " + message.report.BackupID,
+		rollbackCommand(options, message.report.BackupID),
+		"应用完成",
+	} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("success view omits %q:\n%s", want, view)
+		}
+	}
+}
+
+func TestNoOpApplyResultSaysNoRollbackIsNeeded(t *testing.T) {
+	options := apply.Options{Package: "fixture.tar", Home: t.TempDir()}
+	model := deploymentModel(options, successfulDiffReport())
+	report := successfulDiffReport()
+	report.DryRun = false
+	report.Summary = apply.Summary{Staged: 1, Unchanged: 1}
+	report.Changes[0].Action = "unchanged"
+	updated, _ := model.Update(applyMsg{report: report})
+	view := updated.(Model).View()
+	for _, want := range []string{"backupId —", "无需回滚"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("no-op result omits %q:\n%s", want, view)
+		}
+	}
+}
+
+func TestDeploymentFailureShowsCoreFindingsVerbatim(t *testing.T) {
+	t.Run("symlink target", func(t *testing.T) {
+		pkg := buildTUIFixturePackage(t, "workspace-valid")
+		home := t.TempDir()
+		if err := os.Symlink(t.TempDir(), filepath.Join(home, ".claude")); err != nil {
+			t.Fatal(err)
+		}
+		options := apply.Options{Package: pkg, Home: home, Targets: []string{"claude"}}
+		report, err := apply.Diff(options)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assertFailedReportVisible(t, deploymentModel(options, report), report)
+	})
+
+	t.Run("mcp conflict", func(t *testing.T) {
+		t.Setenv("EXAMPLE_SERVICE_TOKEN", "resolved-example-service-token")
+		pkg := buildTUIFixturePackage(t, "workspace-2b")
+		home := t.TempDir()
+		project := t.TempDir()
+		if err := os.WriteFile(
+			filepath.Join(home, ".claude.json"),
+			[]byte(`{"mcpServers":{"example":{"command":"conflicting-command"}}}`),
+			0o600,
+		); err != nil {
+			t.Fatal(err)
+		}
+		options := apply.Options{
+			Package: pkg,
+			Home:    home,
+			Project: project,
+			Targets: []string{"claude"},
+		}
+		report, err := apply.Diff(options)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assertFailedReportVisible(t, deploymentModel(options, report), report)
+	})
+}
+
+func TestRollbackCommandIncludesEveryInstallRoot(t *testing.T) {
+	options := apply.Options{
+		Home:    filepath.Join("/tmp", "home with space"),
+		Project: filepath.Join("/tmp", "project's root"),
+	}
+	command := rollbackCommand(options, "backup-123")
+	for _, want := range []string{
+		"--home '/tmp/home with space'",
+		"--project '/tmp/project'\"'\"'s root'",
+		"--backup backup-123",
+	} {
+		if !strings.Contains(command, want) {
+			t.Fatalf("rollback command omits %q: %s", want, command)
+		}
+	}
+}
+
+func deploymentModel(options apply.Options, report apply.Report) Model {
+	model := NewModel(inventory.Options{Home: options.Home, Project: options.Project}).
+		WithDeployment(options)
+	model.plain = true
+	updated, _ := model.Update(diffMsg{report: report})
+	return updated.(Model)
+}
+
+func successfulDiffReport() apply.Report {
+	return apply.Report{
+		SchemaVersion: 1,
+		Kind:          "apply",
+		Ok:            true,
+		DryRun:        true,
+		Summary:       apply.Summary{Staged: 1, Create: 1},
+		Changes: []apply.Change{{
+			Path: "home/.claude/skills/review/SKILL.md", Action: "create", SHA256: "abc",
+		}},
+	}
+}
+
+func assertFailedReportVisible(t *testing.T, model Model, report apply.Report) {
+	t.Helper()
+	if report.Ok || len(report.Findings) == 0 {
+		t.Fatalf("fixture did not produce a failed report: %#v", report)
+	}
+	view := model.View()
+	for _, finding := range report.Findings {
+		for _, want := range append(
+			[]string{finding.Code, string(finding.Severity), finding.Message},
+			finding.Paths...,
+		) {
+			if !strings.Contains(view, want) {
+				t.Fatalf("view changed or hid finding text %q:\n%s", want, view)
+			}
+		}
+	}
+	updated, command := model.Update(keyPress("a"))
+	if command != nil || updated.(Model).confirming {
+		t.Fatal("failed diff allowed apply confirmation")
+	}
+}
+
+func buildTUIFixturePackage(t *testing.T, fixture string) string {
+	t.Helper()
+	out := t.TempDir()
+	report, err := build.Build(build.Options{
+		Manifest: filepath.Join("..", "..", "testdata", fixture, "manifest.yaml"),
+		Profile:  "personal",
+		OutDir:   out,
+	})
+	if err != nil || !report.Ok {
+		t.Fatalf("build: err=%v report=%#v", err, report)
+	}
+	return filepath.Join(out, report.Package.Archive)
+}
