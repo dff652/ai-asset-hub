@@ -164,8 +164,8 @@ claude mcp add aiah -- aiah mcp
 Codex / 其它客户端在各自配置里声明 `command: "aiah"`、`args: ["mcp"]` 即可；该
 子命令不接受任何 flag 或 operand。
 
-`aiah doctor` 已在 `dev` 实现，将进入首个 public 版本 `v0.1.1`；此前的 private
-`v0.1.0` 验证版本不包含该命令。
+`aiah doctor` 已包含在首个 public 版本 `v0.1.1`；此前的 private `v0.1.0`
+验证版本不包含该命令。
 
 ## 安装已发布版本
 
@@ -178,7 +178,7 @@ Codex / 其它客户端在各自配置里声明 `command: "aiah"`、`args: ["mcp
 | macOS | `aiah_<version>_darwin_amd64` | `aiah_<version>_darwin_arm64` |
 | Windows | `aiah_<version>_windows_amd64.exe` | `aiah_<version>_windows_arm64.exe` |
 
-以下示例用于首个 public 版本 `v0.1.1`；其他 Unix 平台替换 `AIAH_ASSET`：
+以下示例使用首个 public 版本 `v0.1.1`；其他 Unix 平台替换 `AIAH_ASSET`：
 
 ```bash
 (
@@ -501,7 +501,8 @@ config。云服务尚未实现。
 
 TUI Phase A/B/C 均已实现并完成真机 PTY dogfood。
 private `v0.1.0` 已完成六平台二进制、许可材料、SHA256 与版本信息的发布链路验收；
-首个 public 版本计划为包含 `doctor` 的 `v0.1.1`。
+首个 public 版本 `v0.1.1` 已发布并完成匿名 clone、下载、SHA256、Linux amd64
+`version` / `doctor` 与公开文档访问验收。
 下一步与待决策项见 [MVP 路线图](docs/roadmap.md)。
 
 产品采用 **CLI-first、Go Core**：当前不引入 npm/TypeScript launcher；优先发布

@@ -99,24 +99,26 @@ ADR-0003 已决定：
 
 - [x] 按最终命名空间统一 GitHub 地址、`go.mod`、内部 import 和构建版本注入路径；
 - [x] 用 `export-ignore` 将设备迁移台账和会话交接排除出干净 public export；
-- [ ] 所有者 push 当前 private `dev` 并等待同一提交的远端 CI 通过；
-- [ ] 按 [Public 发布 runbook](../runbooks/public-launch.md)从已验证提交导出干净
+- [x] 所有者 push 当前 private `dev` 并等待同一提交的远端 CI 通过；
+- [x] 按 [Public 发布 runbook](../runbooks/public-launch.md)从已验证提交导出干净
       工作树，建立新的单提交 `main` / `dev`；不把落后 41 个提交的旧 `main` 或旧
       refs 推入 public；
 - [x] 在 README 明确 `aiah doctor` 尚未进入
-      `v0.1.0`，避免文档与下载二进制不一致。
+      `v0.1.0`，并确认 public `v0.1.1` 已包含该命令。
 
 ### P0：公开项目入口和安全治理
 
 - [x] 增加 GitHub 可识别的根目录 `SECURITY.md`，写明漏洞报告渠道；
 - [x] README 增加匿名下载、SHA256 校验、手动安装、支持平台和 Windows 限制；
-- [ ] 给 `main` 配置分支保护和必需 CI；
-- [ ] 补 GitHub description、topics，并检查 README、LICENSE、NOTICE 和 Release
+- [x] 给 `main` / `dev` 配置分支保护和 8 项必需 CI；
+- [x] 补 GitHub description、topics，并检查 README、LICENSE、NOTICE 和 Release
       链接可从默认分支访问。
+- [x] 启用 GitHub private vulnerability reporting。
 
 ### P1：可在 public 后紧接完成
 
-- [ ] 匿名环境验证 clone、Release 下载、SHA256 和 Linux/macOS 启动；
+- [x] 匿名环境验证 clone、Release 下载、SHA256 和 Linux amd64 启动；macOS
+      产物已构建并校验，原生行为仍按跨平台边界单独验收；
 - [ ] 开启 GitHub secret scanning、Dependabot 等公开仓库安全能力；
 - [ ] 实现 `install.sh` / `install.ps1`，再接 Homebrew 和 Scoop；
 - [ ] 增加 CONTRIBUTING、Issue / PR 模板；Code of Conduct 按社区开放程度决定。

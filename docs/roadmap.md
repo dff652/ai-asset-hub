@@ -179,15 +179,15 @@
       `node24` 的 v7 / v7 / v3；Node.js 20 的 golangci-lint-action 被相同 Go
       toolchain 的直接 `go install` 取代，以保留固定的 lint v1.62.2。YAML 解析、
       上游 runtime metadata、源码安装 lint 与完整本地门禁均已通过；迁移提交的
-      dev CI 8 个 job 全绿且 annotations 为 0。Release-only 的 action-gh-release
-      留待下个正常 tag 实跑。
+      dev CI 8 个 job 全绿且 annotations 为 0；Release-only 的 action-gh-release
+      已随 public `v0.1.1` 正常 tag 实跑通过。
     - ⬜ **安装脚本 `scripts/install.sh` + `install.ps1`**（ADR-0003 §3 分发顺序
       第 4 项）。private `v0.1.0` 已证明前置能力：六平台**裸二进制**（无需解压）+
       `SHA256SUMS` + `check-release-checksums.sh`。设计约束见
       [产品形态与分发边界评估 §4.3](research/product-form-and-distribution-assessment.md)：
       必须校验 SHA256、原子安装绝不先删旧的、默认 `~/.local/bin` 不用 sudo、
       平台不在矩阵内明确报错、已装同版本零动作。校验复用 `scripts/_sha256.sh`。
-      D8 已拍板；实现安排在 public `v0.1.1` 匿名下载验收之后。
+      public `v0.1.1` 匿名下载验收已完成，安装脚本现已解除发布阻塞。
     - ⬜ 包格式兼容矩阵：旧包被新 aiah 读到什么程度（同时是 ADR-0003 UI 门槛
       第 2 条的前置）。
 
@@ -284,16 +284,16 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | D5 | 首个 tag 的版本号与时机 | ✅ 2026-07-26 已拍板并发布 `v0.1.0`；线上产物验收通过 | [release runbook](runbooks/release.md) |
 | D6 | `~/.grok/skills` 的 `bundled-copy` 判定要不要做 | 三个内置拷贝会被打进包，到新机器与自带版本重复。判定方法确定（与 `bundled/skills/<name>` 比内容），只是要不要花这个工 | 真机盘点结果 |
 | D7 | `~/.claude/CLAUDE.md` 怎么拆 | 通用 / Claude 专属 / 本机私有三份，**人工判断**，拆完才能进包 | 同上 |
-| D8 | **repo 何时转 public** | ✅ 2026-07-27 已拍板：目标转 public，canonical module path 使用 `github.com/dff652/ai-asset-hub`，采用隐私优先的干净公开历史。visibility 仍须等待默认分支、Release 和远端治理门槛完成 | [Public readiness 评估](reviews/2026-07-27-public-readiness-assessment.md) |
+| D8 | **repo 何时转 public** | ✅ 2026-07-28 已完成：`github.com/dff652/ai-asset-hub` 使用单提交干净公开历史，private 原历史保留在 internal 档案；`v0.1.1`、匿名验收与远端治理均已完成 | [Public readiness 评估](reviews/2026-07-27-public-readiness-assessment.md) |
 
-## 下一步（2026-07-27 Public readiness 评估后更新）
+## 下一步（2026-07-28 Public `v0.1.1` 验收后更新）
 
 | 顺序 | 事项 | 估时 | 为什么在这个位置 |
 |---|---|---|---|
 | 1 | ✅ **TUI Phase A 真机 TTY dogfood** | 已完成 | 未发现需修复的 TUI bug |
 | 2 | ✅ **拍板 D8 + 仓库身份与历史公开边界** | 已完成 | 使用 `dff652`；采用干净公开历史，设备迁移台账不进入 public export |
 | 3 | ✅ **`aiah doctor` + 评审 P3** | 已完成 | 真机只读 dogfood 与变异验证通过 |
-| 4 | **`install.sh` + `install.ps1`** | 1 天 | 等 public `v0.1.1` 完成匿名下载验收 |
+| 4 | **`install.sh` + `install.ps1`** | 1 天 | public `v0.1.1` 匿名验收已完成，当前下一项 |
 | 5 | ✅ **`aiah mcp`（只读子集）** | 已完成 | 5 工具零依赖实现，8 项变异验证全部变红；边界固化为 ADR-0005 |
 | 6 | ✅ **TUI Phase B** | 已完成 | ADR-0006 已写；真机 PTY dogfood 通过 |
 | 7 | ✅ **跨设备分发闭环**（第 9 项） | 已完成 | ADR-0007；解除了 TUI Phase C 的唯一阻塞 |
@@ -304,19 +304,19 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 排序依据：**doctor 先于安装脚本**——安装脚本扩大用户面，doctor 让扩大后的用户
 能自查；反过来会先收到一批「我这边不对」而无从下手。
 
-工程维护项 **Actions Node.js 24 迁移**已完成；Release-only action 留待下个正常
-tag 实跑，不为验证它单独发版。
+工程维护项 **Actions Node.js 24 迁移**已完成；Release-only action 已随正常的
+public `v0.1.1` tag 实跑通过。
 
-D8、仓库身份和历史公开边界已拍板；当前先执行发布收口，再开始安装脚本。
-第 5 项仍可独立开工。完整发布收口清单见
+D8、仓库身份、历史公开边界和发布收口均已完成；当前开始安装脚本。
+完整发布收口清单见
 [2026-07-27 Public readiness 评估](reviews/2026-07-27-public-readiness-assessment.md)。
 
 一句话链路：修 P1/P2 → 真机 dogfood ✅ → TUI Phase A ✅ / 发版闭环 ✅ →
 TUI dogfood ✅ → doctor ✅ → MCP ✅ / TUI Phase B ✅ → 跨设备分发 ✅ →
 Secret Provider ✅ → TUI Phase C ✅ → bootstrap ✅。
 **首次真机 dogfood 已完成，工具已从「工程演示」变为「自用工具」**（2026-07-25）；
-private `v0.1.0` 已完成流水线验收（2026-07-26），下一步是发布可匿名下载并自查的
-public `v0.1.1`。
+private `v0.1.0` 已完成流水线验收（2026-07-26）；public `v0.1.1` 已发布并完成
+匿名下载与自查验收（2026-07-28）。
 
 ## Phase 0：资产盘点与契约
 
