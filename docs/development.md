@@ -1,6 +1,6 @@
 # 工程流程：开发 / 测试 / 构建 / 部署 / 发布
 
-- 更新时间：2026-07-27
+- 更新时间：2026-07-28
 - 定位：长期有效的工程约束与流程现状。排期与**待决策清单 D1–D8** 看
   [MVP 路线图](roadmap.md)。
 
@@ -12,7 +12,7 @@
 |---|---|---|
 | 做什么 | 把资产包装进 `~/.claude` / `~/.codex` / `~/.grok` | 把 `aiah` 二进制交付给用户 |
 | 链路 | `build → diff/dry-run → apply → rollback` | tag → 多平台二进制 → 校验和 → Release |
-| 状态 | **已固化，且 2026-07-25 真机验证** | private `v0.1.0` 已完成流水线验收；首个 public 版本计划为 `v0.1.1`，见 §5 |
+| 状态 | **已固化，且 2026-07-25 真机验证** | public `v0.1.1` 已发布并完成匿名验收，见 §5 |
 | SOP | [真机 dry-run runbook](runbooks/real-home-dry-run.md)、[假 HOME 闭环](runbooks/fake-home-loop.md) | [发版 runbook](runbooks/release.md) |
 
 ## 1. 开发
@@ -104,8 +104,9 @@ VERSION/COMMIT/DATE——两份戳规则正是本地构建与发布构建开始�
 
 ## 5. 发布
 
-**流水线已完成首次 private 实跑**：`v0.1.0` 已于 2026-07-26 发布并验收；
-干净 public history 不复制该 tag，首个 public 版本计划为 `v0.1.1`。
+**流水线已完成 public 实跑**：private `v0.1.0` 已于 2026-07-26 发布并验收；
+干净 public history 没有复制该 tag。首个 public 版本 `v0.1.1` 已于
+2026-07-28 从单提交干净历史发布并完成匿名验收。
 
 ```bash
 VERSION=0.1.1 ./scripts/release-build.sh   # 本地预演：六平台 + 许可材料 + 校验和 + 自检
@@ -117,9 +118,9 @@ git tag -a v0.1.1 -m "aiah v0.1.1" && git push origin v0.1.1   # 触发 Release
 可以（§2.3）。完整流程、验收与回退见
 [发版 runbook](runbooks/release.md)。
 
-首次 private 发布 workflow 全绿；下载线上六平台二进制与许可材料后，
-`SHA256SUMS` 所列文件全部通过，
-Linux amd64 自检为 `aiah 0.1.0, commit a95a1651785b`。这证明发布链路已经
+public `v0.1.1` Release workflow 全绿；下载线上六平台二进制与许可材料后，
+`SHA256SUMS` 所列文件全部通过，匿名 Linux amd64 自检为
+`aiah 0.1.1, commit ce1ba00dc56d`，且 `doctor --help` 可用。这证明发布链路已经
 端到端闭环，不改变「跨平台构建不等于跨平台语义验证」的边界。
 
 首次发布时 GitHub 把 `actions/checkout@v4`、`actions/setup-go@v5` 与
@@ -131,9 +132,8 @@ Linux amd64 自检为 `aiah 0.1.0, commit a95a1651785b`。这证明发布链路�
 本机门禁，不能把“只改 CI”当成跳过 §2.3 的理由。
 
 迁移提交 `2bf0edd` 的 dev CI 8 个 job 全绿，annotations 总数为 0，Node.js 20
-告警已消失。dev CI 已实跑
-checkout、setup-go 与直接安装 lint；`action-gh-release@v3` 只存在于发布 workflow，
-要等下一个正常版本 tag 才能完成 runner 实跑，不为验证 action 单独制造 Release。
+告警已消失。checkout、setup-go 与直接安装 lint 已在 CI 实跑；
+`action-gh-release@v3` 也已随正常的 public `v0.1.1` Release 完成 runner 实跑。
 
 仍缺：产物签名、包格式兼容矩阵（`DisallowUnknownFields` 让给包内 manifest 加字段
 成为破坏性变更）、Homebrew/Scoop 等安装渠道。
