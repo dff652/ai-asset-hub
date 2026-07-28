@@ -68,8 +68,9 @@ aiah ui --home "$HOME"
 6. 成功后记录界面展示的 `backupId` 和完整 rollback 命令。
 
 没有确认工作区前，TUI 不显示复选框，也不会创建目录；它没有隐藏的默认工作区。
-也可以在启动时显式传入 `--workspace ~/ai-assets`。构建、diff 和 apply 都调用与
-CLI 相同的 Core，不另做一套规则。
+也可以在启动时显式传入 `--workspace ~/ai-assets`。HOME/project 下的 `.agents`、
+`.claude`、`.codex`、`.grok` 及其子目录不能作为工作区。构建、diff 和 apply 都
+调用与 CLI 相同的 Core，不另做一套规则。
 
 当前这条 TUI 主线覆盖本地的盘点、组装、校验、构建、diff 和 apply。`doctor`、
 真正执行 rollback、publish/pull 与跨设备传输仍使用下文 CLI；界面会给出可复制的

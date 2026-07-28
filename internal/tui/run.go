@@ -86,7 +86,7 @@ func runModel(
 		return Model{}, ErrNotTTY
 	}
 	if options.Workspace != "" {
-		root, _, err := workspace.PrepareRoot(options.Workspace, options.Home)
+		root, _, err := workspace.PrepareRoot(options.Workspace, options.Home, options.Project)
 		if err != nil {
 			return Model{}, err
 		}

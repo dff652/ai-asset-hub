@@ -104,6 +104,8 @@ func TestComposeSuccessClearsSelection(t *testing.T) {
 	model := composeModel(t, t.TempDir())
 	model.selected = map[string]bool{"home/.claude/skills/review": true}
 	model.composing = true
+	model.deployOptions.Package = "/tmp/old-generated.tar"
+	model.packageFromBuild = true
 
 	updated, _ := model.Update(composeMsg{result: workspace.ComposeResult{
 		Ok: true, Registered: []string{"skill.review"}, ManifestPath: "/w/manifest.yaml",
@@ -114,6 +116,22 @@ func TestComposeSuccessClearsSelection(t *testing.T) {
 	}
 	if next.composing {
 		t.Fatal("composing flag was not cleared")
+	}
+	if next.deployOptions.Package != "" || next.packageFromBuild {
+		t.Fatalf("successful compose retained a stale generated package: %#v", next.deployOptions)
+	}
+}
+
+func TestComposeKeepsAnExplicitDeploymentPackage(t *testing.T) {
+	model := composeModel(t, t.TempDir())
+	model.deployOptions.Package = "/tmp/explicit.tar"
+
+	updated, _ := model.Update(composeMsg{result: workspace.ComposeResult{
+		Ok: true, Registered: []string{"skill.review"}, ManifestPath: "/w/manifest.yaml",
+	}})
+	next := updated.(Model)
+	if next.deployOptions.Package != "/tmp/explicit.tar" {
+		t.Fatalf("compose discarded an unrelated explicit package: %#v", next.deployOptions)
 	}
 }
 
