@@ -26,9 +26,9 @@ Code、Codex、Grok 等目标生成结果。
 
 继续已有开发任务时先读：
 
-1. `docs/handoffs/start-here.md`：当前状态、未推提交和下一步。
-2. `docs/development.md`：开发、测试、构建、发布硬约束。
-3. 与任务直接相关的 ADR、设计或 runbook。
+1. `docs/development.md`：开发、测试、构建、发布硬约束。
+2. `docs/roadmap.md`：当前状态、下一步与待决策项。
+3. `docs/README.md`：按任务找到相关 ADR、设计或 runbook。
 
 先执行只读检查：
 
