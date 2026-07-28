@@ -45,13 +45,13 @@ Linux amd64 一行安装：
 curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh | sh
 ```
 
-安装器默认固定 `v0.1.2`，下载 Release 的 `SHA256SUMS` 和 Linux amd64 二进制，校验后
+安装器默认固定 `v0.1.3`，下载 Release 的 `SHA256SUMS` 和 Linux amd64 二进制，校验后
 在目标目录原子替换；默认安装到 `~/.local/bin`，不用 sudo，也不修改 profile。
 已安装同版本时零下载、零写入。可以显式选择版本和目录：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh |
-  AIAH_VERSION=0.1.2 AIAH_INSTALL_DIR="$HOME/.local/bin" sh
+  AIAH_VERSION=0.1.3 AIAH_INSTALL_DIR="$HOME/.local/bin" sh
 ```
 
 直接执行远程脚本前，推荐先下载、阅读再运行。Release 裸二进制的手动安装方法见
