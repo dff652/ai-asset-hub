@@ -55,6 +55,7 @@ type screen int
 const (
 	screenInventory screen = iota
 	screenDeployment
+	screenHealth
 )
 
 type Model struct {
@@ -102,6 +103,17 @@ type Model struct {
 	confirmInput     textinput.Model
 	applying         bool
 	applyResult      *apply.Report
+
+	maintenance        bool
+	doctorStatus       status
+	doctorReport       apply.DoctorReport
+	doctorErr          error
+	healthCursor       int
+	rollbackConfirming bool
+	rollbackInput      textinput.Model
+	rollbacking        bool
+	rollbackResult     *apply.RollbackReport
+	rollbackErr        error
 }
 
 func NewModel(options inventory.Options) Model {
@@ -115,6 +127,11 @@ func NewModel(options inventory.Options) Model {
 	confirm.Placeholder = "apply"
 	confirm.CharLimit = 5
 	confirm.Width = 12
+	rollbackInput := textinput.New()
+	rollbackInput.Prompt = "> "
+	rollbackInput.Placeholder = "rollback"
+	rollbackInput.CharLimit = 8
+	rollbackInput.Width = 14
 	workspaceInput := textinput.New()
 	workspaceInput.Prompt = "> "
 	workspaceInput.Placeholder = "~/ai-assets"
@@ -139,12 +156,13 @@ func NewModel(options inventory.Options) Model {
 			"action:skipped":   true,
 			"findings":         true,
 		},
-		confirmInput: confirm,
-		status:       statusLoading,
-		width:        100,
-		height:       30,
-		generation:   1,
-		keys:         defaultKeys(),
+		confirmInput:  confirm,
+		rollbackInput: rollbackInput,
+		status:        statusLoading,
+		width:         100,
+		height:        30,
+		generation:    1,
+		keys:          defaultKeys(),
 	}
 }
 
@@ -152,6 +170,14 @@ func NewModel(options inventory.Options) Model {
 // Without it the model can only read.
 func (m Model) WithWorkspace(root string) Model {
 	m.workspace = root
+	return m
+}
+
+// WithMaintenance enables doctor and rollback in the regular `aiah ui`
+// workflow. Bootstrap deliberately keeps its existing deployment-only result
+// contract and does not enable these actions.
+func (m Model) WithMaintenance(enabled bool) Model {
+	m.maintenance = enabled
 	return m
 }
 
@@ -299,7 +325,41 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		if message.err == nil && message.report.Ok {
 			m.generation++
 			m.status = statusLoading
+			if m.maintenance {
+				m.doctorStatus = statusLoading
+				return m, tea.Batch(
+					scanCommand(m.options, m.generation),
+					doctorCommand(m.doctorOptions()),
+				)
+			}
 			return m, scanCommand(m.options, m.generation)
+		}
+		return m, nil
+	case doctorMsg:
+		m.doctorErr = message.err
+		if message.err != nil {
+			m.doctorStatus = statusFailed
+			m.healthCursor = 0
+			return m, nil
+		}
+		m.doctorReport = message.report
+		m.doctorStatus = statusReady
+		m.clampHealthCursor()
+		return m, nil
+	case rollbackMsg:
+		m.rollbacking = false
+		m.rollbackConfirming = false
+		m.rollbackInput.Blur()
+		m.rollbackErr = message.err
+		m.rollbackResult = &message.report
+		if message.err == nil && message.report.Ok {
+			m.doctorStatus = statusLoading
+			m.generation++
+			m.status = statusLoading
+			return m, tea.Batch(
+				doctorCommand(m.doctorOptions()),
+				scanCommand(m.options, m.generation),
+			)
 		}
 		return m, nil
 	case tea.KeyMsg:
@@ -326,8 +386,8 @@ func (m *Model) pruneSelection() {
 }
 
 func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
-	if m.applying {
-		m.notice = "正在执行 apply，请等待事务完成"
+	if m.applying || m.rollbacking {
+		m.notice = "正在执行写操作，请等待事务完成"
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -345,6 +405,9 @@ func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.confirming {
 		return m.updateConfirmation(message)
+	}
+	if m.rollbackConfirming {
+		return m.updateRollbackConfirmation(message)
 	}
 	if m.showHelp {
 		if key.Matches(message, m.keys.Quit) {
@@ -373,6 +436,9 @@ func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.screen == screenDeployment {
 		return m.updateDeploymentKey(message)
+	}
+	if m.screen == screenHealth {
+		return m.updateHealthKey(message)
 	}
 
 	rows := m.visibleRows()
@@ -418,6 +484,8 @@ func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.startProfileInput()
 	case key.Matches(message, m.keys.Diff):
 		return m.startDiff()
+	case key.Matches(message, m.keys.Doctor):
+		return m.startDoctor()
 	case key.Matches(message, m.keys.Expand):
 		m.setCurrentExpanded(rows, true)
 	case key.Matches(message, m.keys.Collapse):

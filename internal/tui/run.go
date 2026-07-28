@@ -37,8 +37,8 @@ type terminalFile interface {
 	Fd() uintptr
 }
 
-// Run starts the workflow UI. It delegates scan, composition, build, diff, and
-// apply to the same Core functions as the CLI.
+// Run starts the workflow UI. It delegates scan, composition, build, diff,
+// apply, doctor, and rollback to the same Core functions as the CLI.
 func Run(options Options) error {
 	return run(options, os.Getenv, term.IsTerminal)
 }
@@ -60,7 +60,7 @@ func RunDeployment(options Options) (DeploymentResult, error) {
 	if options.Package == "" {
 		return DeploymentResult{}, apply.ErrInvalidOptions
 	}
-	model, err := runModel(options, os.Getenv, term.IsTerminal)
+	model, err := runModel(options, os.Getenv, term.IsTerminal, false)
 	result := DeploymentResult{Diff: model.diffReport}
 	if model.applyResult != nil {
 		report := *model.applyResult
@@ -73,7 +73,7 @@ func RunDeployment(options Options) (DeploymentResult, error) {
 }
 
 func run(options Options, getenv func(string) string, isTerminal func(uintptr) bool) error {
-	_, err := runModel(options, getenv, isTerminal)
+	_, err := runModel(options, getenv, isTerminal, true)
 	return err
 }
 
@@ -81,6 +81,7 @@ func runModel(
 	options Options,
 	getenv func(string) string,
 	isTerminal func(uintptr) bool,
+	maintenance bool,
 ) (Model, error) {
 	if !interactiveTerminal(options, getenv, isTerminal) {
 		return Model{}, ErrNotTTY
@@ -95,6 +96,7 @@ func runModel(
 
 	model := NewModel(inventory.Options{Home: options.Home, Project: options.Project}).
 		WithWorkspace(options.Workspace).
+		WithMaintenance(maintenance).
 		WithDeployment(apply.Options{
 			Package: options.Package,
 			Home:    options.Home,
