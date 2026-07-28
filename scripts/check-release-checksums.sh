@@ -11,6 +11,25 @@ if [[ ! -f "$RELEASE_DIR/SHA256SUMS" ]]; then
   exit 1
 fi
 
+shopt -s nullglob
+release_paths=("$RELEASE_DIR"/aiah_*)
+shopt -u nullglob
+if [[ "${#release_paths[@]}" -ne 1 ]] || [[ ! -f "${release_paths[0]:-}" ]]; then
+  echo "error: release must contain exactly one Linux amd64 binary" >&2
+  exit 1
+fi
+release_binary="${release_paths[0]##*/}"
+if [[ ! "$release_binary" =~ ^aiah_[0-9A-Za-z.+-]+_linux_amd64$ ]]; then
+  echo "error: release must contain exactly one Linux amd64 binary" >&2
+  exit 1
+fi
+if ! awk -v required="$release_binary" \
+  '$2 == required { count++ } END { exit count != 1 }' \
+  "$RELEASE_DIR/SHA256SUMS"; then
+  echo "error: $release_binary must have exactly one SHA256SUMS entry" >&2
+  exit 1
+fi
+
 required_files=(
   LICENSE
   NOTICE

@@ -5,7 +5,7 @@
 面向个人与小团队的 AI 编程资产管理、打包和跨设备部署工具。
 
 > **状态：Technical Preview。** 核心 CLI、只读 MCP、跨设备分发与 TUI Phase C
-> 已可用；Windows 原生写入行为验收仍在路线图中。
+> 已可用；当前安装和 Release 支持范围为 **Linux amd64**。
 
 AI Asset Hub 解决 Skills、Rules、Memory、Agents、Hooks 与 MCP 模板散落在
 Claude Code、Codex、Grok 等工具目录，难以审计、迁移和回滚的问题。
@@ -39,19 +39,13 @@ Claude Code / Codex / Grok 目标目录
 
 ## 安装
 
-Linux / macOS 一行安装：
+Linux amd64 一行安装：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh | sh
 ```
 
-Windows PowerShell：
-
-```powershell
-irm https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.ps1 | iex
-```
-
-安装器默认固定 `v0.1.1`，下载 Release 的 `SHA256SUMS` 和当前平台二进制，校验后
+安装器默认固定 `v0.1.1`，下载 Release 的 `SHA256SUMS` 和 Linux amd64 二进制，校验后
 在目标目录原子替换；默认安装到 `~/.local/bin`，不用 sudo，也不修改 profile。
 已安装同版本时零下载、零写入。可以显式选择版本和目录：
 
@@ -63,8 +57,9 @@ curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/in
 直接执行远程脚本前，推荐先下载、阅读再运行。Release 裸二进制的手动安装方法见
 [上手指南](docs/getting-started.md#安装)。
 
-Linux amd64 已完成端到端行为验证；其他 Release 目标经过交叉编译和产物校验，
-但在对应平台完成原生验收前，不把“有二进制”表述为“完整支持”。
+Linux amd64 已完成端到端行为验证。`v0.1.1` 中现存的 macOS、Windows 和 arm64
+文件是历史交叉编译产物，未做对应平台原生验收，不属于当前支持范围；后续 Release
+只发布 Linux amd64，其他平台通过原生验收后再恢复分发。
 
 ## 五分钟上手
 

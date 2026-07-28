@@ -75,11 +75,13 @@ CI 跑的就是这几条里的同名脚本，不是另抄一份 inline 步骤—
 |---|---|
 | `go` | `go test` / `go test -race` / `go vet` / `check-gofmt.sh` / `demo-apply-scan-loop.sh` |
 | `lint` | golangci-lint v1.62.2；用当前仓库 Go 直接从源码安装并执行，不经过 Node.js action wrapper，避免上游预编译版的构建 Go 低于目标版本 |
+| `install-linux` | Linux amd64 安装器的校验、幂等、原子替换与平台拒绝回归 |
 | `build-matrix` | linux / darwin / windows × amd64 / arm64，只交叉编译 |
 
 `build-matrix` **只证明可构建，不等于该平台语义已验证**
 （[ADR-0003 §4](decisions/0003-cli-first-go-core-and-product-surfaces.md)）：
-Windows 的 `chmod`、shebang、配置根语义都要单独的行为验收，不能用「编译通过」代替。
+Windows 的 `chmod`、shebang、配置根语义都要单独的行为验收，不能用「编译通过」
+代替。当前安装和 Release 只支持 Linux amd64。
 
 ## 4. 构建与版本
 
@@ -109,7 +111,7 @@ VERSION/COMMIT/DATE——两份戳规则正是本地构建与发布构建开始�
 2026-07-28 从单提交干净历史发布并完成匿名验收。
 
 ```bash
-VERSION=0.1.1 ./scripts/release-build.sh   # 本地预演：六平台 + 许可材料 + 校验和 + 自检
+VERSION=0.1.1 ./scripts/release-build.sh   # 本地预演：Linux amd64 + 许可材料 + 校验和 + 自检
 git tag -a v0.1.1 -m "aiah v0.1.1" && git push origin v0.1.1   # 触发 Release
 ```
 
@@ -118,10 +120,11 @@ git tag -a v0.1.1 -m "aiah v0.1.1" && git push origin v0.1.1   # 触发 Release
 可以（§2.3）。完整流程、验收与回退见
 [发版 runbook](runbooks/release.md)。
 
-public `v0.1.1` Release workflow 全绿；下载线上六平台二进制与许可材料后，
+public `v0.1.1` Release workflow 全绿；当时下载线上六平台交叉编译二进制与许可材料后，
 `SHA256SUMS` 所列文件全部通过，匿名 Linux amd64 自检为
 `aiah 0.1.1, commit ce1ba00dc56d`，且 `doctor --help` 可用。这证明发布链路已经
-端到端闭环，不改变「跨平台构建不等于跨平台语义验证」的边界。
+端到端闭环，不改变「跨平台构建不等于跨平台语义验证」的边界。后续发布范围已
+收口为完成原生验收的 Linux amd64。
 
 首次发布时 GitHub 把 `actions/checkout@v4`、`actions/setup-go@v5` 与
 `softprops/action-gh-release@v2` 的 Node.js 20 action 强制运行在 Node.js 24，
