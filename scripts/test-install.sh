@@ -173,9 +173,10 @@ if find "$atomic_dir" -maxdepth 1 -name '.aiah.install.*' | grep -q .; then
   fail "failed install left a stage file"
 fi
 
-# Unsupported systems and architectures fail before downloading.
+# Unsupported systems and architectures fail before downloading. Darwin and
+# arm64 are explicit regression cases because both were previously published.
 : >"$AIAH_TEST_CURL_LOG"
-AIAH_TEST_UNAME_S=FreeBSD
+AIAH_TEST_UNAME_S=Darwin
 export AIAH_TEST_UNAME_S
 if run_installer "$fake_bin" "$TEST_ROOT/unsupported-os" >/dev/null 2>&1; then
   fail "unsupported operating system was accepted"
@@ -183,7 +184,7 @@ fi
 [ ! -s "$AIAH_TEST_CURL_LOG" ] || fail "unsupported operating system downloaded files"
 unset AIAH_TEST_UNAME_S
 
-AIAH_TEST_UNAME_M=riscv64
+AIAH_TEST_UNAME_M=aarch64
 export AIAH_TEST_UNAME_M
 if run_installer "$fake_bin" "$TEST_ROOT/unsupported-arch" >/dev/null 2>&1; then
   fail "unsupported architecture was accepted"
@@ -191,13 +192,8 @@ fi
 [ ! -s "$AIAH_TEST_CURL_LOG" ] || fail "unsupported architecture downloaded files"
 unset AIAH_TEST_UNAME_M
 
-# Both public installers must default to the same release.
 sh_default=$(awk -F= '$1 == "DEFAULT_AIAH_VERSION" { print $2 }' \
   "$ROOT/scripts/install.sh")
-ps_default=$(sed -n 's/^\$script:DefaultAiahVersion = "\(.*\)"$/\1/p' \
-  "$ROOT/scripts/install.ps1")
 [ -n "$sh_default" ] || fail "install.sh default version is missing"
-[ "$sh_default" = "$ps_default" ] ||
-  fail "install.sh and install.ps1 default versions differ"
 
 echo "install.sh: OK"

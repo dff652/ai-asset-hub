@@ -120,7 +120,7 @@ ADR-0003 已决定：
 - [x] 匿名环境验证 clone、Release 下载、SHA256 和 Linux amd64 启动；macOS
       产物已构建并校验，原生行为仍按跨平台边界单独验收；
 - [ ] 开启 GitHub secret scanning、Dependabot 等公开仓库安全能力；
-- [ ] 实现 `install.sh` / `install.ps1`，再接 Homebrew 和 Scoop；
+- [x] 实现并验证 Linux amd64 `install.sh`；其他平台在原生验收后再开放安装入口；
 - [ ] 增加 CONTRIBUTING、Issue / PR 模板；Code of Conduct 按社区开放程度决定。
 
 安装脚本是 public 分发的后续能力，不是切换可见性的先决条件；但 README 中必须先

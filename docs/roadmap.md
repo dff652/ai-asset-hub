@@ -165,9 +165,10 @@
       （`DisallowUnknownFields` 会让旧二进制读不了新包，需抬 `schemaVersion`）。
     - ✅ **CI 补齐**：gofmt 门禁、golangci-lint、闭环脚本、跨平台构建矩阵
       （只证明可构建，不等于语义已验证，见 ADR-0003 §4）。
-    - ✅ **发版流水线**：`scripts/release-build.sh`（六平台 + 项目/第三方许可材料 +
+    - ✅ **发版流水线**：`scripts/release-build.sh`（Linux amd64 + 项目/第三方许可材料 +
       `SHA256SUMS` + 版本自检，本机已验证）+ `.github/workflows/release.yml`
-      （监听 `v*` tag）。
+      （监听 `v*` tag）。早期版本曾发布六平台交叉编译产物；当前仅分发完成原生
+      端到端验收的 Linux amd64，其他目标保留在 CI 作为可构建性检查。
       发布逻辑放脚本不放 YAML，因为 YAML 没法本地跑。
     - ✅ **`docs/runbooks/release.md`**：pre-release checklist、本地预演、打 tag、
       发布后校验、回退表、已知缺口（无签名 / 无兼容矩阵 / 只做到 Releases 一步）。
@@ -181,12 +182,12 @@
       上游 runtime metadata、源码安装 lint 与完整本地门禁均已通过；迁移提交的
       dev CI 8 个 job 全绿且 annotations 为 0；Release-only 的 action-gh-release
       已随 public `v0.1.1` 正常 tag 实跑通过。
-    - ✅ **安装脚本 `scripts/install.sh` + `install.ps1`**（ADR-0003 §3 分发顺序
+    - ✅ **Linux amd64 安装脚本 `scripts/install.sh`**（ADR-0003 §3 分发顺序
       第 4 项）。默认固定 `v0.1.1`；校验 Release `SHA256SUMS` 后才安装，同目录
       stage 后原子替换，不先删旧版本，不用 sudo、不改 profile，同版本零下载。
-      Unix 校验复用 `scripts/_sha256.sh`；Linux/macOS 与 Windows 分开探测，不猜测
-      不支持的平台。两套网络隔离测试覆盖校验失败保旧、重复 checksum、幂等和
-      原子替换；PowerShell 7.6.4 便携运行时本机通过，Windows 原生 CI 待 PR 验收。
+      校验复用 `scripts/_sha256.sh`；网络隔离测试覆盖校验失败保旧、重复 checksum、
+      幂等、原子替换，以及 macOS/arm64 在下载前被拒绝。Windows/macOS/arm64
+      安装入口须在对应平台完成原生验收后再提供。
     - ⬜ 包格式兼容矩阵：旧包被新 aiah 读到什么程度（同时是 ADR-0003 UI 门槛
       第 2 条的前置）。
 
@@ -292,7 +293,7 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | 1 | ✅ **TUI Phase A 真机 TTY dogfood** | 已完成 | 未发现需修复的 TUI bug |
 | 2 | ✅ **拍板 D8 + 仓库身份与历史公开边界** | 已完成 | 使用 `dff652`；采用干净公开历史，设备迁移台账不进入 public export |
 | 3 | ✅ **`aiah doctor` + 评审 P3** | 已完成 | 真机只读 dogfood 与变异验证通过 |
-| 4 | ✅ **`install.sh` + `install.ps1`** | 已完成 | SHA256、原子替换、无 sudo、幂等与平台拒绝均有回归测试 |
+| 4 | ✅ **`install.sh`（Linux amd64）** | 已完成 | SHA256、原子替换、无 sudo、幂等与平台拒绝均有回归测试 |
 | 5 | ✅ **`aiah mcp`（只读子集）** | 已完成 | 5 工具零依赖实现，8 项变异验证全部变红；边界固化为 ADR-0005 |
 | 6 | ✅ **TUI Phase B** | 已完成 | ADR-0006 已写；真机 PTY dogfood 通过 |
 | 7 | ✅ **跨设备分发闭环**（第 9 项） | 已完成 | ADR-0007；解除了 TUI Phase C 的唯一阻塞 |
@@ -478,9 +479,9 @@ Phase 1A 不写源目录，不生成资产包，也不执行脚本、hook 或 MC
 - Git 或 Release 下载。
 - WebDAV/rclone 传输。
 - 设备 Profile 和 Secret Provider。
-- GitHub Releases 多平台原生二进制；
-- Homebrew，随后评估 Scoop/winget；
-- Linux/macOS 完整 CI；Windows 先验证只读链路，再收口写入语义。
+- GitHub Releases 当前只发布已原生验收的 Linux amd64；
+- 其他平台补原生验收后恢复分发，再评估对应包管理器；
+- CI 保留多平台交叉编译，但不把它作为运行时支持证据。
 
 首版不做双向实时同步，只发布和拉取不可变版本。
 

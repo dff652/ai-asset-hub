@@ -8,8 +8,9 @@
 ## 0. 触发方式
 
 **push tag 即发布**。`.github/workflows/release.yml` 监听 `v*`，跑测试与 gofmt
-门禁后调用 `scripts/release-build.sh`，把六个平台的二进制、许可材料与
-`SHA256SUMS` 附到 GitHub Release。
+门禁后调用 `scripts/release-build.sh`，把 Linux amd64 二进制、许可材料与
+`SHA256SUMS` 附到 GitHub Release。其他目标只保留在 CI 交叉编译矩阵中，不进入
+Release。
 
 发布逻辑刻意放在脚本里而不是 workflow YAML 里：**YAML 没法本地跑，脚本可以**。
 改发布流程时先在本地把脚本跑通，再动 workflow。
@@ -42,13 +43,12 @@ print(collections.Counter(f['code'] for f in r['findings']).most_common())"
 
 ## 2. 本地预演发布产物
 
-先把 `scripts/install.sh`、`scripts/install.ps1` 和 README 的默认安装版本同步为
+先把 `scripts/install.sh` 和 README 的默认安装版本同步为
 本次版本；安装器默认版本必须指向一个实际存在的 Release，不能提前指向尚未发布的
-tag。运行两套安装器测试：
+tag。运行安装器测试：
 
 ```bash
 ./scripts/test-install.sh
-pwsh -NoLogo -NoProfile -File ./scripts/test-install.ps1
 ```
 
 ```bash
@@ -59,16 +59,15 @@ cd dist/release && file aiah_0.1.1_* | cut -c1-80
 
 必须看到：
 
-- 六个二进制（linux/darwin/windows × amd64/arm64）；
+- 一个 `aiah_<version>_linux_amd64` 二进制，且没有其他平台二进制；
 - `LICENSE`、`NOTICE`、`THIRD_PARTY_LICENSES.txt`、
   `THIRD_PARTY_DEPENDENCIES.md` 与 `SHA256SUMS`；
 - `sha256sum -c` 全部成功；
 - 脚本末尾的 self check 打印出正确版本号（脚本自己会断言，不匹配直接退出 1）。
 
-跨平台产物只证明**可构建**，不代表在那些平台上验证过行为
+CI 的跨平台目标只证明**可构建**，不代表在那些平台上验证过行为
 （[ADR-0003 §4](../decisions/0003-cli-first-go-core-and-product-surfaces.md)）。
-Windows 的 `chmod`、shebang、配置根语义没有单独验收前，不要在 Release 说明里
-把 Windows 写成「已支持」。
+任何新平台必须先补原生行为验收，再加入安装器和 Release 输出。
 
 ## 3. 打 tag 并发布
 
@@ -114,5 +113,7 @@ workflow 的 `VERSION` 处理坏了，**先撤下 Release 再排查**。
 - **无包格式兼容矩阵**。旧资产包被新 `aiah` 读到什么程度还没有定论；
   `pkgload` 用 `DisallowUnknownFields`，所以**给包内 manifest 加字段是破坏性变更**，
   必须连 `schemaVersion` 一起抬。这条同时是 ADR-0003「启动 UI 门槛」第 2 条的前置。
-- **包管理器渠道未接入**。当前已有 Release 与可审查的 `install.sh` /
-  `install.ps1`，尚未接 Homebrew、Scoop/winget。
+- **只分发 Linux amd64**。macOS、Windows 和 arm64 尚无原生端到端行为验收；
+  `v0.1.1` 中这些平台的文件是历史交叉编译产物，不代表当前支持。
+- **包管理器渠道未接入**。当前已有 Release 与可审查的 Linux amd64
+  `install.sh`，尚未接包管理器。
