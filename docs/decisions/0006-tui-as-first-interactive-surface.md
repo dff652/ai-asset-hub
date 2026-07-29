@@ -1,8 +1,8 @@
 # ADR-0006：TUI 作为第一个交互界面，及其写操作边界
 
 - 状态：Accepted
-- 实施：Phase A 已实现（2026-07-26）；Phase B/C 与 Phase D1 引导式本地闭环于
-  2026-07-28 落地
+- 实施：Phase A 已实现（2026-07-26）；Phase B/C、Phase D1 引导式本地闭环与
+  Phase D2 Doctor/当前部署回滚于 2026-07-28 落地
 - 日期：2026-07-28
 - 取代：[ADR-0003](0003-cli-first-go-core-and-product-surfaces.md) §5（本地只读
   Web UI → 本地 TUI）
@@ -139,6 +139,17 @@ Phase C 复用 `apply.Diff` / `apply.Apply`，不复制业务规则。执行前�
 变异均能使对应行为测试变红；审查修复又增加工具目录禁入、compose 后旧包失效、重建
 失败后旧包失效三项变异验证。恢复后全量门禁通过。真实 PTY 已走通路径确认 → compose
 → profile → build → 自动 diff，并在 apply 前退出。
+
+### 9. Phase D2 只维护 Doctor 识别到的当前部署
+
+普通 `aiah ui` 增加 `h` Doctor 页，直接调用 `apply.Doctor`，展示当前 deployment、
+backup 数量、drift 与 Core 原始 findings。Doctor 通过且当前 deployment 有
+`backupId` 时，才开放 `x` rollback；用户必须完整输入 `rollback`，TUI 再调用
+`apply.Rollback`。成功后同时刷新 Doctor 与 inventory。
+
+本阶段不在界面里列出或猜选历史 backup；要恢复历史版本仍用 CLI 显式传
+`--backup`。`aiah bootstrap` 复用 Phase C 的 diff/apply 结果契约，因此不附加
+Doctor/rollback 维护入口，避免改变 bootstrap 的退出与报告语义。
 
 ## 讨论过但不采用的方案
 

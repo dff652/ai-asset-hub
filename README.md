@@ -54,6 +54,10 @@ curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/in
   AIAH_VERSION=0.1.3 AIAH_INSTALL_DIR="$HOME/.local/bin" sh
 ```
 
+升级时重复执行第一条安装命令即可：脚本中的默认版本只会在对应 Release 校验通过后
+更新；本机版本较旧时会校验 SHA256 后原子替换，同版本则直接退出。要固定或切换到
+某个版本，显式设置 `AIAH_VERSION`。aiah 不在后台自动升级。
+
 直接执行远程脚本前，推荐先下载、阅读再运行。Release 裸二进制的手动安装方法见
 [上手指南](docs/getting-started.md#安装)。
 
@@ -79,8 +83,8 @@ aiah ui --home "$HOME"
 
 进入后按 `w` 明确输入工作区路径，空格勾选资产，再按 `w` 写出；按 `b` 选择
 profile 后会自动校验、构建并进入只读 diff。只有按 `a` 后完整输入 `apply` 才会写
-目标目录。部署后运行 `aiah doctor` 自查；真正需要恢复时复制界面给出的 rollback
-命令。
+目标目录。部署后按 `h` 运行只读 doctor；doctor 通过且存在当前部署时，可按 `x`
+并完整输入 `rollback` 恢复。
 
 自动化、跨设备和假 HOME 演练仍使用 CLI。完整教程、manifest 属性与安全边界见
 [上手指南](docs/getting-started.md)。
@@ -105,6 +109,8 @@ profile 后会自动校验、构建并进入只读 diff。只有按 `a` 后完�
 - TUI 初始只读；只有显式传入 `--workspace`，或按 `w` 输入并确认路径，才会创建或写工作区。
 - 部署入口只来自显式 `--package`，或当前会话成功构建出的包。
 - TUI 部署必须完整输入 `apply`；`bootstrap` 没有 `--yes` 或非交互旁路。
+- TUI rollback 只针对 doctor 识别到的当前部署，且必须完整输入 `rollback`；选择
+  历史 backup 仍使用 CLI。
 - MCP server 只暴露 `scan`、`validate`、`diff`、`doctor`、`version`，不暴露
   `build`、`apply` 或 `rollback`。
 - MCP 原生配置采用 create-only 所有权；冲突时整单 fail-closed。

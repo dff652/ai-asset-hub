@@ -36,6 +36,25 @@ aiah version
 
 安装器不会修改 PATH；命令找不到时把 `~/.local/bin` 加入 PATH。
 
+### 升级
+
+重复执行一行安装命令即可：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh | sh
+```
+
+脚本不是不受控的“永远取 latest”：仓库中的默认版本只在对应 Release 产物和
+`SHA256SUMS` 验证完成后更新。本机版本较旧时，安装器校验下载内容并原子替换
+`~/.local/bin/aiah`；已经是同版本时零下载、零写入。固定版本、降级或重装指定版本：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh |
+  AIAH_VERSION=0.1.3 sh
+```
+
+aiah 没有后台自动更新器，升级始终是显式操作。升级后用 `aiah version` 核对版本。
+
 `v0.1.1` 中现存的 macOS、Windows 和 arm64 文件是发布范围收口前生成的历史
 交叉编译产物，未做对应平台原生验收。它们不是安装器或当前支持范围的一部分；
 后续 Release 只发布 Linux amd64，其他平台通过原生验收后再恢复。
@@ -65,16 +84,25 @@ aiah ui --home "$HOME"
 4. 按 `b`，确认或输入 profile；TUI 自动校验并构建到 `<工作区>/dist/`。
 5. 构建成功后自动进入只读 diff。按 `a` 只打开确认页；完整输入 `apply` 并回车才写
    目标目录。
-6. 成功后记录界面展示的 `backupId` 和完整 rollback 命令。
+6. 成功后按 `h` 运行只读 doctor，审阅当前 deployment、backup、drift 和 findings。
+7. doctor 通过且存在当前部署时，可按 `x`，完整输入 `rollback` 后回滚当前部署。
 
 没有确认工作区前，TUI 不显示复选框，也不会创建目录；它没有隐藏的默认工作区。
 也可以在启动时显式传入 `--workspace ~/ai-assets`。HOME/project 下的 `.agents`、
 `.claude`、`.codex`、`.grok` 及其子目录不能作为工作区。构建、diff 和 apply 都
 调用与 CLI 相同的 Core，不另做一套规则。
 
-当前这条 TUI 主线覆盖本地的盘点、组装、校验、构建、diff 和 apply。`doctor`、
-真正执行 rollback、publish/pull 与跨设备传输仍使用下文 CLI；界面会给出可复制的
-rollback 命令。非 TTY 环境也应使用 JSON 命令。
+当前 TUI 覆盖日常单机流程：盘点、组装、校验、构建、diff、apply、doctor，以及
+当前部署的 rollback。以下场景仍使用 CLI：
+
+- 安装、升级、版本固定；
+- publish / pull / versions / bootstrap 和跨设备传输；
+- 选择并回滚某个历史 backup；
+- JSON 自动化、CI、假 HOME 批量演练和 MCP server；
+- secret provider 环境准备，以及直接编辑资产正文或 manifest 的高级字段。
+
+TUI 是工作流操作台，不是设置面板；可审计的 `manifest.yaml` 仍是配置事实源。
+非 TTY 环境应使用 JSON 命令。
 
 盘点结果中的 `candidate` 只是迁移候选，不代表应原样打包。凭据、session、cache、
 数据库和疑似 secret 会被排除或脱敏报告。
@@ -105,6 +133,16 @@ aiah ui --home "$HOME" --workspace ~/ai-assets
 项目自己的 `CLAUDE.md` / `AGENTS.md` 由项目 Git 管理。aiah 会盘点 missing 或
 shadowing，但不会替项目自动初始化、复制、删除或改名。完整边界见
 [资产模型 §4.1](asset-model.md#41-claudemd-与-agentsmd-的处理)。
+
+### “导入”与“导出”分别指什么
+
+- **已有工具目录 → 可编辑工作区**：支持。`scan` / TUI 盘点后，勾选候选并
+  compose 到工作区；敏感或设备私有内容会跳过或报告。
+- **可编辑工作区 → 不可变包**：支持。`build` 就是导出。
+- **不可变包 → Claude/Codex/Grok 目标目录**：支持。通过
+  `pull` / `bootstrap` / `diff` / `apply` 导入并部署。
+- **不可变包 → 可编辑工作区**：当前不支持。包是部署产物，不是源码恢复格式；
+  要继续维护资产，应同步原工作区（例如 Git、NAS 或 U 盘），而不是反向解包重建。
 
 ## 4. CLI：校验并构建
 

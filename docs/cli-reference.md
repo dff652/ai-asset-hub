@@ -143,6 +143,9 @@ aiah ui --package <tar|dir> --home "$HOME"     # Phase C：审阅并部署
 - 没有 `--package` 且当前会话尚未成功构建时，不显示部署入口。
 - `--targets` 同时适用于显式包和当前会话构建出的包。
 - Phase C 必须完整输入 `apply`；成功后显示 `backupId` 和 rollback 命令。
+- 普通 `aiah ui` 可按 `h` 运行只读 Doctor；Doctor 通过且存在当前部署时，按 `x`
+  并完整输入 `rollback` 可回滚当前部署。历史 backup 仍需 CLI 显式指定。
+- `bootstrap` 只复用 diff/apply 部署视图，不开放 Doctor/rollback 维护入口。
 - stdin/stdout 不是 TTY，或 `TERM` 为空/`dumb` 时直接失败。
 
 交互键与设计边界见 [TUI 技术方案](designs/tui-technical-design.md)。

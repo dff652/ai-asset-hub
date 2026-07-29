@@ -17,6 +17,8 @@ type keyMap struct {
 	Build        key.Binding
 	Diff         key.Binding
 	Apply        key.Binding
+	Doctor       key.Binding
+	Rollback     key.Binding
 	Help         key.Binding
 	Quit         key.Binding
 	ForceQuit    key.Binding
@@ -38,6 +40,8 @@ func defaultKeys() keyMap {
 		Build:        key.NewBinding(key.WithKeys("b")),
 		Diff:         key.NewBinding(key.WithKeys("d")),
 		Apply:        key.NewBinding(key.WithKeys("a")),
+		Doctor:       key.NewBinding(key.WithKeys("h")),
+		Rollback:     key.NewBinding(key.WithKeys("x")),
 		Help:         key.NewBinding(key.WithKeys("?")),
 		Quit:         key.NewBinding(key.WithKeys("q")),
 		ForceQuit:    key.NewBinding(key.WithKeys("ctrl+c")),
