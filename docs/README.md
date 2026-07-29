@@ -6,6 +6,8 @@
 - [CLI 命令参考](cli-reference.md)
 - [跨设备迁移 runbook](runbooks/cross-device-transfer.md)（发布 → 搬运 → 取回 → 安装）
 - [真机 dry-run runbook](runbooks/real-home-dry-run.md)
+- [工具安装、升级与 TUI dogfood](runbooks/install-upgrade-dogfood.md)
+- [全部 Runbook / SOP 及缺口](runbooks/README.md)
 - [AI 资产管理踩坑清单](troubleshooting/ai-asset-pitfalls.md)
 
 ## 现行设计
@@ -16,6 +18,7 @@
 - [安全与隐私](security.md)
 - [工程流程：开发 / 测试 / 构建 / 部署 / 发布](development.md)
 - [开发环境搭建 SOP](runbooks/development-environment.md)
+- [发版 runbook](runbooks/release.md)
 - [MVP 路线图](roadmap.md)
 - [假 HOME 闭环 runbook](runbooks/fake-home-loop.md)
 - [Public 发布 runbook](runbooks/public-launch.md)
