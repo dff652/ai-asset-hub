@@ -183,7 +183,7 @@
       dev CI 8 个 job 全绿且 annotations 为 0；Release-only 的 action-gh-release
       已随 public `v0.1.1` 正常 tag 实跑通过。
     - ✅ **Linux amd64 安装脚本 `scripts/install.sh`**（ADR-0003 §3 分发顺序
-      第 4 项）。默认固定 `v0.1.3`；校验 Release `SHA256SUMS` 后才安装，同目录
+      第 4 项）。默认固定 `v0.1.4`；校验 Release `SHA256SUMS` 后才安装，同目录
       stage 后原子替换，不先删旧版本，不用 sudo、不改 profile，同版本零下载。
       校验复用 `scripts/_sha256.sh`；网络隔离测试覆盖校验失败保旧、重复 checksum、
       幂等、原子替换，以及 macOS/arm64 在下载前被拒绝。Windows/macOS/arm64
@@ -302,7 +302,7 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | D7 | `~/.claude/CLAUDE.md` 怎么拆 | 通用 / Claude 专属 / 本机私有三份，**人工判断**，拆完才能进包 | 同上 |
 | D8 | **repo 何时转 public** | ✅ 2026-07-28 已完成：`github.com/dff652/ai-asset-hub` 使用单提交干净公开历史，private 原历史保留在 internal 档案；`v0.1.1`、匿名验收与远端治理均已完成 | [Public readiness 评估](reviews/2026-07-27-public-readiness-assessment.md) |
 
-## 下一步（2026-07-29 `v0.1.4` 发布准备）
+## 下一步（2026-07-29 `v0.1.4` 发布完成）
 
 | 顺序 | 事项 | 估时 | 为什么在这个位置 |
 |---|---|---|---|
@@ -320,12 +320,13 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | 12 | ✅ **TUI Phase D2 Doctor/当前回滚** | 已完成 | Doctor gate、typed rollback、历史 backup/ bootstrap 边界保持显式 |
 | 13 | ✅ **TUI Phase D3 版本/更新检查** | 已完成 | 默认离线、按键联网、CLI/TUI 共用 Core、不做隐式自更新 |
 | 14 | ✅ **安装/升级与 D2/D3 隔离 dogfood** | 已完成 | `v0.1.2→v0.1.3` 真实安装器升级、候选替换、rollback 与版本检查均通过；SOP 已固化 |
-| 15 | **发布 `v0.1.4`** | 进行中 | ✅ PR #12 合入 `main@014e3268e305`、✅ main CI；待 tag/Release、下载与 `v0.1.3→v0.1.4` 升级验收 |
+| 15 | ✅ **发布 `v0.1.4`** | 已完成 | tag/Release、线上 SHA/版本/架构、`v0.1.3→v0.1.4` 升级、TUI 与幂等复装均通过 |
 
-`v0.1.4` 当前停在可发版检查点：main 合并后 9 个 CI job 全绿，预发布产物及
-SHA256/版本自检通过；尚未创建 tag/Release，安装器仍安全地指向 `v0.1.3`。
-下一步严格按 [发版 runbook](runbooks/release.md) 创建 annotated tag，完成线上
-下载、真实升级、TUI 与幂等复装验收后，再用独立 PR 更新安装器默认 pin。
+`v0.1.4` 已从 `main@014e3268e305` 发布：main 与 Release CI、线上
+SHA256/版本/架构、真实升级、TUI D2/D3 和幂等复装均通过；安装器默认 pin 随后
+独立更新到 `v0.1.4`。发布与升级步骤分别见
+[发版 runbook](runbooks/release.md)和
+[安装/升级 dogfood SOP](runbooks/install-upgrade-dogfood.md)。
 
 排序依据：**doctor 先于安装脚本**——安装脚本扩大用户面，doctor 让扩大后的用户
 能自查；反过来会先收到一批「我这边不对」而无从下手。
@@ -341,11 +342,11 @@ D8、仓库身份、历史公开边界、发布收口、安装脚本和 TUI D1/D
 TUI dogfood ✅ → doctor ✅ → MCP ✅ / TUI Phase B ✅ → 跨设备分发 ✅ →
 Secret Provider ✅ → TUI Phase C ✅ → bootstrap ✅。
 当前再向后是 TUI D1 引导式本地闭环 ✅ → TUI D2 Doctor/当前回滚 ✅ →
-TUI D3 版本/只读更新检查 ✅ → 安装升级 dogfood ✅ → `v0.1.4` main
-合并与 CI ✅ → tag/Release 及发布后升级验收待执行。
+TUI D3 版本/只读更新检查 ✅ → 安装升级 dogfood ✅ → `v0.1.4` 发布与发布后
+升级验收 ✅。
 **首次真机 dogfood 已完成，工具已从「工程演示」变为「自用工具」**（2026-07-25）；
-private `v0.1.0` 已完成流水线验收（2026-07-26）；public `v0.1.1`–`v0.1.3`
-已发布并完成匿名下载与自查验收（2026-07-28）。
+private `v0.1.0` 已完成流水线验收（2026-07-26）；public `v0.1.1`–`v0.1.4`
+已发布并完成下载与自查验收（2026-07-28 至 2026-07-29）。
 
 ## Phase 0：资产盘点与契约
 
