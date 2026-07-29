@@ -260,11 +260,13 @@ TUI 可以编辑那个文件，但不得引入私有设置存储。
 16. **TUI Phase D2：Doctor 与当前部署回滚**。✅ **已实现（2026-07-28）**：
     普通 `aiah ui` 按 `h` 直调 Core Doctor；仅在 Doctor 通过且存在当前 deployment
     backup 时开放 `x`，必须完整输入 `rollback`。成功后刷新 Doctor 与 inventory。
-    历史 backup 仍由 CLI 显式选择；bootstrap 不扩维护入口。
+    历史 backup 仍由 CLI 显式选择；bootstrap 不扩维护入口。2026-07-29 隔离 TTY
+    dogfood 完成真实 deployment → Doctor → typed rollback → CLI 对账。
 17. **TUI Phase D3：版本与只读 Release 检查**。✅ **已实现（2026-07-29）**：
     `v` 页面显示 aiah version/commit/build date 与当前资产 deployment 包版本；
     打开页面不联网，只有按 `c` 才复用 `aiah update --check` 的只读 Core。
-    检查不下载、不自更新，发现新版本时给出绑定精确 tag 的安装命令。
+    检查不下载、不自更新，发现新版本时给出绑定精确 tag 的安装命令。隔离 TTY
+    dogfood 已确认首屏不联网、按键后查询与 dev 构建不可比较状态。
 
 启动前置：ADR-0003 五项门槛第 3 条（跨设备分发）**已满足**（第 9 项，2026-07-28）。
 Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）。新增依赖时仍须
@@ -300,7 +302,7 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | D7 | `~/.claude/CLAUDE.md` 怎么拆 | 通用 / Claude 专属 / 本机私有三份，**人工判断**，拆完才能进包 | 同上 |
 | D8 | **repo 何时转 public** | ✅ 2026-07-28 已完成：`github.com/dff652/ai-asset-hub` 使用单提交干净公开历史，private 原历史保留在 internal 档案；`v0.1.1`、匿名验收与远端治理均已完成 | [Public readiness 评估](reviews/2026-07-27-public-readiness-assessment.md) |
 
-## 下一步（2026-07-28 Public `v0.1.1` 验收后更新）
+## 下一步（2026-07-29 `v0.1.4` 发布准备）
 
 | 顺序 | 事项 | 估时 | 为什么在这个位置 |
 |---|---|---|---|
@@ -317,6 +319,8 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | 11 | ✅ **TUI Phase D1 引导式本地闭环** | 已完成 | 显式工作区→compose→profile→build→Phase C，降低首次使用门槛 |
 | 12 | ✅ **TUI Phase D2 Doctor/当前回滚** | 已完成 | Doctor gate、typed rollback、历史 backup/ bootstrap 边界保持显式 |
 | 13 | ✅ **TUI Phase D3 版本/更新检查** | 已完成 | 默认离线、按键联网、CLI/TUI 共用 Core、不做隐式自更新 |
+| 14 | ✅ **安装/升级与 D2/D3 隔离 dogfood** | 已完成 | `v0.1.2→v0.1.3` 真实安装器升级、候选替换、rollback 与版本检查均通过；SOP 已固化 |
+| 15 | **发布 `v0.1.4`** | 进行中 | dev → main PR、main CI、tag/Release、下载与旧版升级验收分阶段执行 |
 
 排序依据：**doctor 先于安装脚本**——安装脚本扩大用户面，doctor 让扩大后的用户
 能自查；反过来会先收到一批「我这边不对」而无从下手。
@@ -332,10 +336,10 @@ D8、仓库身份、历史公开边界、发布收口、安装脚本和 TUI D1/D
 TUI dogfood ✅ → doctor ✅ → MCP ✅ / TUI Phase B ✅ → 跨设备分发 ✅ →
 Secret Provider ✅ → TUI Phase C ✅ → bootstrap ✅。
 当前再向后是 TUI D1 引导式本地闭环 ✅ → TUI D2 Doctor/当前回滚 ✅ →
-TUI D3 版本/只读更新检查 ✅。
+TUI D3 版本/只读更新检查 ✅ → 安装升级 dogfood ✅ → `v0.1.4` 发布准备。
 **首次真机 dogfood 已完成，工具已从「工程演示」变为「自用工具」**（2026-07-25）；
-private `v0.1.0` 已完成流水线验收（2026-07-26）；public `v0.1.1` 已发布并完成
-匿名下载与自查验收（2026-07-28）。
+private `v0.1.0` 已完成流水线验收（2026-07-26）；public `v0.1.1`–`v0.1.3`
+已发布并完成匿名下载与自查验收（2026-07-28）。
 
 ## Phase 0：资产盘点与契约
 

@@ -1,6 +1,6 @@
 # 工程流程：开发 / 测试 / 构建 / 部署 / 发布
 
-- 更新时间：2026-07-28
+- 更新时间：2026-07-29
 - 定位：长期有效的工程约束与流程现状。排期与**待决策清单 D1–D8** 看
   [MVP 路线图](roadmap.md)。
 
@@ -13,7 +13,7 @@
 | 做什么 | 把资产包装进 `~/.claude` / `~/.codex` / `~/.grok` | 把 `aiah` 二进制交付给用户 |
 | 链路 | `build → diff/dry-run → apply → rollback` | tag → 多平台二进制 → 校验和 → Release |
 | 状态 | **已固化，且 2026-07-25 真机验证** | public `v0.1.3` 已发布并完成下载验收，见 §5 |
-| SOP | [真机 dry-run runbook](runbooks/real-home-dry-run.md)、[假 HOME 闭环](runbooks/fake-home-loop.md) | [发版 runbook](runbooks/release.md) |
+| SOP | [真机 dry-run runbook](runbooks/real-home-dry-run.md)、[假 HOME 闭环](runbooks/fake-home-loop.md) | [发版 runbook](runbooks/release.md)、[安装/升级 dogfood](runbooks/install-upgrade-dogfood.md) |
 
 ## 1. 开发
 
@@ -88,7 +88,7 @@ Windows 的 `chmod`、shebang、配置根语义都要单独的行为验收，不
 ```bash
 go build -o build/aiah ./cmd/aiah   # 版本 = dev，未发布二进制的诚实答案
 ./scripts/build.sh                  # 注入 git 版本 / commit / 时间
-VERSION=0.1.3 ./scripts/build.sh    # 已发布版本的构建复验示例
+VERSION=0.1.4-dev.1 ./scripts/build.sh  # 未发布候选必须带开发标记
 aiah version [--output json]
 aiah update --check [--output text|json]  # 只读查 Release，不安装
 ```
@@ -112,8 +112,8 @@ VERSION/COMMIT/DATE——两份戳规则正是本地构建与发布构建开始�
 2026-07-28 从单提交干净历史发布并完成匿名验收。
 
 ```bash
-VERSION=0.1.3 ./scripts/release-build.sh   # 本地预演：Linux amd64 + 许可材料 + 校验和 + 自检
-git tag -a v0.1.3 -m "aiah v0.1.3" && git push origin v0.1.3   # 触发 Release
+VERSION=0.1.4 ./scripts/release-build.sh   # 本地预演：Linux amd64 + 许可材料 + 校验和 + 自检
+git tag -a v0.1.4 -m "aiah v0.1.4" && git push origin v0.1.4   # 触发 Release
 ```
 
 `.github/workflows/release.yml` 监听 `v*` tag，跑测试与 gofmt 门禁后调用同一个
@@ -135,6 +135,12 @@ public `v0.1.3` 于 2026-07-28 从 `main@ebb08dcd20ca` 发布：Release workflow
 全绿，只上传一个 Linux amd64 二进制及许可/校验材料；重新下载后的 SHA256、
 ELF x86-64 架构和 `aiah 0.1.3, commit ebb08dcd20ca` 均通过验收。该版本首次包含
 TUI Phase D1 引导式本地闭环。
+
+`v0.1.4` 正在准备中：计划包含 TUI D2 Doctor/当前回滚与 D3 版本/显式更新检查。
+2026-07-29 已在隔离目录完成真实 `v0.1.2 → v0.1.3` 安装器升级，以及
+`dev@2780840` 的候选替换、TUI Doctor/typed rollback、版本页和按键后 Release
+检查 dogfood。可重复步骤见
+[安装、升级与 TUI dogfood SOP](runbooks/install-upgrade-dogfood.md)。
 
 首次发布时 GitHub 把 `actions/checkout@v4`、`actions/setup-go@v5` 与
 `softprops/action-gh-release@v2` 的 Node.js 20 action 强制运行在 Node.js 24，
