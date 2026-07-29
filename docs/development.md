@@ -12,7 +12,7 @@
 |---|---|---|
 | 做什么 | 把资产包装进 `~/.claude` / `~/.codex` / `~/.grok` | 把 `aiah` 二进制交付给用户 |
 | 链路 | `build → diff/dry-run → apply → rollback` | tag → 多平台二进制 → 校验和 → Release |
-| 状态 | **已固化，且 2026-07-25 真机验证** | public `v0.1.3` 已发布并完成下载验收，见 §5 |
+| 状态 | **已固化，且 2026-07-25 真机验证** | public `v0.1.3` 已验收；`v0.1.4` 已合入 main、待发布后验收，见 §5 |
 | SOP | [真机 dry-run runbook](runbooks/real-home-dry-run.md)、[假 HOME 闭环](runbooks/fake-home-loop.md) | [发版 runbook](runbooks/release.md)、[安装/升级 dogfood](runbooks/install-upgrade-dogfood.md) |
 
 ## 1. 开发
@@ -136,10 +136,17 @@ public `v0.1.3` 于 2026-07-28 从 `main@ebb08dcd20ca` 发布：Release workflow
 ELF x86-64 架构和 `aiah 0.1.3, commit ebb08dcd20ca` 均通过验收。该版本首次包含
 TUI Phase D1 引导式本地闭环。
 
-`v0.1.4` 正在准备中：计划包含 TUI D2 Doctor/当前回滚与 D3 版本/显式更新检查。
-2026-07-29 已在隔离目录完成真实 `v0.1.2 → v0.1.3` 安装器升级，以及
+`v0.1.4` 包含 TUI D2 Doctor/当前回滚与 D3 版本/显式更新检查。2026-07-29，
+[PR #12](https://github.com/dff652/ai-asset-hub/pull/12) 已合入
+`main@014e3268e305`；合并后的 main CI
+[run 30437294951](https://github.com/dff652/ai-asset-hub/actions/runs/30437294951)
+共 9 个 job 全绿，本地同树的 Linux amd64 release-build、SHA256 与版本自检也已
+通过。当前**尚未**创建 `v0.1.4` tag/Release，安装器默认 pin 仍为已验收的
+`v0.1.3`。
+
+发布前已在隔离目录完成真实 `v0.1.2 → v0.1.3` 安装器升级，以及
 `dev@2780840` 的候选替换、TUI Doctor/typed rollback、版本页和按键后 Release
-检查 dogfood。可重复步骤见
+检查 dogfood。`v0.1.3 → v0.1.4` 真实升级必须等 Release 存在后补跑；可重复步骤见
 [安装、升级与 TUI dogfood SOP](runbooks/install-upgrade-dogfood.md)。
 
 首次发布时 GitHub 把 `actions/checkout@v4`、`actions/setup-go@v5` 与
