@@ -16,21 +16,21 @@ less /tmp/aiah-install.sh
 sh /tmp/aiah-install.sh
 ```
 
-安装器默认固定 `0.1.3`，也可显式设置：
+安装器默认固定 `0.1.4`，也可显式设置：
 
 ```bash
-AIAH_VERSION=0.1.3 AIAH_INSTALL_DIR="$HOME/.local/bin" \
+AIAH_VERSION=0.1.4 AIAH_INSTALL_DIR="$HOME/.local/bin" \
   sh /tmp/aiah-install.sh
 ```
 
-从 [Release](https://github.com/dff652/ai-asset-hub/releases/tag/v0.1.3)
+从 [Release](https://github.com/dff652/ai-asset-hub/releases/tag/v0.1.4)
 手动下载时，必须同时下载 `SHA256SUMS`。Linux amd64 示例：
 
 ```bash
 sha256sum -c SHA256SUMS --ignore-missing
-chmod +x aiah_0.1.3_linux_amd64
+chmod +x aiah_0.1.4_linux_amd64
 mkdir -p "$HOME/.local/bin"
-install -m 0755 aiah_0.1.3_linux_amd64 "$HOME/.local/bin/aiah"
+install -m 0755 aiah_0.1.4_linux_amd64 "$HOME/.local/bin/aiah"
 aiah version
 ```
 
@@ -50,7 +50,7 @@ curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/in
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh |
-  AIAH_VERSION=0.1.3 sh
+  AIAH_VERSION=0.1.4 sh
 ```
 
 aiah 没有后台自动更新器，升级始终是显式操作。升级后用 `aiah version` 核对版本。
