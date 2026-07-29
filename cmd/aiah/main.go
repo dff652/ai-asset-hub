@@ -15,6 +15,7 @@ import (
 	"github.com/dff652/ai-asset-hub/internal/inventory"
 	"github.com/dff652/ai-asset-hub/internal/mcp"
 	"github.com/dff652/ai-asset-hub/internal/tui"
+	updater "github.com/dff652/ai-asset-hub/internal/update"
 	"github.com/dff652/ai-asset-hub/internal/validate"
 	"github.com/dff652/ai-asset-hub/internal/version"
 )
@@ -33,11 +34,13 @@ const usage = `usage:
   aiah bootstrap --channel DIR --name NAME [--version V] [--profile P] --out DIR [--home PATH] [--project PATH] [--targets LIST]
   aiah ui [--home PATH] [--project PATH] [--workspace PATH] [--package PATH] [--targets LIST]
   aiah mcp
-  aiah version [--output json]
+  aiah update --check [--output text|json]
+  aiah version [--output text|json]
 `
 
 // stdin is indirected so the stdio-driven subcommands stay testable.
 var stdin io.Reader = os.Stdin
+var updateCheck = updater.Check
 
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
@@ -85,10 +88,50 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return runUI(args[1:], stdout, stderr)
 	case "mcp":
 		return runMCP(args[1:], stdout, stderr)
+	case "update":
+		return runUpdate(args[1:], stdout, stderr)
 	default:
 		_, _ = io.WriteString(stderr, usage)
 		return 2
 	}
+}
+
+func runUpdate(args []string, stdout, stderr io.Writer) int {
+	flags := flag.NewFlagSet("update", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	check := flags.Bool("check", false, "check the latest supported release without installing")
+	output := flags.String("output", "text", "output format (text|json)")
+	if ok, code := parseFlagSet(flags, args); !ok {
+		return code
+	}
+	if flags.NArg() != 0 || !*check {
+		_, _ = io.WriteString(stderr, usage)
+		return 2
+	}
+	if *output != "text" && *output != "json" {
+		_, _ = io.WriteString(stderr, "aiah: unsupported output format\n")
+		return 2
+	}
+
+	report, err := updateCheck(updater.Options{})
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "aiah: update check failed: %v\n", err)
+		return 1
+	}
+	if *output == "json" {
+		return writeJSON(stdout, stderr, report)
+	}
+	_, _ = fmt.Fprintf(
+		stdout,
+		"current %s · latest %s · %s\n",
+		report.CurrentVersion,
+		report.LatestVersion,
+		report.Status,
+	)
+	if report.UpdateAvailable {
+		_, _ = fmt.Fprintln(stdout, report.UpgradeCommand)
+	}
+	return 0
 }
 
 func runUI(args []string, stdout, stderr io.Writer) int {

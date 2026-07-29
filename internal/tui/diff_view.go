@@ -75,6 +75,12 @@ func (m Model) deploymentView(style styles) string {
 	if m.applyResult != nil || !report.Ok {
 		footer = style.muted.Render("↑↓/jk 导航 · ←→ 折叠 · d 重算 diff · Esc inventory · ? 帮助 · q 退出")
 	}
+	if m.maintenance {
+		footer = style.muted.Render("↑↓/jk 导航 · ←→ 折叠 · a apply · d diff · h doctor · v version · Esc inventory · ? 帮助 · q 退出")
+		if m.applyResult != nil || !report.Ok {
+			footer = style.muted.Render("↑↓/jk 导航 · ←→ 折叠 · d diff · h doctor · v version · Esc inventory · ? 帮助 · q 退出")
+		}
+	}
 	if m.notice != "" {
 		noticeStyle := style.muted
 		if m.noticeIsWarn {
@@ -116,11 +122,15 @@ func (m Model) applyResultBanner(style styles, report apply.Report) string {
 	if report.BackupID == "" {
 		return style.header.Render("应用完成 · written 0 · backupId — · 无需回滚")
 	}
-	return strings.Join([]string{
+	lines := []string{
 		style.header.Render(fmt.Sprintf("应用完成 · written %d", report.Summary.Written)),
 		style.header.Render("backupId  " + report.BackupID),
 		style.warning.Render("rollback  " + rollbackCommand(m.deployOptions, report.BackupID)),
-	}, "\n")
+	}
+	if m.maintenance {
+		lines = append(lines, style.muted.Render("按 h 进入 doctor，可审阅状态并回滚当前部署。"))
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (m Model) deploymentBody(style styles, report apply.Report) string {

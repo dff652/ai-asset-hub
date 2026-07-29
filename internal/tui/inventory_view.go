@@ -21,6 +21,12 @@ func (m Model) View() string {
 	if m.screen == screenDeployment {
 		return m.deploymentView(style)
 	}
+	if m.screen == screenHealth {
+		return m.healthView(style)
+	}
+	if m.screen == screenVersion {
+		return m.versionView(style)
+	}
 
 	header := style.header.Render("aiah · inventory")
 	counts := fmt.Sprintf(
@@ -61,6 +67,9 @@ func (m Model) View() string {
 	}
 	if m.deployOptions.Package != "" {
 		keysHint += " · d 部署 diff"
+	}
+	if m.maintenance {
+		keysHint += " · h doctor · v version"
 	}
 	footer := style.muted.Render(keysHint)
 	if selected := len(m.selected); selected > 0 {
@@ -228,6 +237,12 @@ func (m Model) helpView(style styles) string {
 	if m.screen == screenDeployment {
 		return m.deploymentHelpView(style)
 	}
+	if m.screen == screenHealth {
+		return m.healthHelpView(style)
+	}
+	if m.screen == screenVersion {
+		return m.versionHelpView(style)
+	}
 	lines := []string{
 		style.header.Render("aiah · inventory · 帮助"),
 		"",
@@ -271,6 +286,13 @@ func (m Model) helpView(style styles) string {
 	} else if m.workspace == "" {
 		lines = append(lines, "未选择工作区或指定 --package 时，TUI 不提供部署入口。")
 	}
+	if m.maintenance {
+		lines = append(lines,
+			"h             运行只读 doctor，检查当前部署、备份与 drift",
+			"v             查看 aiah、当前资产部署与 Release 版本",
+			"doctor 通过且存在当前部署时，可在 doctor 页按 x 回滚当前部署。",
+		)
+	}
 	return strings.Join(lines, "\n")
 }
 
@@ -311,7 +333,7 @@ func (m Model) profileInputView(style styles) string {
 }
 
 func (m Model) deploymentHelpView(style styles) string {
-	return strings.Join([]string{
+	lines := []string{
 		style.header.Render("aiah · deployment · 帮助"),
 		"",
 		"↑/↓ 或 j/k   上下移动",
@@ -326,6 +348,46 @@ func (m Model) deploymentHelpView(style styles) string {
 		"",
 		"执行前必须完整输入 apply。TUI 直接调用与 CLI 相同的 apply.Diff / apply.Apply。",
 		"成功后显示 backupId 与完整 rollback 命令；失败 finding 保持 Core 原文。",
+	}
+	if m.maintenance {
+		lines = append(lines,
+			"h             运行只读 doctor，并进入当前部署维护页",
+			"v             查看 aiah、当前资产部署与 Release 版本",
+		)
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m Model) healthHelpView(style styles) string {
+	return strings.Join([]string{
+		style.header.Render("aiah · doctor · 帮助"),
+		"",
+		"↑/↓ 或 j/k   上下移动",
+		"g / G         跳到开头 / 结尾",
+		"h             重新运行只读 doctor",
+		"x             回滚 doctor 识别到的当前部署",
+		"v             查看版本信息",
+		"Esc           返回 inventory",
+		"?             关闭帮助",
+		"q / Ctrl+C    退出",
+		"",
+		"rollback 仅在 doctor 通过且当前部署有 backupId 时开放。",
+		"执行前必须完整输入 rollback；历史 backup 仍需通过 CLI 显式选择。",
+	}, "\n")
+}
+
+func (m Model) versionHelpView(style styles) string {
+	return strings.Join([]string{
+		style.header.Render("aiah · version · 帮助"),
+		"",
+		"c             用户触发只读 Release 检查",
+		"h             进入 doctor",
+		"Esc           返回 inventory",
+		"?             关闭帮助",
+		"q / Ctrl+C    退出",
+		"",
+		"打开版本页只读取本地构建与 deployment 信息，不会联网。",
+		"只有按 c 才查询 GitHub latest release；本页不替换当前二进制。",
 	}, "\n")
 }
 

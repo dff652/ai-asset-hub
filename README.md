@@ -33,7 +33,8 @@ Claude Code / Codex / Grok 目标目录
 - 包不可变；同版本不同内容会被拒绝，不提供 `--force`。
 - 密钥只在目标设备 apply 时解析，不进入包、报告、journal 或 backup metadata。
 - 写入前能 diff，写入后返回 `backupId` 并支持回滚。
-- aiah 不实现网络传输、服务端或后台 daemon。
+- aiah 不实现用户资产的网络传输、服务端或后台 daemon；版本检查仅在用户显式触发时
+  读取 GitHub Release 元数据。
 
 架构与格式详见[总体架构](docs/architecture.md)和[资产模型](docs/asset-model.md)。
 
@@ -53,6 +54,19 @@ curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/in
 curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh |
   AIAH_VERSION=0.1.3 AIAH_INSTALL_DIR="$HOME/.local/bin" sh
 ```
+
+升级时重复执行第一条安装命令即可：脚本中的默认版本只会在对应 Release 校验通过后
+更新；本机版本较旧时会校验 SHA256 后原子替换，同版本则直接退出。要固定或切换到
+某个版本，显式设置 `AIAH_VERSION`。aiah 不在后台自动升级。
+
+先只读检查版本：
+
+```bash
+aiah update --check
+```
+
+它不会下载或替换二进制；发现新版本时会输出绑定到精确 Release tag 的安装命令。
+`aiah --update` 和不带 `--check` 的 `aiah update` 都不会执行升级。
 
 直接执行远程脚本前，推荐先下载、阅读再运行。Release 裸二进制的手动安装方法见
 [上手指南](docs/getting-started.md#安装)。
@@ -79,8 +93,9 @@ aiah ui --home "$HOME"
 
 进入后按 `w` 明确输入工作区路径，空格勾选资产，再按 `w` 写出；按 `b` 选择
 profile 后会自动校验、构建并进入只读 diff。只有按 `a` 后完整输入 `apply` 才会写
-目标目录。部署后运行 `aiah doctor` 自查；真正需要恢复时复制界面给出的 rollback
-命令。
+目标目录。部署后按 `h` 运行只读 doctor；doctor 通过且存在当前部署时，可按 `x`
+并完整输入 `rollback` 恢复。按 `v` 查看 aiah 与当前资产部署版本；只有再按 `c`
+才会联网检查 Release。
 
 自动化、跨设备和假 HOME 演练仍使用 CLI。完整教程、manifest 属性与安全边界见
 [上手指南](docs/getting-started.md)。
@@ -95,6 +110,7 @@ profile 后会自动校验、构建并进入只读 diff。只有按 `a` 后完�
 | `aiah publish` / `pull` / `versions` | 通过普通目录分发不可变资产包 |
 | `aiah bootstrap` | pull 后进入强制交互 diff 与 typed `apply` |
 | `aiah doctor` | 只读检查 journal、backup、deployment drift 与 MCP 前置状态 |
+| `aiah update --check` | 用户触发的只读 Release 版本检查 |
 | `aiah mcp` | 面向 AI 工具的只读 MCP server |
 
 完整参数与行为见[命令参考](docs/cli-reference.md)，跨设备操作见
@@ -105,6 +121,8 @@ profile 后会自动校验、构建并进入只读 diff。只有按 `a` 后完�
 - TUI 初始只读；只有显式传入 `--workspace`，或按 `w` 输入并确认路径，才会创建或写工作区。
 - 部署入口只来自显式 `--package`，或当前会话成功构建出的包。
 - TUI 部署必须完整输入 `apply`；`bootstrap` 没有 `--yes` 或非交互旁路。
+- TUI rollback 只针对 doctor 识别到的当前部署，且必须完整输入 `rollback`；选择
+  历史 backup 仍使用 CLI。
 - MCP server 只暴露 `scan`、`validate`、`diff`、`doctor`、`version`，不暴露
   `build`、`apply` 或 `rollback`。
 - MCP 原生配置采用 create-only 所有权；冲突时整单 fail-closed。

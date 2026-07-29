@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/dff652/ai-asset-hub/internal/inventory"
+	updater "github.com/dff652/ai-asset-hub/internal/update"
 	"github.com/dff652/ai-asset-hub/internal/version"
 )
 
@@ -28,6 +29,7 @@ func TestRunHelpExitsZero(t *testing.T) {
 		{"pull", "--help"},
 		{"versions", "--help"},
 		{"bootstrap", "--help"},
+		{"update", "--help"},
 		{"version", "--help"},
 	}
 	for _, args := range tests {
@@ -545,6 +547,55 @@ func TestRunVersionReportsBuildIdentity(t *testing.T) {
 	}
 	if !strings.HasPrefix(stdout.String(), "aiah ") {
 		t.Fatalf("--version output = %q", stdout.String())
+	}
+}
+
+func TestRunUpdateCheckUsesReadOnlyCore(t *testing.T) {
+	original := updateCheck
+	t.Cleanup(func() { updateCheck = original })
+	updateCheck = func(options updater.Options) (updater.Report, error) {
+		if options.CurrentVersion != "" {
+			t.Fatalf("CLI overrode Core current version: %#v", options)
+		}
+		return updater.Report{
+			SchemaVersion:   1,
+			Kind:            "update-check",
+			ProducedBy:      version.ProducedBy(),
+			Ok:              true,
+			CurrentVersion:  "0.1.2",
+			LatestVersion:   "0.1.3",
+			Status:          updater.StatusUpdateAvailable,
+			UpdateAvailable: true,
+			UpgradeCommand:  "curl -fsSL https://example.invalid/v0.1.3/install.sh | sh",
+		}, nil
+	}
+
+	var stdout, stderr bytes.Buffer
+	code := run(
+		[]string{"update", "--check", "--output", "json"},
+		&stdout,
+		&stderr,
+	)
+	if code != 0 {
+		t.Fatalf("exit=%d stderr=%q", code, stderr.String())
+	}
+	var report updater.Report
+	if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
+		t.Fatal(err)
+	}
+	if !report.Ok || !report.UpdateAvailable ||
+		report.UpgradeCommand != "curl -fsSL https://example.invalid/v0.1.3/install.sh | sh" {
+		t.Fatalf("report = %#v", report)
+	}
+}
+
+func TestRunUpdateRequiresExplicitCheck(t *testing.T) {
+	for _, args := range [][]string{{"update"}, {"--update"}} {
+		var stdout, stderr bytes.Buffer
+		if code := run(args, &stdout, &stderr); code != 2 {
+			t.Fatalf("args=%v exit=%d stdout=%q stderr=%q",
+				args, code, stdout.String(), stderr.String())
+		}
 	}
 }
 

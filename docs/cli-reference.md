@@ -19,6 +19,7 @@ aiah bootstrap --channel <dir> --name <name> [--version <v>] [--profile <p>] --o
 aiah doctor [--home <path>] [--project <path>] --output json
 aiah ui [--home <path>] [--project <path>] [--workspace <path>] [--package <tar|dir>] [--targets claude,codex,grok]
 aiah mcp
+aiah update --check [--output text|json]
 aiah version [--output text|json]
 ```
 
@@ -143,6 +144,11 @@ aiah ui --package <tar|dir> --home "$HOME"     # Phase C：审阅并部署
 - 没有 `--package` 且当前会话尚未成功构建时，不显示部署入口。
 - `--targets` 同时适用于显式包和当前会话构建出的包。
 - Phase C 必须完整输入 `apply`；成功后显示 `backupId` 和 rollback 命令。
+- 普通 `aiah ui` 可按 `h` 运行只读 Doctor；Doctor 通过且存在当前部署时，按 `x`
+  并完整输入 `rollback` 可回滚当前部署。历史 backup 仍需 CLI 显式指定。
+- `bootstrap` 只复用 diff/apply 部署视图，不开放 Doctor/rollback 维护入口。
+- 普通 `aiah ui` 可按 `v` 查看 aiah 构建身份和当前资产部署版本；版本页按 `c`
+  才请求 GitHub Release 元数据，打开 TUI 不会自动联网。
 - stdin/stdout 不是 TTY，或 `TERM` 为空/`dumb` 时直接失败。
 
 交互键与设计边界见 [TUI 技术方案](designs/tui-technical-design.md)。
@@ -167,6 +173,19 @@ claude mcp add aiah -- aiah mcp
 ```
 
 Codex 与其它客户端配置 `command: "aiah"`、`args: ["mcp"]`。
+
+## `update`
+
+```bash
+aiah update --check [--output text|json]
+```
+
+只读查询 GitHub latest release，报告当前版本、最新稳定版本、两者关系、Release URL
+和绑定精确 tag 的升级命令。状态为 `current` / `update-available` / `ahead` /
+`development`；开发构建不伪装成可比较的 Release。
+
+该命令不下载、不替换二进制。`aiah --update` 不存在；`aiah update` 必须显式带
+`--check`。真正升级仍由用户执行报告中的校验安装命令。
 
 ## `version`
 

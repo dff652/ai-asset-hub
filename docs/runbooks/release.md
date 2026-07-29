@@ -52,9 +52,9 @@ print(collections.Counter(f['code'] for f in r['findings']).most_common())"
 ```
 
 ```bash
-VERSION=0.1.3 ./scripts/release-build.sh
+VERSION=0.1.4 ./scripts/release-build.sh
 ./scripts/check-release-checksums.sh
-cd dist/release && file aiah_0.1.3_* | cut -c1-80
+cd dist/release && file aiah_0.1.4_* | cut -c1-80
 ```
 
 必须看到：
@@ -77,17 +77,17 @@ CI 的跨平台目标只证明**可构建**，不代表在那些平台上验证�
 ```bash
 gh run list --branch main --limit 1
 gh run watch <run-id> --exit-status
-git tag -a v0.1.3 -m "aiah v0.1.3"
-git rev-parse v0.1.3^{}      # 必须等于刚通过 CI 的 main commit
-git push origin v0.1.3        # 这一步触发 Release
+git tag -a v0.1.4 -m "aiah v0.1.4"
+git rev-parse v0.1.4^{}      # 必须等于刚通过 CI 的 main commit
+git push origin v0.1.4        # 这一步触发 Release
 ```
 
 ## 4. 发布后验收
 
 ```bash
-gh release view v0.1.3
+gh release view v0.1.4
 # 下载并校验（换成实际平台）
-gh release download v0.1.3 \
+gh release download v0.1.4 \
   -p 'aiah_*_linux_amd64' -p 'LICENSE' -p 'NOTICE' \
   -p 'THIRD_PARTY_*' -p 'SHA256SUMS' -D /tmp/rel-check
 cd /tmp/rel-check && sha256sum -c SHA256SUMS --ignore-missing
@@ -96,6 +96,10 @@ chmod +x aiah_*_linux_amd64 && ./aiah_*_linux_amd64 version
 
 `version` 输出的版本号必须与 tag 一致（去掉 `v`）。不一致说明 ldflags 注入或
 workflow 的 `VERSION` 处理坏了，**先撤下 Release 再排查**。
+
+随后按[安装、升级与 TUI dogfood SOP](install-upgrade-dogfood.md)用上一公开版本
+真实升级到本版本。只有 Release 下载、升级、TUI 和幂等复装全部通过，才另开 PR
+把 `scripts/install.sh` 的默认 pin 与用户文档同步到新版本。
 
 ## 5. 出问题怎么退
 
