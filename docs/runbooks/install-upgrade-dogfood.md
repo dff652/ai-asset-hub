@@ -6,6 +6,8 @@
   [真机 dry-run runbook](real-home-dry-run.md)。
 - 默认边界：所有写入都在 `mktemp` 目录，不覆盖 `~/.local/bin/aiah`，不把
   `HOME` 环境变量改指测试目录。
+- 最近一次实跑：2026-07-29，public `v0.1.3 → v0.1.4` 升级、同版本幂等复装、
+  TUI D2 Doctor/typed rollback、D3 显式更新检查与退出后 CLI 对账全部通过。
 
 ## 0. 四种验证不要混
 
