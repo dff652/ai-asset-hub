@@ -55,6 +55,17 @@ curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/in
 
 aiah 没有后台自动更新器，升级始终是显式操作。升级后用 `aiah version` 核对版本。
 
+升级前可只读检查：
+
+```bash
+aiah update --check
+aiah update --check --output json
+```
+
+检查只在命令执行时请求 GitHub latest release 元数据，不下载、不替换当前二进制。
+发现新版本时输出的命令绑定到精确 Release tag，避免 `main` 安装脚本的默认 pin
+尚未同步。`aiah --update` 不存在；不带 `--check` 的 `aiah update` 也会拒绝执行。
+
 `v0.1.1` 中现存的 macOS、Windows 和 arm64 文件是发布范围收口前生成的历史
 交叉编译产物，未做对应平台原生验收。它们不是安装器或当前支持范围的一部分；
 后续 Release 只发布 Linux amd64，其他平台通过原生验收后再恢复。
@@ -86,6 +97,8 @@ aiah ui --home "$HOME"
    目标目录。
 6. 成功后按 `h` 运行只读 doctor，审阅当前 deployment、backup、drift 和 findings。
 7. doctor 通过且存在当前部署时，可按 `x`，完整输入 `rollback` 后回滚当前部署。
+8. 随时按 `v` 查看 aiah 构建身份和当前资产部署版本；版本页只有再按 `c` 才联网
+   检查 Release，不会自动安装。
 
 没有确认工作区前，TUI 不显示复选框，也不会创建目录；它没有隐藏的默认工作区。
 也可以在启动时显式传入 `--workspace ~/ai-assets`。HOME/project 下的 `.agents`、
@@ -95,7 +108,7 @@ aiah ui --home "$HOME"
 当前 TUI 覆盖日常单机流程：盘点、组装、校验、构建、diff、apply、doctor，以及
 当前部署的 rollback。以下场景仍使用 CLI：
 
-- 安装、升级、版本固定；
+- 真正执行安装、升级和版本固定（TUI 只展示版本与安全命令）；
 - publish / pull / versions / bootstrap 和跨设备传输；
 - 选择并回滚某个历史 backup；
 - JSON 自动化、CI、假 HOME 批量演练和 MCP server；

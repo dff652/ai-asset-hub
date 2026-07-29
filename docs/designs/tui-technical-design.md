@@ -1,6 +1,6 @@
 # TUI 技术方案（2026-07-25）
 
-- 状态：**Phase A 已实现**（2026-07-26）、**Phase B/C 与 Phase D1/D2 已实现**
+- 状态：**Phase A 已实现**（2026-07-26）、**Phase B/C 与 Phase D1/D2/D3 已实现**
   （2026-07-28，
   见 [ADR-0006](../decisions/0006-tui-as-first-interactive-surface.md)）；跨设备
   分发前置由 ADR-0007 满足
@@ -10,7 +10,7 @@
   §2「UI 不得复制业务规则」、§5「先只读、再受控写入」
 
 本文只回答「怎么做」。「要不要做、什么时候做」在评估文档里；分发前置满足后，
-Phase A/B/C/D1/D2 已按顺序全部落地。
+Phase A/B/C/D1/D2/D3 已按顺序全部落地。
 
 ## 0. 定位：工作流操作台，不是控制面板
 
@@ -85,6 +85,7 @@ internal/tui/               Model ──Update──▶ Model ──View──�
                                                    ▼
 internal/inventory.Scan / internal/apply.Diff / internal/apply.Apply
 internal/apply.Doctor / internal/apply.Rollback
+internal/update.Check（只在用户显式按 c 后联网）
 internal/build.Build / internal/validate.Validate
 ```
 
@@ -187,6 +188,16 @@ TUI 调 `build.Build` 写到 `<workspace>/dist/`，成功即把 archive 交给 P
 界面不枚举、不自动选择历史 backup；历史恢复仍走 CLI。`RunDeployment` 被
 `bootstrap` 复用，维护能力显式关闭，保持既有 final report 与退出契约。
 
+### Phase D3：版本与只读 Release 检查
+
+**实现状态：已完成（2026-07-29）。** 普通 `aiah ui` 按 `v` 显示当前 binary 的
+version/commit/build date，并复用 Doctor 报告显示当前资产 deployment 包版本。
+打开版本页只做本地读取；只有再按 `c` 才异步调用 `internal/update.Check` 查询
+GitHub latest release。
+
+检查失败在页面可见，不静默吞掉；检查成功区分 current / update-available / ahead /
+development，并在可更新时展示精确 tag 安装命令。TUI 不自替换正在运行的二进制。
+
 ## 5. 代码落位与状态模型
 
 ```text
@@ -199,6 +210,7 @@ internal/tui/
   manifest_view.go      Phase B 视图
   diff_view.go          Phase C 视图
   health_view.go        Phase D2 Doctor / 当前部署回滚视图
+  version_view.go       Phase D3 构建身份 / deployment / Release 检查
   styles.go             lipgloss 样式，语义色集中在此
 ```
 
@@ -238,6 +250,8 @@ report 本身**，这样重新扫描与过滤互不干扰。
 | `r` | 重新扫描 |
 | `h` | 运行只读 Doctor |
 | `x` | 在 Doctor 页回滚当前部署（需 typed confirmation） |
+| `v` | 查看本地版本与当前资产 deployment |
+| `c` | 在版本页显式检查 GitHub Release |
 | `?` | 键位帮助 |
 | `q` `Ctrl+C` | 退出 |
 

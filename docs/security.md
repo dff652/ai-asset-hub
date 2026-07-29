@@ -104,6 +104,10 @@ bootstrap 含解析值。后续 inventory 会把这个 native config 识别为
 
 更新第三方资产时先展示 diff，不允许静默跟随远端最新版本。
 
+工具自身的 Release 检查同样不静默跟随：`aiah update --check` 和 TUI `v` → `c`
+只读取 GitHub latest release 元数据，不下载、不替换二进制。返回的升级命令绑定
+精确 tag；真正安装仍由用户显式执行，并继续经过安装器的 SHA256 与原子替换门禁。
+
 ## 6. 许可证
 
 本项目许可证已定为 **Apache-2.0**（2026-07-25 决策）：仓库根 `LICENSE` 为官方

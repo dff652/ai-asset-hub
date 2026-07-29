@@ -10,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dff652/ai-asset-hub/internal/apply"
 	"github.com/dff652/ai-asset-hub/internal/inventory"
+	updater "github.com/dff652/ai-asset-hub/internal/update"
 	"github.com/dff652/ai-asset-hub/internal/workspace"
 )
 
@@ -56,6 +57,7 @@ const (
 	screenInventory screen = iota
 	screenDeployment
 	screenHealth
+	screenVersion
 )
 
 type Model struct {
@@ -114,6 +116,11 @@ type Model struct {
 	rollbacking        bool
 	rollbackResult     *apply.RollbackReport
 	rollbackErr        error
+
+	updateChecking bool
+	updateChecked  bool
+	updateReport   updater.Report
+	updateErr      error
 }
 
 func NewModel(options inventory.Options) Model {
@@ -362,6 +369,12 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			)
 		}
 		return m, nil
+	case updateCheckMsg:
+		m.updateChecking = false
+		m.updateChecked = true
+		m.updateReport = message.report
+		m.updateErr = message.err
+		return m, nil
 	case tea.KeyMsg:
 		return m.updateKey(message)
 	}
@@ -440,6 +453,9 @@ func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.screen == screenHealth {
 		return m.updateHealthKey(message)
 	}
+	if m.screen == screenVersion {
+		return m.updateVersionKey(message)
+	}
 
 	rows := m.visibleRows()
 	switch {
@@ -486,6 +502,8 @@ func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.startDiff()
 	case key.Matches(message, m.keys.Doctor):
 		return m.startDoctor()
+	case key.Matches(message, m.keys.Version):
+		return m.startVersion()
 	case key.Matches(message, m.keys.Expand):
 		m.setCurrentExpanded(rows, true)
 	case key.Matches(message, m.keys.Collapse):

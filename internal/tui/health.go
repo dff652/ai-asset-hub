@@ -61,6 +61,8 @@ func (m Model) updateHealthKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.showHelp = true
 	case key.Matches(message, m.keys.Doctor):
 		return m.startDoctor()
+	case key.Matches(message, m.keys.Version):
+		return m.startVersion()
 	case key.Matches(message, m.keys.Rollback):
 		return m.startRollbackConfirmation()
 	case key.Matches(message, m.keys.Up):
