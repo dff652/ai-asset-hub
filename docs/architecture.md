@@ -129,6 +129,10 @@ NAS/网盘、或一个 git checkout）；**aiah 自己不实现任何网络传�
 git / rsync / gh / U 盘，aiah 只负责它们都不负责的部分——不可变性、布局、两端
 的完整性校验。
 
+这条边界针对**用户资产包的搬运**。`aiah update --check` 是独立的、用户显式触发的
+工具版本元数据 GET：它只读取 GitHub latest release，不下载资产包、不上传本地
+状态，也不在 TUI 启动时自动发生。
+
 ```bash
 # 机器 A：发布到通道（不可变；同坐标内容不同即拒绝，无 --force）
 aiah publish --package dist/<name>-<version>-<profile>.tar --channel /mnt/usb/aiah

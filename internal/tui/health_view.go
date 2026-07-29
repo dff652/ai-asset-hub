@@ -47,10 +47,10 @@ func (m Model) healthView(style styles) string {
 
 	summary := m.doctorSummary(style)
 	body := m.healthBody(style)
-	footerText := "↑↓/jk 导航 · h 重跑 doctor · Esc inventory · ? 帮助 · q 退出"
+	footerText := "↑↓/jk 导航 · h 重跑 doctor · v version · Esc inventory · ? 帮助 · q 退出"
 	if m.doctorReport.Ok && m.doctorReport.Deployment != nil &&
 		m.doctorReport.Deployment.BackupID != "" {
-		footerText = "↑↓/jk 导航 · h 重跑 doctor · x rollback · Esc inventory · ? 帮助 · q 退出"
+		footerText = "↑↓/jk 导航 · h doctor · x rollback · v version · Esc inventory · ? 帮助 · q 退出"
 	}
 	footer := style.muted.Render(footerText)
 	if m.notice != "" {

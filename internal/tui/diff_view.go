@@ -76,9 +76,9 @@ func (m Model) deploymentView(style styles) string {
 		footer = style.muted.Render("↑↓/jk 导航 · ←→ 折叠 · d 重算 diff · Esc inventory · ? 帮助 · q 退出")
 	}
 	if m.maintenance {
-		footer = style.muted.Render("↑↓/jk 导航 · ←→ 折叠 · a apply · d 重算 diff · h doctor · Esc inventory · ? 帮助 · q 退出")
+		footer = style.muted.Render("↑↓/jk 导航 · ←→ 折叠 · a apply · d diff · h doctor · v version · Esc inventory · ? 帮助 · q 退出")
 		if m.applyResult != nil || !report.Ok {
-			footer = style.muted.Render("↑↓/jk 导航 · ←→ 折叠 · d 重算 diff · h doctor · Esc inventory · ? 帮助 · q 退出")
+			footer = style.muted.Render("↑↓/jk 导航 · ←→ 折叠 · d diff · h doctor · v version · Esc inventory · ? 帮助 · q 退出")
 		}
 	}
 	if m.notice != "" {

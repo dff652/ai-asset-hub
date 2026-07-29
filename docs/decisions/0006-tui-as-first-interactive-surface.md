@@ -2,7 +2,8 @@
 
 - 状态：Accepted
 - 实施：Phase A 已实现（2026-07-26）；Phase B/C、Phase D1 引导式本地闭环与
-  Phase D2 Doctor/当前部署回滚于 2026-07-28 落地
+  Phase D2 Doctor/当前部署回滚于 2026-07-28 落地；Phase D3 版本与只读
+  Release 检查于 2026-07-29 落地
 - 日期：2026-07-28
 - 取代：[ADR-0003](0003-cli-first-go-core-and-product-surfaces.md) §5（本地只读
   Web UI → 本地 TUI）
@@ -150,6 +151,17 @@ backup 数量、drift 与 Core 原始 findings。Doctor 通过且当前 deployme
 本阶段不在界面里列出或猜选历史 backup；要恢复历史版本仍用 CLI 显式传
 `--backup`。`aiah bootstrap` 复用 Phase C 的 diff/apply 结果契约，因此不附加
 Doctor/rollback 维护入口，避免改变 bootstrap 的退出与报告语义。
+
+### 10. Phase D3 版本页默认离线，更新检查必须由用户触发
+
+普通 `aiah ui` 增加 `v` 版本页，显示当前 aiah 版本、commit、构建时间，以及
+Doctor 识别到的当前资产 deployment 包版本。打开页面只读取本地状态，**不联网**；
+只有用户再按 `c` 才调用与 CLI `aiah update --check` 相同的 `internal/update`
+只读 Core。
+
+检查只读取 GitHub latest release 元数据，不下载、不替换当前二进制。若有新版本，
+界面展示绑定精确 Release tag 的安装命令；真正升级仍由用户退出 TUI 后显式执行。
+`bootstrap` 继续保持 deployment-only，不暴露版本页。
 
 ## 讨论过但不采用的方案
 

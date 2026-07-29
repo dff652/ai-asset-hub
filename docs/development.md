@@ -90,6 +90,7 @@ go build -o build/aiah ./cmd/aiah   # 版本 = dev，未发布二进制的诚实
 ./scripts/build.sh                  # 注入 git 版本 / commit / 时间
 VERSION=0.1.3 ./scripts/build.sh    # 已发布版本的构建复验示例
 aiah version [--output json]
+aiah update --check [--output text|json]  # 只读查 Release，不安装
 ```
 
 版本戳规则只有一份：`scripts/_stamp.sh`，由 `build.sh` 与 `release-build.sh`

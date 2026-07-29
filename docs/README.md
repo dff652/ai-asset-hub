@@ -41,7 +41,7 @@
 
 ## 设计方案
 
-- [TUI 技术方案](designs/tui-technical-design.md)（Phase A / B / C / D1 已实现）
+- [TUI 技术方案](designs/tui-technical-design.md)（Phase A / B / C / D1 / D2 / D3 已实现）
 
 ## 评审
 
