@@ -59,6 +59,14 @@ func TestCheckReportsReleaseRelationship(t *testing.T) {
 	}
 }
 
+func TestUpgradeCommandPinsInstallerVersion(t *testing.T) {
+	const want = "curl -fsSL https://raw.githubusercontent.com/dff652/" +
+		"ai-asset-hub/v0.1.5/scripts/install.sh | AIAH_VERSION=0.1.5 sh"
+	if got := upgradeCommandFor("0.1.5"); got != want {
+		t.Fatalf("upgrade command = %q, want %q", got, want)
+	}
+}
+
 func TestCheckRejectsInvalidReleaseResponse(t *testing.T) {
 	tests := []struct {
 		name   string

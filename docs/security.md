@@ -110,7 +110,8 @@ bootstrap 含解析值。后续 inventory 会把这个 native config 识别为
 但 tag URL 不能单独证明目标版本已绑定：`v0.1.4` / `v0.1.5` 的生成命令缺少显式
 `AIAH_VERSION`，配合 staged installer pin 会停留在旧版。`v0.1.5` 的公开
 workaround 见[上手指南](getting-started.md)；后续发布门禁必须执行程序实际生成的
-命令，并核对安装后的版本、commit 和 SHA256。
+命令，并核对安装后的版本、commit 和 SHA256。当前源码已让未来构建显式绑定
+`AIAH_VERSION` 并加入精确字符串回归；该修复不追溯改变已发布二进制。
 
 ## 6. 许可证
 

@@ -11,7 +11,8 @@
   typed apply/update/remove/rollback、E3.1 和退出后 CLI 对账均通过。
 - 已知问题：同次验收确认 `v0.1.4` / `v0.1.5` 的 `update --check` 推荐命令缺少
   `AIAH_VERSION`，执行后可能仍停留在旧 pin。Release 说明已提供显式版本命令；
-  下一版本必须修复并把“执行实际输出命令”加入发布门禁。
+  当前源码已修复生成格式并把“执行实际输出命令”加入发布门禁，但下一正式版本仍须
+  完成真实旧版升级。
 - E2 候选实跑：2026-07-30，隔离 `0.1.5-dev.e2` 二进制完成统一资产状态、纳入、
   连续 profile/diff、typed apply、成功摘要、Doctor、typed update/remove 与 CLI
   对账。该记录只证明 dev 候选，不代表未发布 Release 的安装器升级已通过。
@@ -69,7 +70,16 @@ before_sha=$(sha256sum "$DOGFOOD_INSTALL/aiah" | awk '{print $1}')
 upgrade_command=$("$DOGFOOD_INSTALL/aiah" update --check --output json |
   python3 -c 'import json,sys; print(json.load(sys.stdin)["upgradeCommand"])')
 expected="curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v$TO_VERSION/scripts/install.sh | AIAH_VERSION=$TO_VERSION sh"
-test "$upgrade_command" = "$expected"
+legacy_expected="curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v$TO_VERSION/scripts/install.sh | sh"
+case "$FROM_VERSION" in
+  0.1.4 | 0.1.5)
+    test "$upgrade_command" = "$legacy_expected"
+    printf 'known legacy upgrade command: %s\n' "$upgrade_command"
+    ;;
+  *)
+    test "$upgrade_command" = "$expected"
+    ;;
+esac
 
 AIAH_VERSION=$TO_VERSION AIAH_INSTALL_DIR=$DOGFOOD_INSTALL sh scripts/install.sh
 "$DOGFOOD_INSTALL/aiah" version --output json
@@ -89,12 +99,17 @@ test "$after_sha" = "$(sha256sum "$DOGFOOD_INSTALL/aiah" | awk '{print $1}')"
 
 必须在安装 `TO_VERSION` **之前**从旧版本读取并核对程序实际生成的升级命令；升级后
 再检查只会得到 `current`，不能证明旧用户看到的命令正确。不要对未经验证的网络
-返回值直接使用 `eval`；先断言命令完全等于项目定义的安全模板，再在另一个隔离目录
-执行模板中的固定 URL 和显式版本，确认确实到达 `TO_VERSION`。
+返回值直接使用 `eval`；先断言命令等于“修复后模板”或明确列出的 legacy 模板，再在
+另一个隔离目录执行固定 URL 和显式版本，确认确实到达 `TO_VERSION`。
 
 `v0.1.5` 首次执行这条新增门禁时发现：实际命令没有 `AIAH_VERSION=0.1.5`，会让
 v0.1.4 保持原版本。因此该版本只能记为“显式版本升级通过，推荐命令失败且已公开
 告知”，不能记为安装入口完整闭环。
+
+`v0.1.4` / `v0.1.5` 二进制不可追溯修改。由 `v0.1.5` 升级到首个包含修复的版本时，
+仍会命中上面的 legacy 分支：Release 必须公开显式版本 workaround，并把实际旧命令
+执行后的 no-op 作为已知失败证据。只有从首个修复版升级到再下一版时，才能首次要求
+`upgrade_command == expected` 并宣布推荐命令端到端闭环。
 
 验收记录至少保留：
 
@@ -151,11 +166,22 @@ PACKAGE=$DOGFOOD_DIST/$(python3 -c \
   --output json >"$DOGFOOD_ROOT/apply.json"
 ```
 
-启动真实 TTY：
+启动真实 TTY。普通入口必须使用裸 `aiah`；`ui` 仅在需要显式测试目录参数时保留：
 
 ```bash
 "$AIAH" ui --home "$DOGFOOD_HOME" --project "$DOGFOOD_PROJECT"
 ```
+
+另开一个真实 TTY，验证无参数入口：
+
+```bash
+"$AIAH"
+```
+
+裸入口会只读扫描当前用户 HOME；本项只验证任务首页和 `q` 退出，不进入任何写操作。
+隔离写流程继续使用上一条显式 `ui --home/--project` 命令。两者必须进入同一任务
+首页。自动 PTY 脚本应等待首屏实际出现后再发送按键，不能用固定的过早按键时序代替
+初始化判断。
 
 人工验收：
 

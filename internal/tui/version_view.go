@@ -85,20 +85,27 @@ func (m Model) releaseCheckLines(style styles) []string {
 
 func displayUpgradeCommand(command string) []string {
 	const (
-		prefix  = "curl -fsSL "
-		urlBase = "https://raw.githubusercontent.com/dff652/"
-		suffix  = " | sh"
+		prefix     = "curl -fsSL "
+		urlBase    = "https://raw.githubusercontent.com/dff652/"
+		pipeMarker = " | AIAH_VERSION="
+		suffix     = " sh"
 	)
-	script := strings.TrimPrefix(command, prefix+urlBase)
-	script = strings.TrimSuffix(script, suffix)
-	if script == command || script == "" ||
-		prefix+urlBase+script+suffix != command {
+	commandBody := strings.TrimPrefix(command, prefix+urlBase)
+	parts := strings.Split(commandBody, pipeMarker)
+	if commandBody == command || len(parts) != 2 {
+		return []string{command}
+	}
+	script := parts[0]
+	release := strings.TrimSuffix(parts[1], suffix)
+	if script == "" || release == parts[1] || release == "" ||
+		prefix+urlBase+script+pipeMarker+release+suffix != command {
 		return []string{command}
 	}
 	return []string{
 		"curl -fsSL \\",
 		"  '" + urlBase + "'\\",
-		"  '" + script + "' | sh",
+		"  '" + script + "' |",
+		"  AIAH_VERSION=" + release + " sh",
 	}
 }
 

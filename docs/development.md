@@ -163,8 +163,18 @@ public `v0.1.5` 于 2026-07-30 从 `main@8ca70f0cde4b` 发布：
 本次验收同时发现 P1：`v0.1.4` / `v0.1.5` 的 `aiah update --check` 生成命令没有
 显式传入 `AIAH_VERSION`，而 `v0.1.5` tag 内安装器默认 pin 仍为 `v0.1.4`；执行
 推荐命令会停留在旧版。Release 说明已公开 workaround，tag 与产物不重写。下一版本
-必须先修复命令生成，并把“执行程序实际输出的升级命令”加入发布门禁，再更新默认
-installer pin。完整证据见
+必须把“执行程序实际输出的升级命令”加入发布门禁。后续本地 N2.1 分支已经：
+
+- 让 `upgradeCommand` 同时绑定 tag URL 和 `AIAH_VERSION`；
+- 增加精确字符串测试并完成删除防线会变红的变异验证；
+- 同步 TUI 窄屏可复制命令的四行展示；
+- 把 `main` installer 默认 pin 更新为已验收的 `v0.1.5`；
+- 把 README SVG 静态规范检查纳入 `check-local.sh`。
+
+这些是**当前源码候选**，不是已经发布的新二进制；仍需 PR/CI 和下一 Release 的
+旧版 → 新版真实升级验收。由于 `v0.1.5` 自身不能追溯修复，下一版是一次性 bridge
+release，仍需显式版本 workaround；从首个修复版升级到再下一版时，才能首次证明
+推荐命令端到端闭环。完整历史证据见
 [v0.1.5 检查点 §5](reviews/2026-07-30-v0.1.5-candidate-readiness.md#5-发布结果与已知问题)。
 
 首次发布时 GitHub 把 `actions/checkout@v4`、`actions/setup-go@v5` 与

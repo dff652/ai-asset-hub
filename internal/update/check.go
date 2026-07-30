@@ -138,7 +138,8 @@ func Check(options Options) (Report, error) {
 
 func upgradeCommandFor(release string) string {
 	return fmt.Sprintf(
-		"curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v%s/scripts/install.sh | sh",
+		"curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v%s/scripts/install.sh | AIAH_VERSION=%s sh",
+		release,
 		release,
 	)
 }
