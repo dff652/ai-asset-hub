@@ -183,11 +183,12 @@
       dev CI 8 个 job 全绿且 annotations 为 0；Release-only 的 action-gh-release
       已随 public `v0.1.1` 正常 tag 实跑通过。
     - ✅ **Linux amd64 安装脚本 `scripts/install.sh`**（ADR-0003 §3 分发顺序
-      第 4 项）。默认固定 `v0.1.4`；校验 Release `SHA256SUMS` 后才安装，同目录
+      第 4 项）。默认仍固定 `v0.1.4`；校验 Release `SHA256SUMS` 后才安装，同目录
       stage 后原子替换，不先删旧版本，不用 sudo、不改 profile，同版本零下载。
       校验复用 `scripts/_sha256.sh`；网络隔离测试覆盖校验失败保旧、重复 checksum、
       幂等、原子替换，以及 macOS/arm64 在下载前被拒绝。Windows/macOS/arm64
-      安装入口须在对应平台完成原生验收后再提供。
+      安装入口须在对应平台完成原生验收后再提供。`v0.1.5` 已发布，但生成的升级
+      命令缺少显式 `AIAH_VERSION`；默认 pin 与提示命令须由 N2.1 一并收口。
     - ⬜ 包格式兼容矩阵：旧包被新 aiah 读到什么程度（同时是 ADR-0003 UI 门槛
       第 2 条的前置）。
 
@@ -282,10 +283,10 @@ TUI 可以编辑那个文件，但不得引入私有设置存储。
     `v` 页面显示 aiah version/commit/build date 与当前资产 deployment 包版本；
     打开页面不联网，只有按 `c` 才复用 `aiah update --check` 的只读 Core。
     检查不下载、不自更新，发现新版本时给出绑定精确 tag 的安装命令。隔离 TTY
-    dogfood 已确认首屏不联网、按键后查询与 dev 构建不可比较状态。
-18. **TUI Phase E：产品体验与导航 V2**。🚧 **E1/E2/E3.1 已实现，dev 候选
-    dogfood 通过，待正式 Release 安装验收
-    （2026-07-30）**：
+    dogfood 已确认首屏不联网、按键后查询与 dev 构建不可比较状态。`v0.1.5`
+    验收发现生成命令没有显式绑定安装器目标版本，列为 N2.1 P0 修复。
+18. **TUI Phase E：产品体验与导航 V2**。🚧 **E1/E2/E3.1 已实现，随
+    `v0.1.5` 发布并完成正式安装包 dogfood（2026-07-30）；E3.2+ 待实现**：
     - 定位为“AI 编程资产管理器”，资产库可包含知识型资产，但产品不是知识库；
     - 新增任务首页，把 inventory 降为“本机 AI 资产”子页面；
     - `aiah` 在交互 TTY 默认启动首页，`aiah ui` 保持兼容，非 TTY 仍拒绝进入；
@@ -297,17 +298,16 @@ TUI 可以编辑那个文件，但不得引入私有设置存储。
     - 应用成功页汇总目标工具、写入/不变/跳过数量、安装恢复点和建议下一步；
     - “资产库备份 / 安装恢复点 / 跨设备分发”边界已固化，不再把 publish/pull
       称为同步；
-    - 2026-07-30 隔离 TTY dev 候选走通纳入 → 连续 profile/diff → typed apply →
-      成功摘要 → Doctor → 源端更新检测 → typed update → typed remove；CLI 对账确认
-      manifest/profile 已移出、源端保留、安装记录仍健康；
-    - 该结果不等于尚未发布版本的安装器升级验收；E3 跨设备迁移与版本对齐 TUI、
-      E4 设置/i18n 继续按[产品体验方案 V2](designs/tui-product-experience-v2.md)
-      分期，未实现入口不展示。
+    - 2026-07-30 隔离 TTY 候选与正式安装包均走通纳入 → 连续 profile/diff →
+      typed apply → 成功摘要 → Doctor → 源端更新检测 → typed update → typed
+      remove；CLI 对账确认 manifest/profile 已移出、源端保留、安装记录仍健康；
+    - E3 跨设备迁移与版本对齐 TUI、E4 设置/i18n 继续按
+      [产品体验方案 V2](designs/tui-product-experience-v2.md)分期，未实现入口不展示。
     - ✅ **E3.1（2026-07-30）**：首页新增只读“迁移到其他设备”；同一 Core
       汇总资产库、Doctor 当前安装与 channel versions，明确显示相同/不同/未安装/
       未发布/未选通道。`c` 只读取用户输入的已有目录，不创建、不联网、不发布、
-      不 pull、不 apply；版本不同不猜测新旧。隔离 TTY dev 候选已验证未选通道与
-      同版本通道两种状态，仓库 fixture 无写入。
+      不 pull、不 apply；版本不同不猜测新旧。隔离 TTY 候选与正式安装包均已验证
+      未选通道和同版本通道状态，仓库 fixture 无写入。
 
 启动前置：ADR-0003 五项门槛第 3 条（跨设备分发）**已满足**（第 9 项，2026-07-28）。
 Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）。新增依赖时仍须
@@ -331,16 +331,17 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 ## 当前资产管理完成度（2026-07-30）
 
 结论：aiah 已形成“发现 → 资产库 → 校验/组包 → 预览/应用 → 检查/撤销 →
-不可变分发”的资产生命周期 MVP；当前不足不在基础 Core，而在最新 TUI 候选尚未
-发布、跨设备连续向导尚未完成，以及 AI 接口还没有覆盖最新的统一状态。
+不可变分发”的资产生命周期 MVP；TUI E1/E2/E3.1 已随 `v0.1.5` 发布。当前优先
+不足是升级提示命令与 installer pin 尚未收口、跨设备连续向导尚未完成，以及 AI
+接口还没有覆盖统一资产状态。
 
 | 层面 | 已完成 | 当前边界 |
 |---|---|---|
-| 公开版 `v0.1.4` | CLI/Core、TUI D1–D3、只读 MCP、不可变通道、secret provider、Linux amd64 安装升级 | 不包含当前工作树中的 E1/E2/E3.1 |
-| 当前 dev 候选 | `dev@8552bef`：任务首页、统一资产状态、纳入/更新/移出、连续应用向导、E3.1 跨设备只读状态 | PR #16、dev CI、本地 Release 产物预演和隔离候选安装 dogfood 已通过；尚未合入 main 或完成正式 Release 安装验收 |
+| 公开版 `v0.1.5` | CLI/Core、任务首页、统一资产状态、连续应用、Doctor/rollback、E3.1、只读 MCP、不可变通道、secret provider | Linux amd64 产物与显式版本升级通过；`update --check` 推荐命令缺少显式版本 |
+| 当前 dev / main | `dev@88094cd` 与 `main@8ca70f0` tree 一致，E1/E2/E3.1 已发布 | installer 默认仍为 v0.1.4；修复提示命令后才能完成默认入口收口 |
 | 人工操作入口 | TUI 覆盖日常本机流程；CLI 保留全部高级、脚本和 CI 能力 | 写操作继续要求显式路径、diff 和 typed confirmation |
 | AI 接入入口 | `aiah mcp` 提供 scan/validate/diff/doctor/version 五个只读工具 | 尚无统一资产状态、迁移状态和三客户端验收矩阵；不开放写操作 |
-| README 视觉 | README mode、项目首屏、生命周期图和 TUI 证明板已完成宽屏/窄屏验证 | 仅进入 dev 候选；默认分支首页待 main 合入，且未宣称 dev 能力已经发布 |
+| README 视觉 | README mode、项目首屏、五步主流程、生命周期图和 TUI 证明板已完成宽屏/窄屏验证 | 已进入默认分支；一张主流程图只表达首次成功，其它流程由任务表和详细文档覆盖 |
 
 资产管理后续可增强“资产库备份就绪与恢复验证、搜索/标签/描述、来源与许可证追踪”，
 但这些不是当前发布阻塞项。aiah 仍不实现网络传输、后台双向同步或云端账户体系。
@@ -360,7 +361,7 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | D7 | `~/.claude/CLAUDE.md` 怎么拆 | 通用 / Claude 专属 / 本机私有三份，**人工判断**，拆完才能进包 | 同上 |
 | D8 | **repo 何时转 public** | ✅ 2026-07-28 已完成：`github.com/dff652/ai-asset-hub` 使用单提交干净公开历史，private 原历史保留在 internal 档案；`v0.1.1`、匿名验收与远端治理均已完成 | [Public readiness 评估](reviews/2026-07-27-public-readiness-assessment.md) |
 
-## 下一步（2026-07-29 `v0.1.4` 发布完成）
+## 下一步（2026-07-30 `v0.1.5` 发布后）
 
 | 顺序 | 事项 | 估时 | 为什么在这个位置 |
 |---|---|---|---|
@@ -379,15 +380,16 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | 13 | ✅ **TUI Phase D3 版本/更新检查** | 已完成 | 默认离线、按键联网、CLI/TUI 共用 Core、不做隐式自更新 |
 | 14 | ✅ **安装/升级与 D2/D3 隔离 dogfood** | 已完成 | `v0.1.2→v0.1.3` 真实安装器升级、候选替换、rollback 与版本检查均通过；SOP 已固化 |
 | 15 | ✅ **发布 `v0.1.4`** | 已完成 | tag/Release、线上 SHA/版本/架构、`v0.1.3→v0.1.4` 升级、TUI 与幂等复装均通过 |
-| 16 | 🚧 **TUI 产品体验 V2 E1/E2/E3.1** | dev 候选 dogfood 通过，待正式 Release 验收 | 任务首页、统一资产状态、连续应用向导和跨设备只读状态；下一步 E3.2 |
+| 16 | ✅ **TUI 产品体验 V2 E1/E2/E3.1** | `v0.1.5` 正式安装包验收完成 | 任务首页、统一资产状态、连续应用向导和跨设备只读状态已发布；下一步先修升级提示，再进入 E3.2 |
 
-### 后续任务计划（从当前 dev 候选继续）
+### 后续任务计划（从 `v0.1.5` 发布后继续）
 
 | 顺序 | 优先级 | 任务 | 验收出口 |
 |---|---|---|---|
 | N0 | P0 | ✅ **严格 review 当前 E1/E2/E3.1 + 文档/视觉改动** | 已修复“读取失败误报待更新”和首页缺少自动安装状态；变异验证、完整 `check-local`、真 TTY 与 900/360 视觉检查通过；无剩余 P0/P1；[复审记录](reviews/2026-07-30-e1-e2-e3-1-strict-review.md)列出建议提交拆分，未自行 commit |
-| N1 | P0 | 🚧 **形成下一 Release 候选并做正式安装包 dogfood** | `dev@8552bef`、PR #16、dev CI、候选替换/TUI dogfood 和本地 `0.1.5` Release 产物已通过；[检查点](reviews/2026-07-30-v0.1.5-candidate-readiness.md)之后仍需 main CI → tag → Release → `v0.1.4→v0.1.5` 真实升级 |
-| N2 | P0 | ✅ **README mode：整体结构、首屏与五步使用流程** | 已进入 dev 候选；保留重构前历史快照并明确公开版/dev 候选边界；“发现 → 整理 → 准备 → 预览 → 人工确认”已固化到上手指南和项目原生 SVG；900px/360px、链接、SVG 安全和无障碍检查通过；默认分支 GitHub 页面验收待 main 合入 |
+| N1 | P0 | ⚠️ **`v0.1.5` 发布与正式安装包 dogfood** | main/Release CI、线上产物、显式版本升级和正式 TUI dogfood 已通过；`update --check` 实际推荐命令复现为 no-op，Release 已标注 Known issue；准确证据见[检查点 §5](reviews/2026-07-30-v0.1.5-candidate-readiness.md#5-发布结果与已知问题) |
+| N2 | P0 | ✅ **README mode：整体结构、首屏与五步使用流程** | 已进入 `main@8ca70f0`；“发现 → 整理 → 准备 → 预览 → 人工确认”已固化到上手指南和项目原生 SVG；900px/360px、链接、SVG 安全、无障碍和默认分支内容检查通过 |
+| N2.1 | P0 | **修复升级提示命令并收口 installer pin** | `upgradeCommand` 必须带精确 `AIAH_VERSION`；发布门禁执行程序实际输出的命令；为 v0.1.4/v0.1.5 保留公开 workaround；更新 installer 默认和用户文档前完成回归与发布策略复审 |
 | N3 | P1 | **E3.2 跨设备连续向导** | TUI 编排 build/publish/versions/pull/bootstrap；通道由用户明确选择；pull 后仍必须 diff + typed apply |
 | N4 | P1 | **E3.3 换机前置检查** | 显示 device-private 排除项、缺失 secret、目标支持和 adapter 降级；检查阶段零写入 |
 | N5 | P1 | **MCP 只读状态补齐与客户端验收** | 先修订 ADR-0005，再暴露统一资产状态和迁移状态；所有工具零写入；Claude/Codex/Grok 真实握手有记录 |
@@ -395,9 +397,10 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | N7 | P2 | **E4 设置与 i18n** | 字符串目录先行；简体中文/English golden tests；偏好文件 `0600`、原子写入、无 secret；显示密度不得隐藏路径、版本、目标工具、风险、变更、确认与恢复信息 |
 | N8 | P2 | **规模化资产管理增强评估** | 由真实使用量触发；评估备份就绪/恢复验证、搜索/标签/来源追踪，不提前引入服务端或数据库事实源 |
 
-`v0.1.4` 已从 `main@014e3268e305` 发布：main 与 Release CI、线上
-SHA256/版本/架构、真实升级、TUI D2/D3 和幂等复装均通过；安装器默认 pin 随后
-独立更新到 `v0.1.4`。发布与升级步骤分别见
+`v0.1.5` 已从 `main@8ca70f0cde4b` 发布：main 与 Release CI、线上
+SHA256/版本/架构、显式版本升级、TUI E1/E2/E3.1 和幂等复装均通过；推荐升级命令
+缺少 `AIAH_VERSION`，因此 installer 默认 pin 尚未更新，Release 说明已给出
+workaround。发布与升级步骤分别见
 [发版 runbook](runbooks/release.md)和
 [安装/升级 dogfood SOP](runbooks/install-upgrade-dogfood.md)。
 
@@ -408,10 +411,9 @@ SHA256/版本/架构、真实升级、TUI D2/D3 和幂等复装均通过；安�
 public `v0.1.1` tag 实跑通过。
 
 D8、仓库身份、历史公开边界、发布收口、安装脚本和 TUI D1/D2/D3 均已完成。
-当前产品主线是 TUI 产品体验 V2：E1/E2 与 E3.1 已进入 dev；N0 严格复审、
-N2 README mode 和 owner 已授权的 N1 dev 候选阶段均已通过。下一步按 main 提升
-评审、main CI、tag/Release 和发布后真实升级的顺序收口，再进入 E3.2 跨设备
-发布/查看/取回编排和 E3.3 换机前置检查。
+当前产品主线是 TUI 产品体验 V2：E1/E2 与 E3.1 已随 `v0.1.5` 发布。下一步先修复
+升级提示命令、复审 tag installer 与 staged pin 的契约，并完成默认安装入口收口；
+之后进入 E3.2 跨设备发布/查看/取回编排和 E3.3 换机前置检查。
 E4 设置/i18n 尚未实现。完整发布收口清单见
 [2026-07-27 Public readiness 评估](reviews/2026-07-27-public-readiness-assessment.md)。
 
@@ -419,11 +421,11 @@ E4 设置/i18n 尚未实现。完整发布收口清单见
 TUI dogfood ✅ → doctor ✅ → MCP ✅ / TUI Phase B ✅ → 跨设备分发 ✅ →
 Secret Provider ✅ → TUI Phase C ✅ → bootstrap ✅。
 当前再向后是 TUI D1 引导式本地闭环 ✅ → TUI D2 Doctor/当前回滚 ✅ →
-TUI D3 版本/只读更新检查 ✅ → 安装升级 dogfood ✅ → `v0.1.4` 发布与发布后
-升级验收 ✅。
+TUI D3 版本/只读更新检查 ✅ → 安装升级 dogfood ✅ → `v0.1.5` 发布产物与显式
+升级验收 ✅ → 推荐升级命令修复待完成 ⚠️。
 **首次真机 dogfood 已完成，工具已从「工程演示」变为「自用工具」**（2026-07-25）；
-private `v0.1.0` 已完成流水线验收（2026-07-26）；public `v0.1.1`–`v0.1.4`
-已发布并完成下载与自查验收（2026-07-28 至 2026-07-29）。
+private `v0.1.0` 已完成流水线验收（2026-07-26）；public `v0.1.1`–`v0.1.5`
+已发布（2026-07-28 至 2026-07-30），其中 v0.1.5 的推荐升级命令保留公开已知问题。
 
 ## Phase 0：资产盘点与契约
 

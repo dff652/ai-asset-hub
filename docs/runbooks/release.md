@@ -45,16 +45,27 @@ print(collections.Counter(f['code'] for f in r['findings']).most_common())"
 
 安装器默认版本必须始终指向一个实际存在且已验收的 Release，不能提前指向尚未发布
 的 tag。因此发布新版本时先保留上一个已验收版本；新 Release 通过 §4 验收后，再用
-独立 PR 同步 `scripts/install.sh`、README 和上手指南的默认版本。运行安装器测试：
+独立 PR 同步 `scripts/install.sh`、README 和上手指南的默认版本。
+
+这个 staged-pin 规则要求升级提示**另外显式传入目标版本**。只把安装脚本 URL 绑定
+到新 tag 不够，因为该 tag 内脚本的默认 pin 仍可能指向上一版。`v0.1.5` 正式验收
+已证明这会让推荐升级命令停留在旧版；后续版本必须同时满足：
+
+- `upgradeCommand` 含精确 tag URL 和 `AIAH_VERSION=<目标版本>`；
+- 安装器默认 pin 仍保持上一已验收版本，直到发布后门禁全部通过；
+- §4 核对并执行程序实际给出的升级契约，而不是只测试人工补齐版本的命令。
+
+运行安装器测试：
 
 ```bash
 ./scripts/test-install.sh
 ```
 
 ```bash
-VERSION=0.1.4 ./scripts/release-build.sh
+RELEASE_VERSION=0.1.5
+VERSION="$RELEASE_VERSION" ./scripts/release-build.sh
 ./scripts/check-release-checksums.sh
-cd dist/release && file aiah_0.1.4_* | cut -c1-80
+file "dist/release/aiah_${RELEASE_VERSION}_linux_amd64"
 ```
 
 必须看到：
@@ -77,29 +88,63 @@ CI 的跨平台目标只证明**可构建**，不代表在那些平台上验证�
 ```bash
 gh run list --branch main --limit 1
 gh run watch <run-id> --exit-status
-git tag -a v0.1.4 -m "aiah v0.1.4"
-git rev-parse v0.1.4^{}      # 必须等于刚通过 CI 的 main commit
-git push origin v0.1.4        # 这一步触发 Release
+RELEASE_TAG=v0.1.5
+git tag -a "$RELEASE_TAG" -m "aiah $RELEASE_TAG"
+git rev-parse "${RELEASE_TAG}^{}"    # 必须等于刚通过 CI 的 main commit
+git push origin "$RELEASE_TAG"       # 这一步触发 Release
 ```
 
 ## 4. 发布后验收
 
 ```bash
-gh release view v0.1.4
+RELEASE_TAG=v0.1.5
+RELEASE_VERSION="${RELEASE_TAG#v}"
+gh release view "$RELEASE_TAG"
 # 下载并校验（换成实际平台）
-gh release download v0.1.4 \
+RELEASE_CHECK_DIR="$(mktemp -d)"
+gh release download "$RELEASE_TAG" \
   -p 'aiah_*_linux_amd64' -p 'LICENSE' -p 'NOTICE' \
-  -p 'THIRD_PARTY_*' -p 'SHA256SUMS' -D /tmp/rel-check
-cd /tmp/rel-check && sha256sum -c SHA256SUMS --ignore-missing
-chmod +x aiah_*_linux_amd64 && ./aiah_*_linux_amd64 version
+  -p 'THIRD_PARTY_*' -p 'SHA256SUMS' -D "$RELEASE_CHECK_DIR"
+cd "$RELEASE_CHECK_DIR"
+sha256sum -c SHA256SUMS --ignore-missing
+chmod +x "aiah_${RELEASE_VERSION}_linux_amd64"
+"./aiah_${RELEASE_VERSION}_linux_amd64" version
 ```
 
 `version` 输出的版本号必须与 tag 一致（去掉 `v`）。不一致说明 ldflags 注入或
 workflow 的 `VERSION` 处理坏了，**先撤下 Release 再排查**。
 
 随后按[安装、升级与 TUI dogfood SOP](install-upgrade-dogfood.md)用上一公开版本
-真实升级到本版本。只有 Release 下载、升级、TUI 和幂等复装全部通过，才另开 PR
+真实升级到本版本，并增加升级提示契约门禁。用旧版已安装二进制取得 JSON，不执行
+任意返回字符串；先逐字核对，再用相同固定参数在隔离目录执行：
+
+```bash
+OLD_AIAH=/path/to/previous/aiah
+RELEASE_TAG=v0.1.5
+RELEASE_VERSION="${RELEASE_TAG#v}"
+UPGRADE_JSON="$("$OLD_AIAH" update --check --output json)"
+UPGRADE_COMMAND="$(printf '%s' "$UPGRADE_JSON" |
+  python3 -c 'import json,sys; print(json.load(sys.stdin)["upgradeCommand"])')"
+EXPECTED_COMMAND="curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/${RELEASE_TAG}/scripts/install.sh | AIAH_VERSION=${RELEASE_VERSION} sh"
+test "$UPGRADE_COMMAND" = "$EXPECTED_COMMAND"
+
+UPGRADE_ROOT="$(mktemp -d)"
+curl -fsSL \
+  "https://raw.githubusercontent.com/dff652/ai-asset-hub/${RELEASE_TAG}/scripts/install.sh" |
+  AIAH_VERSION="$RELEASE_VERSION" AIAH_INSTALL_DIR="$UPGRADE_ROOT/bin" sh
+"$UPGRADE_ROOT/bin/aiah" version
+```
+
+必须再核对安装前后版本、commit、SHA256、mode、stage 残留和同版本复装。若
+`test "$UPGRADE_COMMAND" = "$EXPECTED_COMMAND"` 失败，发布不能标记为“升级验收
+完成”；不得以手工命令成功替代该门禁。
+
+只有 Release 下载、升级提示契约、真实升级、TUI 和幂等复装全部通过，才另开 PR
 把 `scripts/install.sh` 的默认 pin 与用户文档同步到新版本。
+
+`v0.1.5` 是已知例外：产物、显式版本升级和 TUI 已通过，但上述命令相等性门禁失败；
+Release 说明已公开显式 `AIAH_VERSION=0.1.5` 的 workaround。不要重写 tag 或产物，
+在下一版本修复命令生成后再收口默认 pin。
 
 ## 5. 出问题怎么退
 

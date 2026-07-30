@@ -197,6 +197,18 @@ aiah update --check [--output text|json]
 该命令不下载、不替换二进制。`aiah --update` 不存在；`aiah update` 必须显式带
 `--check`。真正升级仍由用户执行报告中的校验安装命令。
 
+已知问题：`v0.1.4` / `v0.1.5` 输出的命令虽然绑定 tag，却没有给安装器显式传入
+`AIAH_VERSION`；而 `v0.1.5` tag 内的安装器默认版本仍是 `v0.1.4`，直接执行推荐
+命令会停留在旧版。升级到 `v0.1.5` 请使用：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.5/scripts/install.sh |
+  AIAH_VERSION=0.1.5 sh
+```
+
+该命令已完成隔离升级验收。后续版本必须先修复命令生成和发布门禁，不能把“绑定
+tag”误当成“安装目标版本已绑定”。
+
 ## `version`
 
 ```bash

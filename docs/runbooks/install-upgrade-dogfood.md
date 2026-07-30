@@ -6,8 +6,12 @@
   [真机 dry-run runbook](real-home-dry-run.md)。
 - 默认边界：所有写入都在 `mktemp` 目录，不覆盖 `~/.local/bin/aiah`，不把
   `HOME` 环境变量改指测试目录。
-- 最近一次实跑：2026-07-29，public `v0.1.3 → v0.1.4` 升级、同版本幂等复装、
-  TUI D2 Doctor/typed rollback、D3 显式更新检查与退出后 CLI 对账全部通过。
+- 最近一次实跑：2026-07-30，public `v0.1.4 → v0.1.5` 在显式设置
+  `AIAH_VERSION=0.1.5` 时升级通过；同版本幂等复装、裸 `aiah`、统一资产状态、
+  typed apply/update/remove/rollback、E3.1 和退出后 CLI 对账均通过。
+- 已知问题：同次验收确认 `v0.1.4` / `v0.1.5` 的 `update --check` 推荐命令缺少
+  `AIAH_VERSION`，执行后可能仍停留在旧 pin。Release 说明已提供显式版本命令；
+  下一版本必须修复并把“执行实际输出命令”加入发布门禁。
 - E2 候选实跑：2026-07-30，隔离 `0.1.5-dev.e2` 二进制完成统一资产状态、纳入、
   连续 profile/diff、typed apply、成功摘要、Doctor、typed update/remove 与 CLI
   对账。该记录只证明 dev 候选，不代表未发布 Release 的安装器升级已通过。
@@ -15,7 +19,7 @@
   `aiah`、纳入/更新/移出、连续 apply、Doctor/rollback、E3.1 通道对齐和重复候选
   替换；本地 `0.1.5` Release 产物也通过 SHA256/ELF/版本自检。完整证据与仍需门槛见
   [v0.1.5 候选就绪检查点](../reviews/2026-07-30-v0.1.5-candidate-readiness.md)。
-  这仍不代表尚未存在的 `v0.1.5` 线上安装器升级通过。
+  后续正式发布结果与已知问题见同一检查点 §5。
 
 ## 0. 四种验证不要混
 
@@ -52,15 +56,20 @@ test "$DOGFOOD_INSTALL" != "$HOME/.local/bin"
 
 ## 2. Release → Release 真实升级（发布后必跑）
 
-以下示例验证 `v0.1.3 → v0.1.4`。两个版本都必须已存在于 GitHub Releases：
+以下示例验证 `v0.1.4 → v0.1.5`。两个版本都必须已存在于 GitHub Releases：
 
 ```bash
-FROM_VERSION=0.1.3
-TO_VERSION=0.1.4
+FROM_VERSION=0.1.4
+TO_VERSION=0.1.5
 
 AIAH_VERSION=$FROM_VERSION AIAH_INSTALL_DIR=$DOGFOOD_INSTALL sh scripts/install.sh
 "$DOGFOOD_INSTALL/aiah" version --output json
 before_sha=$(sha256sum "$DOGFOOD_INSTALL/aiah" | awk '{print $1}')
+
+upgrade_command=$("$DOGFOOD_INSTALL/aiah" update --check --output json |
+  python3 -c 'import json,sys; print(json.load(sys.stdin)["upgradeCommand"])')
+expected="curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v$TO_VERSION/scripts/install.sh | AIAH_VERSION=$TO_VERSION sh"
+test "$upgrade_command" = "$expected"
 
 AIAH_VERSION=$TO_VERSION AIAH_INSTALL_DIR=$DOGFOOD_INSTALL sh scripts/install.sh
 "$DOGFOOD_INSTALL/aiah" version --output json
@@ -78,6 +87,15 @@ AIAH_VERSION=$TO_VERSION AIAH_INSTALL_DIR=$DOGFOOD_INSTALL sh scripts/install.sh
 test "$after_sha" = "$(sha256sum "$DOGFOOD_INSTALL/aiah" | awk '{print $1}')"
 ```
 
+必须在安装 `TO_VERSION` **之前**从旧版本读取并核对程序实际生成的升级命令；升级后
+再检查只会得到 `current`，不能证明旧用户看到的命令正确。不要对未经验证的网络
+返回值直接使用 `eval`；先断言命令完全等于项目定义的安全模板，再在另一个隔离目录
+执行模板中的固定 URL 和显式版本，确认确实到达 `TO_VERSION`。
+
+`v0.1.5` 首次执行这条新增门禁时发现：实际命令没有 `AIAH_VERSION=0.1.5`，会让
+v0.1.4 保持原版本。因此该版本只能记为“显式版本升级通过，推荐命令失败且已公开
+告知”，不能记为安装入口完整闭环。
+
 验收记录至少保留：
 
 - 升级前后 `aiah version --output json`；
@@ -85,6 +103,7 @@ test "$after_sha" = "$(sha256sum "$DOGFOOD_INSTALL/aiah" | awk '{print $1}')"
 - 最终 mode；
 - 安装器输出；
 - staging 文件检查结果。
+- `update --check` 实际命令文本与执行后的版本。
 
 ## 3. 发布前 dev 候选 dogfood
 
@@ -92,7 +111,7 @@ test "$after_sha" = "$(sha256sum "$DOGFOOD_INSTALL/aiah" | awk '{print $1}')"
 
 ```bash
 mkdir -p "$DOGFOOD_ROOT/candidate"
-VERSION=0.1.4-dev.1 OUT="$DOGFOOD_ROOT/candidate/aiah" ./scripts/build.sh
+VERSION=0.1.6-dev.1 OUT="$DOGFOOD_ROOT/candidate/aiah" ./scripts/build.sh
 "$DOGFOOD_ROOT/candidate/aiah" version --output json
 ```
 

@@ -107,6 +107,10 @@ bootstrap 含解析值。后续 inventory 会把这个 native config 识别为
 工具自身的 Release 检查同样不静默跟随：`aiah update --check` 和 TUI `v` → `c`
 只读取 GitHub latest release 元数据，不下载、不替换二进制。返回的升级命令绑定
 精确 tag；真正安装仍由用户显式执行，并继续经过安装器的 SHA256 与原子替换门禁。
+但 tag URL 不能单独证明目标版本已绑定：`v0.1.4` / `v0.1.5` 的生成命令缺少显式
+`AIAH_VERSION`，配合 staged installer pin 会停留在旧版。`v0.1.5` 的公开
+workaround 见[上手指南](getting-started.md)；后续发布门禁必须执行程序实际生成的
+命令，并核对安装后的版本、commit 和 SHA256。
 
 ## 6. 许可证
 

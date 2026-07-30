@@ -1,6 +1,6 @@
 # 工程流程：开发 / 测试 / 构建 / 部署 / 发布
 
-- 更新时间：2026-07-29
+- 更新时间：2026-07-30
 - 定位：长期有效的工程约束与流程现状。排期与**待决策清单 D1–D8** 看
   [MVP 路线图](roadmap.md)。
 
@@ -12,7 +12,7 @@
 |---|---|---|
 | 做什么 | 把资产包装进 `~/.claude` / `~/.codex` / `~/.grok` | 把 `aiah` 二进制交付给用户 |
 | 链路 | `build → diff/dry-run → apply → rollback` | tag → 多平台二进制 → 校验和 → Release |
-| 状态 | **已固化，且 2026-07-25 真机验证** | public `v0.1.4` 已发布并完成下载、升级与 TUI 验收，见 §5 |
+| 状态 | **已固化，且 2026-07-25 真机验证** | public `v0.1.5` 已发布；产物、显式版本升级与 TUI 验收通过，推荐升级命令有已知问题，见 §5 |
 | SOP | [真机 dry-run runbook](runbooks/real-home-dry-run.md)、[假 HOME 闭环](runbooks/fake-home-loop.md) | [发版 runbook](runbooks/release.md)、[安装/升级 dogfood](runbooks/install-upgrade-dogfood.md) |
 
 ## 1. 开发
@@ -88,7 +88,7 @@ Windows 的 `chmod`、shebang、配置根语义都要单独的行为验收，不
 ```bash
 go build -o build/aiah ./cmd/aiah   # 版本 = dev，未发布二进制的诚实答案
 ./scripts/build.sh                  # 注入 git 版本 / commit / 时间
-VERSION=0.1.4-dev.1 ./scripts/build.sh  # 未发布候选必须带开发标记
+VERSION=0.1.6-dev.1 ./scripts/build.sh  # 未发布候选必须带开发标记
 aiah version [--output json]
 aiah update --check [--output text|json]  # 只读查 Release，不安装
 ```
@@ -112,8 +112,8 @@ VERSION/COMMIT/DATE——两份戳规则正是本地构建与发布构建开始�
 2026-07-28 从单提交干净历史发布并完成匿名验收。
 
 ```bash
-VERSION=0.1.4 ./scripts/release-build.sh   # 本地预演：Linux amd64 + 许可材料 + 校验和 + 自检
-git tag -a v0.1.4 -m "aiah v0.1.4" && git push origin v0.1.4   # 触发 Release
+VERSION=0.1.5 ./scripts/release-build.sh   # 本地预演：Linux amd64 + 许可材料 + 校验和 + 自检
+git tag -a v0.1.5 -m "aiah v0.1.5" && git push origin v0.1.5   # 触发 Release
 ```
 
 `.github/workflows/release.yml` 监听 `v*` tag，跑测试与 gofmt 门禁后调用同一个
@@ -152,6 +152,20 @@ public `v0.1.4` 包含 TUI D2 Doctor/当前回滚与 D3 版本/显式更新检�
 TUI D2 rollback、D3 `current/latest 0.1.4` 与 CLI 对账；因此安装器默认 pin 已
 更新为 `v0.1.4`。可重复步骤见
 [安装、升级与 TUI dogfood SOP](runbooks/install-upgrade-dogfood.md)。
+
+public `v0.1.5` 于 2026-07-30 从 `main@8ca70f0cde4b` 发布：
+[main CI 30515168352](https://github.com/dff652/ai-asset-hub/actions/runs/30515168352)
+与 [Release workflow 30515370094](https://github.com/dff652/ai-asset-hub/actions/runs/30515370094)
+全绿；线上 Linux amd64 产物的 SHA256、静态 ELF x86-64 架构、版本、commit 和
+许可材料均通过下载复验。在隔离目录显式设置 `AIAH_VERSION=0.1.5` 后，真实
+`v0.1.4 → v0.1.5` 升级、同版本幂等复装和正式安装包 TUI E1/E2/E3.1 闭环均通过。
+
+本次验收同时发现 P1：`v0.1.4` / `v0.1.5` 的 `aiah update --check` 生成命令没有
+显式传入 `AIAH_VERSION`，而 `v0.1.5` tag 内安装器默认 pin 仍为 `v0.1.4`；执行
+推荐命令会停留在旧版。Release 说明已公开 workaround，tag 与产物不重写。下一版本
+必须先修复命令生成，并把“执行程序实际输出的升级命令”加入发布门禁，再更新默认
+installer pin。完整证据见
+[v0.1.5 检查点 §5](reviews/2026-07-30-v0.1.5-candidate-readiness.md#5-发布结果与已知问题)。
 
 首次发布时 GitHub 把 `actions/checkout@v4`、`actions/setup-go@v5` 与
 `softprops/action-gh-release@v2` 的 Node.js 20 action 强制运行在 Node.js 24，
