@@ -20,15 +20,16 @@ type workspaceMsg struct {
 type buildMsg struct {
 	report      build.Report
 	packagePath string
-	purpose     buildPurpose
+	purpose     profilePurpose
 	err         error
 }
 
-type buildPurpose int
+type profilePurpose int
 
 const (
-	buildForDeployment buildPurpose = iota
-	buildForPublish
+	profileForDeployment profilePurpose = iota
+	profileForPublish
+	profileForPreflight
 )
 
 func prepareWorkspaceCommand(candidate, home, project string) tea.Cmd {
@@ -38,7 +39,7 @@ func prepareWorkspaceCommand(candidate, home, project string) tea.Cmd {
 	}
 }
 
-func buildCommand(options build.Options, purpose buildPurpose) tea.Cmd {
+func buildCommand(options build.Options, purpose profilePurpose) tea.Cmd {
 	return func() tea.Msg {
 		report, err := build.Build(options)
 		message := buildMsg{report: report, purpose: purpose, err: err}
@@ -89,10 +90,10 @@ func (m Model) updateWorkspaceInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) startProfileInput() (tea.Model, tea.Cmd) {
-	return m.startProfileInputFor(buildForDeployment)
+	return m.startProfileInputFor(profileForDeployment)
 }
 
-func (m Model) startProfileInputFor(purpose buildPurpose) (tea.Model, tea.Cmd) {
+func (m Model) startProfileInputFor(purpose profilePurpose) (tea.Model, tea.Cmd) {
 	if m.composing {
 		m.notice = "正在加入资产库，请完成后再继续"
 		m.noticeIsWarn = true
@@ -120,7 +121,7 @@ func (m Model) startProfileInputFor(purpose buildPurpose) (tea.Model, tea.Cmd) {
 		profile = m.availableProfiles[0]
 	}
 	m.choosingProfile = true
-	m.buildPurpose = purpose
+	m.profilePurpose = purpose
 	m.profileInput.SetValue(profile)
 	m.notice = ""
 	m.noticeIsWarn = false
@@ -130,7 +131,7 @@ func (m Model) startProfileInputFor(purpose buildPurpose) (tea.Model, tea.Cmd) {
 func (m Model) updateProfileInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if message.Type == tea.KeyEsc {
 		m.choosingProfile = false
-		m.buildPurpose = buildForDeployment
+		m.profilePurpose = profileForDeployment
 		m.profileInput.Blur()
 		return m, nil
 	}
@@ -143,11 +144,22 @@ func (m Model) updateProfileInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		m.choosingProfile = false
 		m.profileInput.Blur()
+		purpose := m.profilePurpose
+		m.profilePurpose = profileForDeployment
+		if purpose == profileForPreflight {
+			m.screen = screenMigration
+			m.migrationFlow.mode = migrationModePreflight
+			m.migrationFlow.preflightStatus = statusLoading
+			m.migrationFlow.preflightErr = nil
+			m.migrationFlow.preflightProfile = profile
+			m.migrationFlow.preflightCursor = 0
+			m.notice = ""
+			m.noticeIsWarn = false
+			return m, preflightCommand(m.preflightOptions(profile))
+		}
 		m.invalidateBuiltPackage()
 		m.building = true
-		purpose := m.buildPurpose
-		m.buildPurpose = buildForDeployment
-		if purpose == buildForPublish {
+		if purpose == profileForPublish {
 			m.notice = "正在检查资产并准备待发布安装包…"
 		} else {
 			m.notice = "正在检查资产并准备安装包…"

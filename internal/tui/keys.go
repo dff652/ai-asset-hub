@@ -18,6 +18,7 @@ type keyMap struct {
 	RemoveAsset  key.Binding
 	Build        key.Binding
 	Publish      key.Binding
+	Preflight    key.Binding
 	Diff         key.Binding
 	Apply        key.Binding
 	Doctor       key.Binding
@@ -47,6 +48,7 @@ func defaultKeys() keyMap {
 		RemoveAsset:  key.NewBinding(key.WithKeys("X", "delete")),
 		Build:        key.NewBinding(key.WithKeys("b")),
 		Publish:      key.NewBinding(key.WithKeys("p")),
+		Preflight:    key.NewBinding(key.WithKeys("e")),
 		Diff:         key.NewBinding(key.WithKeys("d")),
 		Apply:        key.NewBinding(key.WithKeys("a")),
 		Doctor:       key.NewBinding(key.WithKeys("h")),

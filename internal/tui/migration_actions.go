@@ -16,6 +16,7 @@ type migrationMode int
 const (
 	migrationModeStatus migrationMode = iota
 	migrationModeVersions
+	migrationModePreflight
 )
 
 type migrationAction int
@@ -42,6 +43,12 @@ type migrationFlow struct {
 	versionsReport channel.ListReport
 	versionsErr    error
 	versionsCursor int
+
+	preflightStatus  status
+	preflightReport  migration.PreflightReport
+	preflightErr     error
+	preflightProfile string
+	preflightCursor  int
 
 	publishPackage    string
 	publishConfirming bool
@@ -190,7 +197,7 @@ func (m Model) startMigrationPublish() (tea.Model, tea.Cmd) {
 	m.migrationFlow.publishPackage = ""
 	m.notice = "选择要生成并发布的资产组合"
 	m.noticeIsWarn = false
-	return m.startProfileInputFor(buildForPublish)
+	return m.startProfileInputFor(profileForPublish)
 }
 
 func (m Model) startPublishConfirmation(packagePath string) (tea.Model, tea.Cmd) {
@@ -318,6 +325,49 @@ func (m Model) updatePullOutput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) updateMigrationKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.migrationFlow.mode == migrationModePreflight {
+		if m.migrationFlow.preflightStatus == statusLoading {
+			switch {
+			case key.Matches(message, m.keys.Quit):
+				return m, tea.Quit
+			case key.Matches(message, m.keys.Collapse):
+				m.migrationFlow.mode = migrationModeStatus
+			}
+			return m, nil
+		}
+		rows := m.preflightRows()
+		switch {
+		case key.Matches(message, m.keys.Quit):
+			return m, tea.Quit
+		case key.Matches(message, m.keys.Help):
+			m.showHelp = true
+		case key.Matches(message, m.keys.Up):
+			if m.migrationFlow.preflightCursor > 0 {
+				m.migrationFlow.preflightCursor--
+			}
+		case key.Matches(message, m.keys.Down):
+			if m.migrationFlow.preflightCursor+1 < len(rows) {
+				m.migrationFlow.preflightCursor++
+			}
+		case key.Matches(message, m.keys.First):
+			m.migrationFlow.preflightCursor = 0
+		case key.Matches(message, m.keys.Last):
+			if len(rows) > 0 {
+				m.migrationFlow.preflightCursor = len(rows) - 1
+			}
+		case key.Matches(message, m.keys.Reload):
+			return m.reloadMigrationPreflight()
+		case key.Matches(message, m.keys.Publish):
+			return m.startMigrationPublish()
+		case key.Matches(message, m.keys.Version):
+			return m.startVersions()
+		case key.Matches(message, m.keys.Collapse):
+			m.migrationFlow.mode = migrationModeStatus
+			m.notice = ""
+			m.noticeIsWarn = false
+		}
+		return m, nil
+	}
 	if m.migrationFlow.mode == migrationModeVersions {
 		switch {
 		case key.Matches(message, m.keys.Quit):
@@ -358,6 +408,8 @@ func (m Model) updateMigrationKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.showHelp = true
 	case key.Matches(message, m.keys.CheckUpdate):
 		return m.startChannelInput()
+	case key.Matches(message, m.keys.Preflight):
+		return m.startMigrationPreflight()
 	case key.Matches(message, m.keys.Publish):
 		return m.startMigrationPublish()
 	case key.Matches(message, m.keys.Version):

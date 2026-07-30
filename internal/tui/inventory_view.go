@@ -403,9 +403,12 @@ func (m Model) workspaceInputView(style styles) string {
 func (m Model) profileInputView(style styles) string {
 	title := "aiah · 预览并应用资产库"
 	next := "将先检查资产并在 dist/ 准备安装包，然后自动进入只读变更预览。"
-	if m.buildPurpose == buildForPublish {
+	if m.profilePurpose == profileForPublish {
 		title = "aiah · 发布资产库版本"
 		next = "将先检查资产并在 dist/ 准备安装包，然后显示不可变发布确认。"
+	} else if m.profilePurpose == profileForPreflight {
+		title = "aiah · 换机前置检查"
+		next = "只读检查本机排除项、secret 可用性和目标工具适配；不会生成安装包。"
 	}
 	lines := []string{
 		style.header.Render(title),

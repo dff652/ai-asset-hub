@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -11,6 +12,59 @@ import (
 	"github.com/dff652/ai-asset-hub/internal/build"
 	"github.com/dff652/ai-asset-hub/internal/workspace"
 )
+
+func TestInspectSecretReferencesIsStableReadOnlyAndValueFree(t *testing.T) {
+	const (
+		availableName  = "AIAH_PREFLIGHT_AVAILABLE"
+		availableValue = "preflight-secret-must-not-be-reported"
+		missingName    = "AIAH_PREFLIGHT_MISSING"
+	)
+	t.Setenv(availableName, availableValue)
+	if err := os.Unsetenv(missingName); err != nil {
+		t.Fatal(err)
+	}
+
+	staged := []adapter.StagedFile{
+		{
+			RelPath: ".codex/mcp/example.json",
+			Body: []byte(`{"name":"example","command":"example-mcp","env":{` +
+				`"TOKEN":"${ENV:` + availableName + `}",` +
+				`"OPTIONAL":"${ENV:` + missingName + `}"}}`),
+			Target: "codex",
+		},
+		{
+			RelPath: ".claude/mcp/example.json",
+			Body: []byte(`{"name":"example","command":"example-mcp","env":{` +
+				`"TOKEN":"${ENV:` + availableName + `}"}}`),
+			Target: "claude",
+		},
+	}
+	before := append([]adapter.StagedFile(nil), staged...)
+	for index := range before {
+		before[index].Body = append([]byte(nil), staged[index].Body...)
+	}
+
+	statuses, err := InspectSecretReferences(staged)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(staged, before) {
+		t.Fatal("secret inspection changed staged templates")
+	}
+	if len(statuses) != 2 ||
+		statuses[0].Name != availableName || !statuses[0].Available ||
+		strings.Join(statuses[0].Targets, ",") != "claude,codex" ||
+		statuses[1].Name != missingName || statuses[1].Available {
+		t.Fatalf("statuses = %#v", statuses)
+	}
+	encoded, err := json.Marshal(statuses)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(encoded), availableValue) {
+		t.Fatalf("status exposed a resolved value: %s", encoded)
+	}
+}
 
 func TestMCPPolicyResolvesEnvironmentAndPassRefsOnlyInNativeConfig(t *testing.T) {
 	t.Setenv("AIAH_SECRET_TEST_TOKEN", "resolved-from-environment")
