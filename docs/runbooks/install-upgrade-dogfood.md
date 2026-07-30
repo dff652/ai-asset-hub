@@ -11,6 +11,11 @@
 - E2 候选实跑：2026-07-30，隔离 `0.1.5-dev.e2` 二进制完成统一资产状态、纳入、
   连续 profile/diff、typed apply、成功摘要、Doctor、typed update/remove 与 CLI
   对账。该记录只证明 dev 候选，不代表未发布 Release 的安装器升级已通过。
+- N1 候选收口：2026-07-30，`dev@8552bef` 的 `0.1.5-dev.n1` 隔离安装完成裸
+  `aiah`、纳入/更新/移出、连续 apply、Doctor/rollback、E3.1 通道对齐和重复候选
+  替换；本地 `0.1.5` Release 产物也通过 SHA256/ELF/版本自检。完整证据与仍需门槛见
+  [v0.1.5 候选就绪检查点](../reviews/2026-07-30-v0.1.5-candidate-readiness.md)。
+  这仍不代表尚未存在的 `v0.1.5` 线上安装器升级通过。
 
 ## 0. 四种验证不要混
 
