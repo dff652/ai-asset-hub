@@ -14,6 +14,8 @@ type keyMap struct {
 	Reload       key.Binding
 	Select       key.Binding
 	Write        key.Binding
+	UpdateAsset  key.Binding
+	RemoveAsset  key.Binding
 	Build        key.Binding
 	Diff         key.Binding
 	Apply        key.Binding
@@ -21,6 +23,7 @@ type keyMap struct {
 	Rollback     key.Binding
 	Version      key.Binding
 	CheckUpdate  key.Binding
+	Home         key.Binding
 	Help         key.Binding
 	Quit         key.Binding
 	ForceQuit    key.Binding
@@ -39,6 +42,8 @@ func defaultKeys() keyMap {
 		Reload:       key.NewBinding(key.WithKeys("r")),
 		Select:       key.NewBinding(key.WithKeys(" ")),
 		Write:        key.NewBinding(key.WithKeys("w")),
+		UpdateAsset:  key.NewBinding(key.WithKeys("u")),
+		RemoveAsset:  key.NewBinding(key.WithKeys("X", "delete")),
 		Build:        key.NewBinding(key.WithKeys("b")),
 		Diff:         key.NewBinding(key.WithKeys("d")),
 		Apply:        key.NewBinding(key.WithKeys("a")),
@@ -46,6 +51,7 @@ func defaultKeys() keyMap {
 		Rollback:     key.NewBinding(key.WithKeys("x")),
 		Version:      key.NewBinding(key.WithKeys("v")),
 		CheckUpdate:  key.NewBinding(key.WithKeys("c")),
+		Home:         key.NewBinding(key.WithKeys("m")),
 		Help:         key.NewBinding(key.WithKeys("?")),
 		Quit:         key.NewBinding(key.WithKeys("q")),
 		ForceQuit:    key.NewBinding(key.WithKeys("ctrl+c")),

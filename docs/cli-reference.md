@@ -6,6 +6,7 @@
 ## 命令总表
 
 ```bash
+aiah
 aiah scan --home <path> [--project <path>] --output json
 aiah validate --manifest <path> [--root <path>] --output json
 aiah build --manifest <path> --profile <name> --out <dir> [--root <path>] --output json
@@ -127,28 +128,37 @@ aiah bootstrap --channel <dir> --name <name> [--version <v>] \
 并完整输入 `apply`；没有 `--yes`、`--force` 或环境变量旁路。取消或 diff 失败不写
 HOME，但已验证的包保留在显式 `--out`。
 
-## `ui`
+## `aiah` / `ui`
 
-引导式本地流程和三个显式入口共用同一个 Core：
+在交互终端直接运行 `aiah` 会打开任务首页；`aiah ui` 作为兼容入口保留：
 
 ```bash
-aiah ui --home "$HOME"                         # 引导式：盘点→工作区→build→diff/apply
-aiah ui --home "$HOME" --workspace ~/ai-assets # Phase B：组装工作区
-aiah ui --package <tar|dir> --home "$HOME"     # Phase C：审阅并部署
+aiah                                            # 推荐：打开任务首页
+aiah ui --home "$HOME"                          # 兼容：同一任务首页
+aiah ui --home "$HOME" --workspace ~/ai-assets # 直接打开资产库
+aiah ui --package <tar|dir> --home "$HOME"     # 高级：直接审阅并应用安装包
 ```
 
-- 没有 `--workspace` 时初始只读；按 `w` 明确输入并确认路径后才创建/打开工作区。
-- HOME/project 下的 `.agents`、`.claude`、`.codex`、`.grok` 不能作为工作区。
-- Phase B 只写显式工作区，create-only，不写工具目录。
-- 工作区内按 `b` 选择 profile，复用 `build` Core 写入 `dist/`，成功后自动进入 diff。
-- 没有 `--package` 且当前会话尚未成功构建时，不显示部署入口。
+- 首页按用户任务组织为“整理本机资产”“预览并应用资产库”“安装检查与撤销”
+  “迁移到其他设备”和“关于与更新”，不要求先理解内部阶段。
+- “迁移到其他设备”当前是 E3.1 只读状态页：按 `c` 选择已有普通目录通道，
+  比较资产库、当前安装和最近发布版本；不会创建通道、发布、取回或应用文件。
+- 用户界面把 workspace 称为“资产库”：它是跨工具资产的可编辑事实源。CLI flag、
+  manifest schema 和 API 仍保留 `workspace`，避免破坏兼容性。
+- 没有 `--workspace` 时初始只读；进入需要资产库的任务后，必须明确输入并确认路径
+  才创建或打开资产库。
+- HOME/project 下的 `.agents`、`.claude`、`.codex`、`.grok` 不能作为资产库。
+- “加入资产库”只写显式资产库，create-only，不写工具目录。
+- 资产库内选择安装方案后，复用 `build` Core 准备安装包，成功后自动进入变更预览。
+- 没有 `--package` 且当前会话尚未成功准备安装包时，不开放应用入口。
 - `--targets` 同时适用于显式包和当前会话构建出的包。
-- Phase C 必须完整输入 `apply`；成功后显示 `backupId` 和 rollback 命令。
-- 普通 `aiah ui` 可按 `h` 运行只读 Doctor；Doctor 通过且存在当前部署时，按 `x`
+- 应用前必须完整输入 `apply`；成功后显示 `backupId` 和 rollback 命令。
+- 普通 TUI 可按 `h` 运行只读安装检查；检查通过且存在当前部署时，按 `x`
   并完整输入 `rollback` 可回滚当前部署。历史 backup 仍需 CLI 显式指定。
 - `bootstrap` 只复用 diff/apply 部署视图，不开放 Doctor/rollback 维护入口。
-- 普通 `aiah ui` 可按 `v` 查看 aiah 构建身份和当前资产部署版本；版本页按 `c`
+- 普通 TUI 可按 `v` 查看 aiah 构建身份和当前资产部署版本；版本页按 `c`
   才请求 GitHub Release 元数据，打开 TUI 不会自动联网。
+- TUI 内按 `m` 随时返回任务首页。
 - stdin/stdout 不是 TTY，或 `TERM` 为空/`dumb` 时直接失败。
 
 交互键与设计边界见 [TUI 技术方案](designs/tui-technical-design.md)。

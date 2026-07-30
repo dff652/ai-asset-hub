@@ -149,13 +149,42 @@ func TestComposeFailureKeepsSelection(t *testing.T) {
 
 func TestHelpStatesTheWriteBoundary(t *testing.T) {
 	readOnly := composeModel(t, "").helpView(newStyles(true))
-	if !strings.Contains(readOnly, "--workspace") {
-		t.Fatalf("read-only help does not explain how to enable writing:\n%s", readOnly)
+	for _, needle := range []string{"--workspace", "可编辑事实源", "目标工具"} {
+		if !strings.Contains(readOnly, needle) {
+			t.Fatalf("read-only help omits %q:\n%s", needle, readOnly)
+		}
 	}
 	composing := composeModel(t, "/tmp/ws").helpView(newStyles(true))
-	for _, needle := range []string{".claude", "不覆盖", "apply"} {
+	for _, needle := range []string{".claude", "w 纳入", "u 更新", "X 移出", "b 预览", "a 应用", "目标工具", "apply", "安装恢复点"} {
 		if !strings.Contains(composing, needle) {
 			t.Fatalf("compose help omits %q:\n%s", needle, composing)
+		}
+	}
+}
+
+func TestInventoryAlwaysShowsWorkspaceAndGuidedStages(t *testing.T) {
+	readOnly := composeModel(t, "").View()
+	for _, needle := range []string{"资产库  未选择", "按 w 选择或创建"} {
+		if !strings.Contains(readOnly, needle) {
+			t.Fatalf("read-only inventory omits %q:\n%s", needle, readOnly)
+		}
+	}
+
+	composing := composeModel(t, "/tmp/ws").View()
+	for _, needle := range []string{"/tmp/ws", "目标工具", "w 纳入", "u 更新", "X 移出", "b 预览并应用"} {
+		if !strings.Contains(composing, needle) {
+			t.Fatalf("workspace inventory omits %q:\n%s", needle, composing)
+		}
+	}
+}
+
+func TestWorkspacePromptExplainsRoleTargetsAndStages(t *testing.T) {
+	model := composeModel(t, "")
+	updated, _ := model.Update(keyPress("w"))
+	view := updated.(Model).View()
+	for _, needle := range []string{"可编辑事实源", "目标工具", "选择资产", "确认应用"} {
+		if !strings.Contains(view, needle) {
+			t.Fatalf("workspace prompt omits %q:\n%s", needle, view)
 		}
 	}
 }

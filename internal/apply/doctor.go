@@ -54,12 +54,13 @@ type DoctorSummary struct {
 }
 
 type DoctorDeployment struct {
-	BackupID   string `json:"backupId"`
-	ProducedBy string `json:"producedBy"`
-	Package    string `json:"package"`
-	Version    string `json:"version"`
-	Profile    string `json:"profile"`
-	AppliedAt  string `json:"appliedAt"`
+	BackupID   string   `json:"backupId"`
+	ProducedBy string   `json:"producedBy"`
+	Package    string   `json:"package"`
+	Version    string   `json:"version"`
+	Profile    string   `json:"profile"`
+	Targets    []string `json:"targets,omitempty"`
+	AppliedAt  string   `json:"appliedAt"`
 }
 
 type DriftEntry struct {
@@ -100,7 +101,8 @@ func Doctor(options DoctorOptions) (DoctorReport, error) {
 		report.Deployment = &DoctorDeployment{
 			BackupID: deploy.BackupID, ProducedBy: deploy.ProducedBy,
 			Package: deploy.Package, Version: deploy.Version,
-			Profile: deploy.Profile, AppliedAt: deploy.AppliedAt,
+			Profile: deploy.Profile, Targets: append([]string(nil), deploy.Targets...),
+			AppliedAt: deploy.AppliedAt,
 		}
 	}
 
