@@ -49,6 +49,7 @@ type migrationFlow struct {
 	preflightErr     error
 	preflightProfile string
 	preflightCursor  int
+	pulledReport     channel.PullReport
 
 	publishPackage    string
 	publishConfirming bool
@@ -164,18 +165,17 @@ func (m Model) handlePullMessage(message pullMsg) (tea.Model, tea.Cmd) {
 		m.noticeIsWarn = true
 		return m, nil
 	}
-	m.deployOptions.Package = message.report.Package
-	m.deployOptions.DryRun = false
-	m.packageFromBuild = false
-	m.screen = screenDeployment
-	m.diffStatus = statusLoading
-	m.deployErr = nil
-	m.applyResult = nil
-	m.diffCursor = 0
+	m.migrationFlow.pulledReport = message.report
+	m.migrationFlow.preflightProfile = message.report.Profile
+	m.migrationFlow.preflightStatus = statusLoading
+	m.migrationFlow.preflightErr = nil
+	m.migrationFlow.preflightCursor = 0
+	m.migrationFlow.mode = migrationModePreflight
+	m.screen = screenMigration
 	m.notice = "已取回 " + message.report.Name + " " + message.report.Version +
-		" (" + message.report.Profile + ")，已进入变更预览"
+		" (" + message.report.Profile + ")，正在检查目标设备"
 	m.noticeIsWarn = false
-	return m, diffCommand(m.deployOptions)
+	return m, packagePreflightCommand(m.packagePreflightOptions())
 }
 
 func operationError(err error) string {
@@ -326,47 +326,7 @@ func (m Model) updatePullOutput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m Model) updateMigrationKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.migrationFlow.mode == migrationModePreflight {
-		if m.migrationFlow.preflightStatus == statusLoading {
-			switch {
-			case key.Matches(message, m.keys.Quit):
-				return m, tea.Quit
-			case key.Matches(message, m.keys.Collapse):
-				m.migrationFlow.mode = migrationModeStatus
-			}
-			return m, nil
-		}
-		rows := m.preflightRows()
-		switch {
-		case key.Matches(message, m.keys.Quit):
-			return m, tea.Quit
-		case key.Matches(message, m.keys.Help):
-			m.showHelp = true
-		case key.Matches(message, m.keys.Up):
-			if m.migrationFlow.preflightCursor > 0 {
-				m.migrationFlow.preflightCursor--
-			}
-		case key.Matches(message, m.keys.Down):
-			if m.migrationFlow.preflightCursor+1 < len(rows) {
-				m.migrationFlow.preflightCursor++
-			}
-		case key.Matches(message, m.keys.First):
-			m.migrationFlow.preflightCursor = 0
-		case key.Matches(message, m.keys.Last):
-			if len(rows) > 0 {
-				m.migrationFlow.preflightCursor = len(rows) - 1
-			}
-		case key.Matches(message, m.keys.Reload):
-			return m.reloadMigrationPreflight()
-		case key.Matches(message, m.keys.Publish):
-			return m.startMigrationPublish()
-		case key.Matches(message, m.keys.Version):
-			return m.startVersions()
-		case key.Matches(message, m.keys.Collapse):
-			m.migrationFlow.mode = migrationModeStatus
-			m.notice = ""
-			m.noticeIsWarn = false
-		}
-		return m, nil
+		return m.updateMigrationPreflightKey(message)
 	}
 	if m.migrationFlow.mode == migrationModeVersions {
 		switch {
@@ -394,6 +354,8 @@ func (m Model) updateMigrationKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m.startVersions()
 		case key.Matches(message, m.keys.CheckUpdate):
 			return m.startChannelInputFor(migrationActionVersions)
+		case key.Matches(message, m.keys.Home):
+			m.screen = screenHome
 		case key.Matches(message, m.keys.Collapse):
 			m.migrationFlow.mode = migrationModeStatus
 			m.notice = ""
@@ -416,8 +378,94 @@ func (m Model) updateMigrationKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.startVersions()
 	case key.Matches(message, m.keys.Reload):
 		return m.startMigration()
-	case key.Matches(message, m.keys.Collapse):
+	case key.Matches(message, m.keys.Home), key.Matches(message, m.keys.Collapse):
 		m.screen = screenHome
 	}
 	return m, nil
+}
+
+func (m Model) updateMigrationPreflightKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.migrationFlow.preflightStatus == statusLoading {
+		switch {
+		case key.Matches(message, m.keys.Quit):
+			return m, tea.Quit
+		case key.Matches(message, m.keys.Home):
+			m.screen = screenHome
+		case key.Matches(message, m.keys.Collapse):
+			m.leaveMigrationPreflight()
+		}
+		return m, nil
+	}
+	rows := m.preflightRows()
+	switch {
+	case key.Matches(message, m.keys.Quit):
+		return m, tea.Quit
+	case key.Matches(message, m.keys.Help):
+		m.showHelp = true
+	case key.Matches(message, m.keys.Up):
+		if m.migrationFlow.preflightCursor > 0 {
+			m.migrationFlow.preflightCursor--
+		}
+	case key.Matches(message, m.keys.Down):
+		if m.migrationFlow.preflightCursor+1 < len(rows) {
+			m.migrationFlow.preflightCursor++
+		}
+	case key.Matches(message, m.keys.First):
+		m.migrationFlow.preflightCursor = 0
+	case key.Matches(message, m.keys.Last):
+		if len(rows) > 0 {
+			m.migrationFlow.preflightCursor = len(rows) - 1
+		}
+	case key.Matches(message, m.keys.Expand):
+		if m.hasPackagePreflight() {
+			return m.continuePulledPackage()
+		}
+	case key.Matches(message, m.keys.Reload):
+		return m.reloadMigrationPreflight()
+	case key.Matches(message, m.keys.Publish):
+		if !m.hasPackagePreflight() {
+			return m.startMigrationPublish()
+		}
+	case key.Matches(message, m.keys.Version):
+		if !m.hasPackagePreflight() {
+			return m.startVersions()
+		}
+	case key.Matches(message, m.keys.Home):
+		m.screen = screenHome
+	case key.Matches(message, m.keys.Collapse):
+		m.leaveMigrationPreflight()
+		m.notice = ""
+		m.noticeIsWarn = false
+	}
+	return m, nil
+}
+
+func (m *Model) leaveMigrationPreflight() {
+	if m.hasPackagePreflight() {
+		m.migrationFlow.mode = migrationModeVersions
+		return
+	}
+	m.migrationFlow.mode = migrationModeStatus
+}
+
+func (m Model) continuePulledPackage() (tea.Model, tea.Cmd) {
+	if m.migrationFlow.preflightStatus != statusReady ||
+		!m.migrationFlow.preflightReport.Ok ||
+		!m.hasPackagePreflight() {
+		m.notice = "目标设备检查未通过；处理阻止项并按 r 重查后才能预览变化"
+		m.noticeIsWarn = true
+		return m, nil
+	}
+	m.deployOptions.Package = m.migrationFlow.pulledReport.Package
+	m.deployOptions.ExpectedSHA256 = m.migrationFlow.pulledReport.SHA256
+	m.deployOptions.DryRun = false
+	m.packageFromBuild = false
+	m.screen = screenDeployment
+	m.diffStatus = statusLoading
+	m.deployErr = nil
+	m.applyResult = nil
+	m.diffCursor = 0
+	m.notice = "发布包检查通过，已进入变更预览；仍需完整输入 apply 才会写入"
+	m.noticeIsWarn = false
+	return m, diffCommand(m.deployOptions)
 }

@@ -196,21 +196,40 @@ func (m Model) preflightRows() []preflightRow {
 }
 
 func (m Model) preflightView(style styles) string {
+	title := "aiah · 换机前置检查"
+	context := valueOrDash(m.migrationFlow.preflightProfile)
+	intro := "检查阶段零写入；本页不会生成安装包、发布版本或应用资产。"
+	loading := "正在只读检查本机排除项、secret 和目标工具适配…"
+	failed := "换机前置检查失败"
+	footer := "↑↓/jk 查看全部项 · r 重查 · p 发布 · v 查看/取回版本 · Esc 返回 · m 首页 · ? 帮助"
+	emptyFooter := "r 重查 · p 发布 · v 查看/取回版本 · Esc 返回 · m 首页 · ? 帮助"
+	failedFooter := "按 r 重试 · Esc 返回版本对齐 · m 首页"
+	if m.hasPackagePreflight() {
+		title = "aiah · 取回版本检查"
+		release := m.migrationFlow.pulledReport
+		context = valueOrDash(release.Name + " " + release.Version + " / " + release.Profile)
+		intro = "已绑定所选版本、资产组合与 SHA256；检查阶段零写入，尚未安装。"
+		loading = "正在校验取回包，并检查本机 secret、排除项和目标工具适配…"
+		failed = "取回版本检查失败"
+		footer = "↑↓/jk 查看全部项 · Enter 进入变更预览 · r 重查 · Esc 返回版本列表 · m 首页 · ? 帮助"
+		emptyFooter = "Enter 进入变更预览 · r 重查 · Esc 返回版本列表 · m 首页 · ? 帮助"
+		failedFooter = "按 r 重试 · Esc 返回版本列表 · m 首页"
+	}
 	header := joinEdges(
-		style.header.Render("aiah · 换机前置检查"),
-		valueOrDash(m.migrationFlow.preflightProfile),
+		style.header.Render(title),
+		context,
 		max(20, m.width),
 	)
 	switch m.migrationFlow.preflightStatus {
 	case statusLoading:
-		return header + "\n\n正在只读检查本机排除项、secret 和目标工具适配…"
+		return header + "\n\n" + loading
 	case statusFailed:
-		message := "换机前置检查失败"
+		message := failed
 		if m.migrationFlow.preflightErr != nil {
 			message += "：" + m.migrationFlow.preflightErr.Error()
 		}
 		return header + "\n\n" + style.error.Render(message) +
-			"\n\n按 r 重试 · Esc 返回版本对齐 · m 首页"
+			"\n\n" + failedFooter
 	}
 
 	report := m.migrationFlow.preflightReport
@@ -219,6 +238,10 @@ func (m Model) preflightView(style styles) string {
 	if !report.Ok {
 		result = "需处理：存在阻止项"
 		resultStyle = style.error
+		if m.hasPackagePreflight() {
+			footer = "↑↓/jk 查看全部项 · r 处理后重查 · Esc 返回版本列表 · m 首页 · ? 帮助"
+			emptyFooter = "r 处理后重查 · Esc 返回版本列表 · m 首页 · ? 帮助"
+		}
 	} else if report.Summary.DegradedItems > 0 {
 		result = "可继续：存在需确认的降级项"
 		resultStyle = style.warning
@@ -237,14 +260,14 @@ func (m Model) preflightView(style styles) string {
 	if len(rows) == 0 {
 		return strings.Join([]string{
 			header,
-			style.muted.Render("检查阶段零写入；本页不会生成安装包、发布版本或应用资产。"),
+			style.muted.Render(intro),
 			"",
 			resultStyle.Render(result),
 			summary,
 			"",
 			"没有需要展示的检查项。",
 			"",
-			style.muted.Render("r 重查 · p 发布 · v 查看/取回版本 · Esc 返回 · m 首页 · ? 帮助"),
+			style.muted.Render(emptyFooter),
 		}, "\n")
 	}
 
@@ -295,11 +318,18 @@ func (m Model) preflightView(style styles) string {
 
 	lines := []string{
 		header,
-		style.muted.Render("检查阶段零写入；本页不会生成安装包、发布版本或应用资产。"),
+		style.muted.Render(intro),
 		resultStyle.Render(result),
 		truncate(summary, max(20, m.width)),
 		strings.Join(combined, "\n"),
-		style.muted.Render("↑↓/jk 查看全部项 · r 重查 · p 发布 · v 查看/取回版本 · Esc 返回 · m 首页 · ? 帮助"),
+		style.muted.Render(footer),
+	}
+	if m.notice != "" {
+		noticeStyle := style.muted
+		if m.noticeIsWarn {
+			noticeStyle = style.warning
+		}
+		lines = append(lines, noticeStyle.Render(m.notice))
 	}
 	return strings.Join(lines, "\n")
 }

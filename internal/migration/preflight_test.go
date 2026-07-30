@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/dff652/ai-asset-hub/internal/build"
 )
 
 func TestInspectPreflightReportsBlockersWarningsAndDevicePrivateWithoutWriting(t *testing.T) {
@@ -136,6 +138,66 @@ func TestInspectPreflightAllowsIntentionalDevicePrivateExclusions(t *testing.T) 
 		report.Summary.DroppedItems != 0 ||
 		report.Summary.MissingSecrets != 0 {
 		t.Fatalf("report=%#v", report)
+	}
+}
+
+func TestInspectPackagePreflightBindsTheSelectedReleaseWithoutWriting(t *testing.T) {
+	root := t.TempDir()
+	if err := os.CopyFS(root, os.DirFS(filepath.Join("..", "..", "testdata", "workspace-valid"))); err != nil {
+		t.Fatal(err)
+	}
+	out := t.TempDir()
+	built, err := build.Build(build.Options{
+		Manifest: filepath.Join(root, "manifest.yaml"),
+		Root:     root,
+		Profile:  "personal",
+		OutDir:   out,
+	})
+	if err != nil || !built.Ok || built.Package == nil {
+		t.Fatalf("build: err=%v report=%#v", err, built)
+	}
+	packagePath := filepath.Join(out, built.Package.Archive)
+	home := t.TempDir()
+	writePreflightFile(t, filepath.Join(home, ".codex", "auth.json"), `{"token":"local-only"}`)
+	before := treeDigest(t, out, home)
+
+	report, err := InspectPackagePreflight(PackagePreflightOptions{
+		Package: packagePath,
+		Home:    home,
+		Expected: ReleaseIdentity{
+			Name: built.Package.Name, Version: built.Package.Version,
+			Profile: "personal", SHA256: built.Package.Digest,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !report.Ok ||
+		report.Subject.Source != "package" ||
+		report.Subject.Name != built.Package.Name ||
+		report.Subject.Version != built.Package.Version ||
+		report.Subject.Profile != "personal" ||
+		report.Subject.Package != filepath.Base(packagePath) ||
+		report.Subject.SHA256 != built.Package.Digest {
+		t.Fatalf("report=%#v", report)
+	}
+	if after := treeDigest(t, out, home); after != before {
+		t.Fatalf("package preflight changed files:\nbefore=%s\nafter=%s", before, after)
+	}
+
+	mismatch, err := InspectPackagePreflight(PackagePreflightOptions{
+		Package: packagePath,
+		Home:    home,
+		Expected: ReleaseIdentity{
+			Name: built.Package.Name, Version: built.Package.Version,
+			Profile: "personal", SHA256: strings.Repeat("0", 64),
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mismatch.Ok || !preflightHasFinding(mismatch, codePreflightReleaseMismatch) {
+		t.Fatalf("a package outside the selected digest was accepted: %#v", mismatch)
 	}
 }
 

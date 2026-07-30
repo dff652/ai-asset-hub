@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -89,26 +90,59 @@ func (a artifactSet) names() []string {
 
 func loadIndex(channelRoot string) (Index, error) {
 	index := Index{SchemaVersion: 1, Kind: "channel", Releases: []Release{}}
-	body, err := os.ReadFile(filepath.Join(channelRoot, indexName))
+	indexPath := filepath.Join(channelRoot, indexName)
+	info, err := os.Lstat(indexPath)
 	if errors.Is(err, os.ErrNotExist) {
 		return index, nil
 	}
-	if err != nil {
+	if err != nil || !info.Mode().IsRegular() || info.Size() > maxIndexBytes {
 		return index, fmt.Errorf("%w: cannot read the channel index", ErrChannelBlocked)
 	}
-	if len(body) > maxIndexBytes {
-		return index, fmt.Errorf("%w: the channel index is implausibly large", ErrChannelBlocked)
+	body, err := os.ReadFile(indexPath)
+	if err != nil {
+		return index, fmt.Errorf("%w: cannot read the channel index", ErrChannelBlocked)
 	}
 	decoder := json.NewDecoder(strings.NewReader(string(body)))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&index); err != nil {
 		return index, fmt.Errorf("%w: the channel index does not parse", ErrChannelBlocked)
 	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		return index, fmt.Errorf("%w: the channel index has trailing content", ErrChannelBlocked)
+	}
 	if index.SchemaVersion != 1 || index.Kind != "channel" {
 		return index, fmt.Errorf("%w: unrecognised channel index", ErrChannelBlocked)
 	}
 	if index.Releases == nil {
 		index.Releases = []Release{}
+	}
+	coordinates := make(map[string]bool, len(index.Releases))
+	for _, release := range index.Releases {
+		for _, value := range []string{release.Name, release.Version, release.Profile} {
+			if !validCoordinate(value) {
+				return Index{}, fmt.Errorf(
+					"%w: the channel index contains an unsafe release coordinate",
+					ErrChannelBlocked,
+				)
+			}
+		}
+		expectedBase := release.Name + "-" + release.Version + "-" + release.Profile
+		if release.Path != releasePath(release.Name, release.Version, release.Profile) ||
+			release.Archive != expectedBase+".tar" ||
+			!validDigest(release.SHA256) {
+			return Index{}, fmt.Errorf(
+				"%w: the channel index contains a release outside the canonical layout",
+				ErrChannelBlocked,
+			)
+		}
+		key := release.Name + "\x00" + release.Version + "\x00" + release.Profile
+		if coordinates[key] {
+			return Index{}, fmt.Errorf(
+				"%w: the channel index contains a duplicate release coordinate",
+				ErrChannelBlocked,
+			)
+		}
+		coordinates[key] = true
 	}
 	return index, nil
 }
@@ -187,13 +221,63 @@ func requireDirectory(candidate string) (string, error) {
 	if err != nil || !info.IsDir() {
 		return "", fmt.Errorf("%w: the channel is not an accessible directory", ErrChannelBlocked)
 	}
-	return absolute, nil
+	resolved, err := filepath.EvalSymlinks(absolute)
+	if err != nil {
+		return "", fmt.Errorf("%w: cannot resolve the channel directory", ErrChannelBlocked)
+	}
+	return filepath.Clean(resolved), nil
 }
 
 // validCoordinate keeps a name/version/profile safe as one path segment.
 func validCoordinate(value string) bool {
 	return value != "" && len(value) <= 128 && coordinatePattern.MatchString(value) &&
 		!strings.Contains(value, "..")
+}
+
+func validDigest(value string) bool {
+	if len(value) != 64 {
+		return false
+	}
+	for _, character := range value {
+		isHex := (character >= '0' && character <= '9') ||
+			(character >= 'a' && character <= 'f')
+		if !isHex {
+			return false
+		}
+	}
+	return true
+}
+
+// secureChannelDirectory resolves one canonical channel-relative directory
+// without following symlinked path components. Publishing may create missing
+// parents; pulling only accepts a fully existing tree.
+func secureChannelDirectory(channelRoot, relative string, create bool) (string, error) {
+	canonical := filepath.ToSlash(relative)
+	if canonical == "" || canonical == "." || path.Clean(canonical) != canonical ||
+		path.IsAbs(canonical) || strings.HasPrefix(canonical, "../") {
+		return "", fmt.Errorf("%w: channel path is unsafe", ErrChannelBlocked)
+	}
+	current := channelRoot
+	for _, segment := range strings.Split(canonical, "/") {
+		if segment == "" || segment == "." || segment == ".." {
+			return "", fmt.Errorf("%w: channel path is unsafe", ErrChannelBlocked)
+		}
+		current = filepath.Join(current, segment)
+		info, err := os.Lstat(current)
+		if errors.Is(err, os.ErrNotExist) && create {
+			if err := os.Mkdir(current, 0o755); err != nil && !errors.Is(err, os.ErrExist) {
+				return "", fmt.Errorf("%w: cannot create the channel tree", ErrChannelBlocked)
+			}
+			info, err = os.Lstat(current)
+		}
+		if err != nil || info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
+			return "", fmt.Errorf(
+				"%w: channel path is missing or contains a non-directory component",
+				ErrChannelBlocked,
+			)
+		}
+	}
+	return current, nil
 }
 
 func digestOf(body []byte) string {
@@ -208,15 +292,8 @@ func parseSHAFile(body []byte, expectedArchive string) (string, bool) {
 		return "", false
 	}
 	digest, named := fields[0], fields[1]
-	if named != expectedArchive || len(digest) != 64 {
+	if named != expectedArchive || !validDigest(digest) {
 		return "", false
-	}
-	for _, character := range digest {
-		isHex := (character >= '0' && character <= '9') ||
-			(character >= 'a' && character <= 'f')
-		if !isHex {
-			return "", false
-		}
 	}
 	return digest, true
 }

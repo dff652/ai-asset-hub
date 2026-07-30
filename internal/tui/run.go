@@ -27,10 +27,11 @@ type Options struct {
 	Workspace string
 	// Package enables Phase C diff/apply review. Targets uses the same target
 	// ids as the CLI diff/apply commands.
-	Package string
-	Targets []string
-	Input   io.Reader
-	Output  io.Writer
+	Package        string
+	ExpectedSHA256 string
+	Targets        []string
+	Input          io.Reader
+	Output         io.Writer
 }
 
 type terminalFile interface {
@@ -99,10 +100,11 @@ func runModel(
 		WithMaintenance(maintenance).
 		WithHome(maintenance).
 		WithDeployment(apply.Options{
-			Package: options.Package,
-			Home:    options.Home,
-			Project: options.Project,
-			Targets: options.Targets,
+			Package:        options.Package,
+			ExpectedSHA256: options.ExpectedSHA256,
+			Home:           options.Home,
+			Project:        options.Project,
+			Targets:        options.Targets,
 		})
 	program := tea.NewProgram(
 		model,

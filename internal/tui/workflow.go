@@ -147,15 +147,7 @@ func (m Model) updateProfileInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		purpose := m.profilePurpose
 		m.profilePurpose = profileForDeployment
 		if purpose == profileForPreflight {
-			m.screen = screenMigration
-			m.migrationFlow.mode = migrationModePreflight
-			m.migrationFlow.preflightStatus = statusLoading
-			m.migrationFlow.preflightErr = nil
-			m.migrationFlow.preflightProfile = profile
-			m.migrationFlow.preflightCursor = 0
-			m.notice = ""
-			m.noticeIsWarn = false
-			return m, preflightCommand(m.preflightOptions(profile))
+			return m, m.beginWorkspacePreflight(profile)
 		}
 		m.invalidateBuiltPackage()
 		m.building = true
