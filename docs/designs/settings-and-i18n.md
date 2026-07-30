@@ -1,6 +1,7 @@
 # N7：偏好设置与中英文支持方案
 
-- 状态：Proposed（仅方案，尚未实现）
+- 状态：Accepted for N7.0；N7.1 首页字符串目录切片已实现，其余页面实施中；
+  设置页、语言切换和偏好文件尚未实现
 - 日期：2026-07-30
 - 目标阶段：TUI 产品体验 V2 E4
 - 关联：[TUI 产品体验方案](tui-product-experience-v2.md)、
@@ -238,23 +239,31 @@ unchanged/skipped；`standard` 可以默认折叠这些技术字段，但用户�
 
 ### N7.0：契约冻结
 
-- [ ] 评审本文的三项首版设置和排除项；
-- [ ] 修订 ADR-0006 中“不得引入 TUI 私有设置存储”的绝对措辞，只允许本文定义的
+- [x] 评审本文的三项首版设置和排除项；
+- [x] 修订 ADR-0006 中“不得引入 TUI 私有设置存储”的绝对措辞，只允许本文定义的
   非业务偏好；
-- [ ] 固化必要信息清单和偏好文件安全契约；
-- [ ] 确认无偏好启动最终采用 `auto`，或决定继续默认 `zh-CN`。
+- [x] 固化必要信息清单和偏好文件安全契约；
+- [x] 确认无偏好启动最终采用 `auto`。
 
 出口：只有文档变化，不新增设置能力。
 
 ### N7.1：完整字符串目录，不开放切换
 
+- [x] 建立 typed `messageID`、`zh-CN` / `en` catalog 和 English fallback；
+- [x] 首页 40 个消息完整迁移，首页 production 文件不再直写中文；
+- [x] 首页 zh-CN/en golden、catalog key/格式占位符完整性和中文直写门禁；
 - [ ] 提取所有 production TUI 用户可见字符串为 typed IDs；
-- [ ] 完成 zh-CN/en catalog、格式占位符与完整性测试；
 - [ ] 为首页、inventory、diff/确认、doctor/rollback、migration、version/help
-  增加双语 golden；
+  增加完整双语 golden（首页已完成）；
 - [ ] 保持当前 zh-CN 默认行为，避免重构和行为切换同时发生。
 
 出口：两套 catalog 完整，但用户仍看不到语言开关。
+
+2026-07-30 检查点：`617b464` 完成首页首个垂直切片，`./scripts/check-local.sh`
+通过。缺翻译键、首页重新直写中文、默认语言误改为 English 三项变异都能使对应
+测试失败。当前仍有 15 个 production TUI 文件、434 行含中文文本待迁移；这里按
+`rg` 行数统计，不等同于 434 个独立消息。`withLanguage` 保持 package-private，
+因此用户界面仍只有兼容默认的简体中文，且不会创建偏好文件。
 
 ### N7.2：偏好 Core
 
@@ -309,11 +318,10 @@ unchanged/skipped；`standard` 可以默认折叠这些技术字段，但用户�
 | bootstrap/deployment-only TUI | 复用同一语言目录，不意外开放设置写入 |
 | CLI/JSON/MCP | 输出契约与 N7 前一致 |
 
-## 10. 实施前需要确认的两个产品决定
-
-推荐值如下：
+## 10. 已确认的产品决定
 
 1. 无偏好文件时语言使用 `auto`；中文 locale 显示简体中文，其余显示 English。
 2. 首选资产库只做预填，不自动启用；最近资产库历史暂缓。
 
-这两项确认后再进入 N7.1。当前阶段不创建偏好文件、不修改 TUI 行为。
+两项已于 2026-07-30 确认。N7.1 保持 `zh-CN` 兼容默认；到 N7.3 设置入口和
+全页面 locale goldens 同时就绪后才实际启用 `auto`。当前阶段不创建偏好文件。
