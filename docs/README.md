@@ -58,6 +58,7 @@
 
 ## 评审
 
+- [2026-07-30 E3.4 发布包绑定与跨设备验收检查点](reviews/2026-07-30-e3-4-candidate-readiness.md)
 - [2026-07-30 E3.3 换机前置检查候选检查点](reviews/2026-07-30-e3-3-candidate-readiness.md)
 - [2026-07-30 E3.2 连续迁移向导候选检查点](reviews/2026-07-30-e3-2-candidate-readiness.md)
 - [2026-07-30 v0.1.6 bridge 发布与验收检查点](reviews/2026-07-30-v0.1.6-bridge-candidate-readiness.md)

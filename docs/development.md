@@ -201,13 +201,17 @@ merge commit，普通 PR merge 和直接非强制快进均被服务器拒绝且�
 所以 PR #23 按 squash 合入：**tree 相同，但 main 不是 dev 的祖先**。可重复流程见
 [发版 runbook §5](runbooks/release.md#5-发布后把文件树同步回-dev)。
 
-E3.2 当前开发候选在此基线上实现 TUI typed publish、显式 versions/pull 和
-pull→现有 diff/typed apply 连续向导；同时修复 pull 覆盖输出目录同名产物的安全
-缺口。相关单测、完整 `check-local`、两项变异验证、隔离 TTY
-publish→pull→diff→typed apply→Doctor→typed rollback 闭环与严格 review 已通过；
-[PR #24](https://github.com/dff652/ai-asset-hub/pull/24) 的实现头 push /
-pull_request CI 共 18 个 job 全绿，最终文档头仍须保持 CI 全绿后才可合并。当前
-PR 未合并，也不属于 `v0.1.6` Release 能力。
+E3.2 已通过 [PR #24](https://github.com/dff652/ai-asset-hub/pull/24) 合入 `dev`，
+实现 TUI typed publish、显式 versions/pull 和 pull→diff/typed apply 连续向导，
+并修复 pull 输出覆盖缺口。E3.3 已通过
+[PR #25](https://github.com/dff652/ai-asset-hub/pull/25) 合入 `dev`，增加当前
+资产库/profile 的零写入换机检查。两次合并后 CI 均通过，但都不属于 `v0.1.6`
+Release 能力。
+
+E3.4 当前候选把 pull 与 diff 之间补成“绑定 name/version/profile/SHA256 的取回
+版本检查 → 用户 Enter → diff”，并补双设备、旧版本显式恢复、中断恢复和恶意通道
+夹具。仍须按本节门禁完成变异验证、隔离 TTY、严格 review 和最终 PR CI；没有这些
+证据不得标记候选完成或进入 Release。
 
 首次发布时 GitHub 把 `actions/checkout@v4`、`actions/setup-go@v5` 与
 `softprops/action-gh-release@v2` 的 Node.js 20 action 强制运行在 Node.js 24，

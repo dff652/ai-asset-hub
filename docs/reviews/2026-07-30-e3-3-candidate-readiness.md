@@ -111,3 +111,11 @@ aiah → 迁移到其他设备 → e 换机检查 → personal
 本节证据提交会再次改变 PR head，因此交付前仍须等待新的 push 与 pull_request CI
 都绑定最终 head 并全绿。不能用 PR #24、本地绿灯或前一 head 的 CI 替代最终 head；
 未获新的合并授权前不合并。
+
+## 5. 最终结果
+
+最终 head `371c354ddc14` 的 push CI `30530003582` 与 pull_request CI
+`30530007571` 共 18/18 job 全绿。所有者确认后，PR #25 于 2026-07-30 squash
+合入 `dev@e3fa3724e92d`；合并后主线 CI
+[30530316564](https://github.com/dff652/ai-asset-hub/actions/runs/30530316564)
+再次全绿。本文件前述“未合并”描述保留为候选时点记录，最终状态以本节为准。

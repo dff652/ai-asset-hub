@@ -11,7 +11,7 @@
 | 第一次整理并应用 | 发现 → 整理 → 准备 → 预览 → 人工确认 | `aiah` | TUI 已覆盖；前四步不写目标工具目录 |
 | 日常维护资产 | 查看统一状态 → 更新/移出 → 预览 → 应用 | `aiah` | `update/remove/apply` 都是显式操作，不做后台同步 |
 | 检查或撤销安装 | 安装检查 → 判断漂移 → typed `rollback` | `aiah` 或 CLI | 恢复点只在本机使用，不等于资产库备份 |
-| 迁移到其他设备 | 换机检查 → build/publish → 外部搬运 → 换机检查 → versions/pull → diff/apply | TUI（开发候选）/ CLI | E3.2 已实现显式发布/取回，E3.3 已实现只读前置检查；`v0.1.6` 仍为 E3.1；网络传输不归 aiah |
+| 迁移到其他设备 | 换机检查 → build/publish → 外部搬运 → versions/pull → 取回版本检查 → diff/apply | TUI（开发候选）/ CLI | E3.2/E3.3 已合入 `dev`，E3.4 候选绑定所选发布包；`v0.1.6` 仍为 E3.1；网络传输不归 aiah |
 | AI 或自动化接入 | MCP 只读查询，或 CLI JSON 编排 | `aiah mcp` / CLI | MCP 不开放 build/apply/rollback |
 | 安装或升级 aiah | 检查版本 → 显式安装指定 Release → 复核版本 | installer / `update --check` | 不后台自更新；这不是用户资产生命周期 |
 
@@ -87,15 +87,14 @@ doctor → 正常 / 漂移 / 缺失 / 前置条件失败 → 必要时 typed rol
 ```text
 旧设备：换机前置检查 → 检查并生成分发包 → publish
 传输层：Git / NAS / rsync / U 盘（aiah 不参与）
-新设备：换机前置检查 → versions → pull/bootstrap → diff → typed apply → doctor
+新设备：versions → pull → 取回版本检查 → diff → typed apply → doctor
 ```
 
 TUI 的“迁移到其他设备”先只读比较资产库、当前安装和用户选择的普通目录通道。
-当前开发候选的 E3.2 在同一页增加两条显式路径：
+当前 `dev` 的 E3.2 在同一页增加两条显式路径：
 
 - 发布：`p` → 选择资产组合 → build → 核对包/通道 → typed `publish`；
-- 取回：`v` → 明确选择版本/profile → 输入已有输出目录 → pull → diff →
-  typed `apply`。
+- 取回：`v` → 明确选择版本/profile → 输入已有输出目录 → pull。
 
 E3.3 在同一页增加第三条只读路径：
 
@@ -104,6 +103,16 @@ E3.3 在同一页增加第三条只读路径：
 - 缺失 secret、不支持目标和 adapter 丢弃是阻止项；adapter 降级需人工确认；
 - 检查只针对当前设备和当前资产库/profile，不创建 `dist/`，也不替用户发布、
   取回或应用。
+
+E3.4 候选把取回后的连续路径补成：
+
+```text
+pull → 绑定 name/version/profile/SHA256 → 目标设备检查
+     → Enter → diff → typed apply → doctor
+```
+
+包级检查重新打开实际 `.tar`，并复用同一 target/adapter/secret/device-private
+报告。坐标或摘要不匹配、有阻止项时不能进入 diff；检查通过也不会自动应用。
 
 光标默认停在最后发布项只用于导航，不会自动取回；TUI 不比较版本号大小。取回不会
 覆盖输出目录中不同或残缺的同名产物，完整同内容四件套才视为幂等。`v0.1.6` 公开版
