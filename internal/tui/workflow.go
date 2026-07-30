@@ -42,7 +42,12 @@ func buildCommand(options build.Options) tea.Cmd {
 }
 
 func (m Model) startWorkspaceInput() (tea.Model, tea.Cmd) {
+	return m.startWorkspaceInputFor(homeActionNone)
+}
+
+func (m Model) startWorkspaceInputFor(next homeAction) (tea.Model, tea.Cmd) {
 	m.choosingWorkspace = true
+	m.afterWorkspace = next
 	m.workspaceInput.SetValue("")
 	m.notice = ""
 	m.noticeIsWarn = false
@@ -59,14 +64,14 @@ func (m Model) updateWorkspaceInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if message.Type == tea.KeyEnter {
 		candidate := strings.TrimSpace(m.workspaceInput.Value())
 		if candidate == "" {
-			m.notice = "必须输入工作区路径"
+			m.notice = "必须输入资产库路径"
 			m.noticeIsWarn = true
 			return m, nil
 		}
 		m.choosingWorkspace = false
 		m.preparingWorkspace = true
 		m.workspaceInput.Blur()
-		m.notice = "正在打开工作区…"
+		m.notice = "正在打开资产库…"
 		m.noticeIsWarn = false
 		return m, prepareWorkspaceCommand(candidate, m.options.Home, m.options.Project)
 	}
@@ -77,12 +82,12 @@ func (m Model) updateWorkspaceInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m Model) startProfileInput() (tea.Model, tea.Cmd) {
 	if m.composing {
-		m.notice = "正在写出工作区，请完成后再构建"
+		m.notice = "正在加入资产库，请完成后再继续"
 		m.noticeIsWarn = true
 		return m, nil
 	}
 	if m.workspace == "" {
-		m.notice = "先按 w 明确选择工作区"
+		m.notice = "先按 w 明确选择资产库"
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -118,7 +123,7 @@ func (m Model) updateProfileInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if message.Type == tea.KeyEnter {
 		profile := strings.TrimSpace(m.profileInput.Value())
 		if profile == "" {
-			m.notice = "必须输入 profile 名称"
+			m.notice = "必须输入资产组合名称"
 			m.noticeIsWarn = true
 			return m, nil
 		}
@@ -126,7 +131,7 @@ func (m Model) updateProfileInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.profileInput.Blur()
 		m.invalidateBuiltPackage()
 		m.building = true
-		m.notice = "正在校验并构建…"
+		m.notice = "正在检查资产并准备安装包…"
 		m.noticeIsWarn = false
 		return m, buildCommand(build.Options{
 			Manifest: filepath.Join(m.workspace, "manifest.yaml"),
@@ -143,7 +148,7 @@ func (m Model) updateProfileInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 func buildFailureNotice(report build.Report) string {
 	if len(report.Findings) > 0 {
 		finding := report.Findings[0]
-		return fmt.Sprintf("构建未通过：%s — %s", finding.Code, finding.Message)
+		return fmt.Sprintf("资产检查未通过：%s — %s", finding.Code, finding.Message)
 	}
-	return "构建未通过；未生成部署包"
+	return "资产检查未通过；未生成安装包"
 }

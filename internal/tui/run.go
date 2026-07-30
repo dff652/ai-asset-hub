@@ -97,6 +97,7 @@ func runModel(
 	model := NewModel(inventory.Options{Home: options.Home, Project: options.Project}).
 		WithWorkspace(options.Workspace).
 		WithMaintenance(maintenance).
+		WithHome(maintenance).
 		WithDeployment(apply.Options{
 			Package: options.Package,
 			Home:    options.Home,

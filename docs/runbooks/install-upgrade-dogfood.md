@@ -8,6 +8,9 @@
   `HOME` 环境变量改指测试目录。
 - 最近一次实跑：2026-07-29，public `v0.1.3 → v0.1.4` 升级、同版本幂等复装、
   TUI D2 Doctor/typed rollback、D3 显式更新检查与退出后 CLI 对账全部通过。
+- E2 候选实跑：2026-07-30，隔离 `0.1.5-dev.e2` 二进制完成统一资产状态、纳入、
+  连续 profile/diff、typed apply、成功摘要、Doctor、typed update/remove 与 CLI
+  对账。该记录只证明 dev 候选，不代表未发布 Release 的安装器升级已通过。
 
 ## 0. 四种验证不要混
 

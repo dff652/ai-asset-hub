@@ -1,5 +1,8 @@
 # TUI 技术方案（2026-07-25）
 
+- **产品体验 V2（2026-07-29）**：首页、面向用户的术语、默认启动与后续设置/i18n
+  以 [TUI 产品体验与导航方案 V2](tui-product-experience-v2.md) 为准。本文继续作为
+  已实现 Phase A–D3 的 Core 编排、安全边界和测试方案，不再作为新首页文案依据。
 - 状态：**Phase A 已实现**（2026-07-26）、**Phase B/C 与 Phase D1/D2/D3 已实现**
   （2026-07-28，
   见 [ADR-0006](../decisions/0006-tui-as-first-interactive-surface.md)）；跨设备

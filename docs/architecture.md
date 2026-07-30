@@ -104,11 +104,11 @@ backup 元数据。
 | `manifest.yaml`、锁文件 | 是 | 是 |
 | SQLite 搜索索引 | 否 | 否 |
 | 编译后的 `.claude/`、`.codex/`、`.grok/` 等 | 否 | 可选预览 |
-| 安装备份 | 否 | 否 |
+| 安装恢复点（`.aiah/backups`） | 否 | 否 |
 | API Key、Token | 否 | 否 |
 | 会话数据库、缓存 | 否 | 默认否 |
 
-## 4. 包与同步
+## 4. 包与跨设备分发
 
 构建输出采用普通、可解压的开放格式，产物名含 profile（不同 profile 曾互相覆盖，
 见评审 P8）：
@@ -122,6 +122,14 @@ dist/
 ```
 
 网盘、NAS、Git Release、WebDAV 或移动介质只负责传输这些不可变产物。首版不实现多端实时合并。
+
+术语边界：
+
+- `apply` 创建的 backup 是设备本地**安装恢复点**，只服务于明确的 rollback；
+- **资产库备份**应保留历史、支持独立恢复并校验结果，当前由私有 Git、NAS 快照或
+  用户自己的备份工具承担；
+- `publish` / `pull` 是不可变版本的**跨设备分发**，不是双向同步，不传播删除、
+  不做冲突合并，也不取代资产库备份。
 
 **这条分工已在 [ADR-0007](decisions/0007-immutable-channel-distribution.md) 中固化**：
 aiah 提供 `publish` / `pull` / `versions`，通道就是一个普通目录（U 盘、挂载的
