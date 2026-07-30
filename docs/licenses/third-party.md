@@ -82,7 +82,7 @@ Linux amd64 发布构建的传递依赖：
 
 ## 3. 与 PromptHub 的边界
 
-`docs/security.md` §6 的约束继续有效，且是本项目可以选择非 AGPL 协议的前提：
+`docs/security.md` §7 的约束继续有效，且是本项目可以选择非 AGPL 协议的前提：
 
 - 不复制 PromptHub（AGPL-3.0）源码；
 - 不移植其受版权保护的实现细节；

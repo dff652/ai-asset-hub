@@ -78,7 +78,7 @@ ACP、PTY 控制），75 个 crate 里绝大多数与我们无关。我们要的
 加选择器，不是 agent 外壳。
 
 **许可证边界**：grok-build 是 Apache-2.0，与本项目同协议，但
-[security.md §6](../security.md) 对 PromptHub 立的规矩同样适用——
+[security.md §7](../security.md) 对 PromptHub 立的规矩同样适用——
 **参考公开行为与交互思路，不复制源码、不移植受版权保护的实现细节**。
 Rust → Go 本来也没法照抄，但这条要写在开工文档里，避免有人「参考」成搬运。
 

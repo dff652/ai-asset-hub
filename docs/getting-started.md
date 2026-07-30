@@ -195,7 +195,7 @@ E3.3 已在当前 `dev` 增加 `e 换机检查`：
 4. 缺失 secret、不支持目标和 adapter 丢弃显示为阻止项；adapter 降级要求确认；
 5. 全过程不生成安装包、不创建 `dist/`、不写通道或工具目标目录。
 
-`e` 检查的是当前资产库与所选 profile，适合源设备发布前使用。E3.4 候选另在
+`e` 检查的是当前资产库与所选 profile，适合源设备发布前使用。当前 `dev` 的 E3.4 另在
 目标设备 pull 后自动检查刚取回的确切发布包：报告来源标记为 `package`，绑定
 name/version/profile/SHA256，逐项展示目标、secret、本机排除项与问题。坐标或摘要
 不匹配、有阻止项时不能进入 diff；该步骤仍为零写入，也不替用户确认 apply。
@@ -220,6 +220,27 @@ name/version/profile/SHA256，逐项展示目标、secret、本机排除项与�
 
 盘点结果中的 `candidate` 只是迁移候选，不代表应原样打包。凭据、session、cache、
 数据库和疑似 secret 会被排除或脱敏报告。
+
+### 2.3 AI 工具只读接入
+
+安装后把 `aiah mcp` 配成 Claude Code、Codex 或 Grok 的本地 stdio server。公开版
+`v0.1.6` 提供基础 5 工具；本 N6 候选（目标分支 `dev`）增加：
+
+- `aiah_asset_status`：比较源端与指定资产库；
+- `aiah_migration_status`：比较指定资产库、当前安装和可选分发通道。
+
+两个工具都要求显式资产库路径，不会猜测 `~/ai-assets`。AI 只能读取和解释；纳入、
+更新、移出、build、publish/pull、apply/rollback 仍回到 TUI/CLI 由用户审阅。
+
+Claude Code 的基础配置：
+
+```bash
+claude mcp add aiah -- aiah mcp
+```
+
+Codex/Grok 使用同一 stdio 进程：`command = "aiah"`、`args = ["mcp"]`。完整配置、
+隔离 fake HOME 验收和客户端状态判断见
+[MCP 客户端接入 runbook](runbooks/mcp-client-acceptance.md)。
 
 ## 3. CLI：只读盘点与建立资产库
 

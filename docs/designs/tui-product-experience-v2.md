@@ -332,14 +332,14 @@ ADR-0006 的绝对措辞并增加安全测试。
   完整输入 `publish` 后才写入不可变通道；
 - [x] E3.2 `versions` / `pull`：显示同一资产库的全部发布坐标，不比较版本号大小，
   用户必须明确选择版本/profile 和已有输出目录；
-- [x] E3.2 连续取回：pull 只写显式输出目录；E3.4 候选在成功后先绑定
+- [x] E3.2 连续取回：pull 只写显式输出目录；E3.4 已合入 `dev`，成功后先绑定
   name/version/profile/SHA256 做目标设备检查，再由用户按 Enter 进入现有 diff 与
   typed `apply`；不新增 `--yes` 或 TUI 私有部署逻辑；
 - [x] pull 输出冲突 fail-closed：完整同内容四件套幂等，残缺或不同内容拒绝且
   不覆盖；
 - [x] E3.3 `e 换机检查`：选择资产组合后零写入检查 device-private、secret
   可用性、目标支持、adapter dropped/degraded，并提供完整可导航明细；
-- [x] E3.4 候选：取回包检查结果来源明确为 package；坐标/SHA 不匹配或存在阻止项
+- [x] E3.4：取回包检查结果来源明确为 package；坐标/SHA 不匹配或存在阻止项
   时不能进入 diff；双设备、显式旧版本恢复、中断恢复与恶意通道均有夹具；
 - [x] 不接管 Git、rsync、U 盘等传输层。
 

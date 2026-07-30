@@ -217,7 +217,7 @@ TUI 不 shell out、不自动选定或取回最后发布项、不创建通道目
 
 ### Phase E3.3/E3.4：资产库前置检查与取回包检查
 
-**实现状态：E3.3 已合入 `dev`；E3.4 为当前候选（2026-07-30），均尚未发布。**
+**实现状态：E3.3/E3.4 已合入 `dev`（2026-07-30），均尚未发布。**
 
 - `e` 选择资产库 profile 后调用 `migration.InspectPreflight`，零写入展示
   device-private、secret、目标支持和 adapter dropped/degraded；

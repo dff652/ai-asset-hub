@@ -135,4 +135,9 @@ head `358e7fbc9efc` 的 push CI
 本证据更新只修改项目文档；推送后仍以 PR 最终 head 的两组 GitHub checks 为合入
 门禁。PR 合并继续需要所有者明确确认，本候选不会自行合入。
 
+所有者确认后，PR #26 于 2026-07-30 squash 合入
+`dev@0a7171b7725e`。合并后的主线 CI
+[`30533364530`](https://github.com/dff652/ai-asset-hub/actions/runs/30533364530)
+共 9/9 job 全绿；本检查点的本地、PR head 与合并后门禁均已闭合。
+
 公开版 `v0.1.6` 不包含 E3.2–E3.4；Release 能力状态必须与开发候选分开报告。

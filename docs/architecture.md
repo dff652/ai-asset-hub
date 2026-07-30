@@ -95,6 +95,20 @@ backup 元数据。
 5. 盘点区分 **权威资产** 与 **compat 加载关系**（`loadedBy`），迁移只数逻辑 Asset。
 6. 设备私有（auth、sessions、cache、bundled、marketplace-cache 等）默认排除。
 
+## 2.2 人工入口与 AI 入口
+
+TUI/CLI 与 MCP 调用同一 Core，但权限不同：
+
+- TUI 是人工操作台，可以在明确路径、diff 和 typed confirmation 后写资产库或
+  目标工具目录；
+- CLI 是完整自动化接口，写操作由调用方显式承担路径、确认、错误恢复和审计；
+- `aiah mcp` 是 AI 工具的**只读查询面**。本 N6 候选（目标分支 `dev`）注册
+  7 个工具，覆盖盘点、统一资产状态、校验、包 diff、安装检查、迁移状态和版本；
+- MCP 不注册 build、资产库纳入/更新/移出、publish/pull、apply/rollback。MCP
+  handler 只做参数解码和 Core 报告转发，不复制分类、版本对齐或路径规则。
+
+完整边界见 [ADR-0005](decisions/0005-read-only-mcp-server-surface.md)。
+
 ## 3. 事实源与派生状态
 
 | 数据 | 是否事实源 | 是否进入资产包 |

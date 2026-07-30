@@ -8,6 +8,8 @@
   （首次使用、日常维护、撤销、跨设备、MCP/自动化与工具升级）
 - [CLI 命令参考](cli-reference.md)
 - [跨设备迁移 runbook](runbooks/cross-device-transfer.md)（发布 → 搬运 → 取回 → 安装）
+- [MCP 客户端接入与只读验收](runbooks/mcp-client-acceptance.md)
+  （Claude Code / Codex / Grok 握手、工具调用与零写入对账）
 - [真机 dry-run runbook](runbooks/real-home-dry-run.md)
 - [工具安装、升级与 TUI dogfood](runbooks/install-upgrade-dogfood.md)
 - [README 与 SVG 视觉验收 SOP](runbooks/readme-visual-acceptance.md)
@@ -58,6 +60,7 @@
 
 ## 评审
 
+- [2026-07-30 N6 MCP 只读状态与客户端验收检查点](reviews/2026-07-30-n6-mcp-read-only-status-candidate-readiness.md)
 - [2026-07-30 E3.4 发布包绑定与跨设备验收检查点](reviews/2026-07-30-e3-4-candidate-readiness.md)
 - [2026-07-30 E3.3 换机前置检查候选检查点](reviews/2026-07-30-e3-3-candidate-readiness.md)
 - [2026-07-30 E3.2 连续迁移向导候选检查点](reviews/2026-07-30-e3-2-candidate-readiness.md)
@@ -87,4 +90,4 @@
 - [第三方依赖许可证清单](licenses/third-party.md)
 
 本项目以 Apache-2.0 发布：协议正文在仓库根 `LICENSE`，署名在 `NOTICE`，
-与 PromptHub 的边界见 [security.md](security.md) §6。
+与 PromptHub 的边界见 [security.md](security.md) §7。

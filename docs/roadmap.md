@@ -26,7 +26,7 @@
      `hooks` 的直接子项豁免，保住 `skills/go-cache` 这类资产名。
 2b. ✅ **已完成**（2026-07-25）：开源协议定为 **Apache-2.0**，个人署名
    `Copyright 2026 ff.dou`。已落地 `LICENSE`（官方正文）、`NOTICE`、
-   `docs/licenses/third-party.md`、README 徽章与章节、`security.md` §6 改写。
+   `docs/licenses/third-party.md`、README 徽章与章节、`security.md` §7 改写。
    依赖侧全部 MIT / Apache-2.0 / BSD，无 copyleft 传染。
 3. ✅ **已完成**（2026-07-25，评审 P4）：tar 内 `../`/绝对路径成员、软/硬链接
    成员、超限成员、超量成员、安装目标叶子软链接均已锚定，每条都做了变异验证
@@ -199,8 +199,8 @@
     「Agent 接口」。
     ✅ **已实现（2026-07-28）**，边界固化为
     [ADR-0005](decisions/0005-read-only-mcp-server-surface.md)。
-    - 暴露 5 个工具：`aiah_scan` / `aiah_validate` / `aiah_diff` /
-      `aiah_doctor` / `aiah_version`。
+    - `v0.1.6` 暴露 5 个工具：`aiah_scan` / `aiah_validate` / `aiah_diff` /
+      `aiah_doctor` / `aiah_version`；当前 N6 候选增加统一资产状态和迁移状态。
     - **不暴露 `apply` 与 `rollback`**：二者写 HOME，而 Claude Code 自身在读
       `~/.claude`——让 agent 改自己的运行时配置，harness 可能中途重载，行为
       不可预测。这是实际风险不是理论风险。
@@ -216,17 +216,18 @@
     - 与已有的「MCP 模板作为**资产**」（ADR-0004）是两回事，两份 ADR 已互相
       标注区分。
 
-#### MCP 后续覆盖（待设计，不改变只读边界）
+#### MCP N6 覆盖（当前候选，不改变只读边界）
 
-当前 5 个工具已经覆盖基础盘点、校验、包级 diff、安装检查和版本识别，但晚于
-ADR-0005 实现的两类只读 Core 尚未进入 MCP：
+基础 5 工具覆盖盘点、校验、包级 diff、安装检查和版本识别。N6 当前候选已把晚于
+ADR-0005 实现的两类只读 Core 接入 MCP：
 
-- 统一资产状态：资产库中的“未纳管 / 已纳管 / 源端有更新 / 仅库内”；
-- 跨设备状态：资产库、当前安装和分发通道的版本对齐结果。
+- `aiah_asset_status`：资产库中的“未纳管 / 已纳管 / 源端有更新 / 仅库内 / 阻止”；
+- `aiah_migration_status`：资产库、当前安装和可选分发通道的版本对齐结果。
 
-后续应优先评估只读 `catalog/status` 与 `migration status` 工具，并补
-Claude Code、Codex、Grok 的真实客户端配置和握手验收矩阵。新增工具必须先修订
-ADR-0005，并继续由 `TestToolCallsWriteNothing` 覆盖注册表中的每个工具。
+ADR-0005 已修订为 7 工具；`TestToolCallsWriteNothing` 已扩大到 HOME、project、
+资产库、通道和包目录。Codex、Grok 已完成模型级调用；Claude Code 客户端握手
+Connected，但模型请求被组织策略在工具调用前以 403 阻止，必须在策略解除后补测，
+不能伪报三客户端模型调用全部通过。
 
 `build`、资产库纳入/更新/移出、`publish/pull`、`apply/rollback` 仍不进入 MCP：
 AI 负责发现、解释和提出建议，创建文件或改变机器状态继续由用户在 TUI/CLI 审阅
@@ -287,8 +288,8 @@ TUI 可以编辑那个文件，但不得引入私有设置存储。
     dogfood 已确认首屏不联网、按键后查询与 dev 构建不可比较状态。`v0.1.5`
     验收发现生成命令没有显式绑定安装器目标版本，列为 N2.1 P0 修复。
 18. **TUI Phase E：产品体验与导航 V2**。🚧 **E1/E2/E3.1 已实现，随
-    `v0.1.5` 首次发布，并用 `v0.1.6` 正式包复验（2026-07-30）；E3.2、E3.3
-    已合入 `dev`，E3.4 已进入当前开发候选验证，E4 待实现**：
+    `v0.1.5` 首次发布，并用 `v0.1.6` 正式包复验（2026-07-30）；E3.2–E3.4
+    已合入 `dev`，E4 待实现**：
     - 定位为“AI 编程资产管理器”，资产库可包含知识型资产，但产品不是知识库；
     - 新增任务首页，把 inventory 降为“本机 AI 资产”子页面；
     - `aiah` 在交互 TTY 默认启动首页，`aiah ui` 保持兼容，非 TTY 仍拒绝进入；
@@ -323,11 +324,12 @@ TUI 可以编辑那个文件，但不得引入私有设置存储。
       inventory、adapter 与 apply secret Core，不生成安装包、不创建 `dist/`，
       不发布、不取回、不自动 apply。PR #25 已 squash 合入 `dev@e3fa372`，合并后
       CI 全绿。
-    - 🚧 **E3.4 候选（2026-07-30）**：用户明确取回版本后，先按 pull 返回的
+    - ✅ **E3.4 已合入 dev（2026-07-30）**：用户明确取回版本后，先按 pull 返回的
       name/version/profile/SHA256 检查确切发布包和目标设备；有阻止项不能进入
       diff，检查通过仍需 Enter、diff 和 typed `apply`。双设备夹具覆盖同包幂等、
       同坐标不同内容拒绝和显式 v1→v2→v1；恶意通道夹具新增索引越界与目录软链
       拒绝，中断恢复覆盖发布树领先索引及 apply journal/自动恢复既有门禁。
+      PR #26 已 squash 合入 `dev@0a7171b`，合并后 CI 9/9 全绿。
 
 启动前置：ADR-0003 五项门槛第 3 条（跨设备分发）**已满足**（第 9 项，2026-07-28）。
 Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）。新增依赖时仍须
@@ -354,17 +356,17 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 结论：aiah 已形成“发现 → 资产库 → 校验/组包 → 预览/应用 → 检查/撤销 →
 不可变分发”的资产生命周期 MVP；TUI E1/E2/E3.1、升级提示修复和 README/SVG
 门禁均已进入 `v0.1.6` 并完成正式包验收。E3.2、E3.3 已合入 `dev`，但尚未作为
-Release 能力验收；E3.4 发布包绑定与双设备/失败恢复验收已进入开发候选。其后
-优先缺口是 AI 接口还没有覆盖统一资产状态，以及 E4 设置/i18n。
+Release 能力验收；E3.4 发布包绑定与双设备/失败恢复验收也已合入 `dev`。N6 候选
+已补齐 AI 接口的统一资产状态与迁移状态，等待 PR 远端门禁和所有者合并；其后的
+优先缺口是 E4 设置/i18n。
 
 | 层面 | 已完成 | 当前边界 |
 |---|---|---|
 | 公开版 `v0.1.6` | CLI/Core、任务首页、统一资产状态、连续应用、Doctor/rollback、E3.1、只读 MCP、不可变通道、secret provider、修复后的升级命令 | Linux amd64 线上产物、显式 bridge 升级、正式 TUI 与幂等复装通过；旧版用户仍需显式版本 workaround |
 | 当前 `main@307041e` | `v0.1.6` 已发布 tree + PR #22 发布后 pin/docs 收口 | installer 默认 pin 为 v0.1.6；tag 内 staged pin 仍按发布契约保持 v0.1.5 |
-| 当前 `dev@e3fa372` | E3.2 typed publish/显式 pull；E3.3 `e 换机检查`及完整可导航报告 | PR #24、#25 已 squash 合入；两次合并后 CI 全绿，尚未进入公开 Release |
-| 当前 E3.4 PR #26 | 取回发布包的坐标/SHA 绑定、目标设备检查、双设备与恶意通道验收 | Core/TUI、完整门禁、三项变异、隔离 TTY 与严格 review 已完成；首个交付 head 的 push/PR CI 18/18 全绿，待最终 head 门禁与所有者合并确认 |
+| 当前 `dev@0a7171b` | E3.2 typed publish/显式 pull；E3.3 换机检查；E3.4 取回发布包坐标/SHA 绑定、目标设备检查及双设备/恶意通道验收 | PR #24–#26 已 squash 合入；三次合并后主线 CI 全绿，尚未进入公开 Release |
 | 人工操作入口 | TUI 覆盖日常本机流程；CLI 保留全部高级、脚本和 CI 能力 | 写操作继续要求显式路径、diff 和 typed confirmation |
-| AI 接入入口 | `aiah mcp` 提供 scan/validate/diff/doctor/version 五个只读工具 | 尚无统一资产状态、迁移状态和三客户端验收矩阵；不开放写操作 |
+| AI 接入入口 | `v0.1.6` 提供 5 个基础只读工具；当前 N6 候选增加 `asset_status` 与 `migration_status` | 7 工具零写入；Codex/Grok 模型调用通过，Claude 握手通过但模型调用被组织策略 403 阻止；不开放写操作 |
 | README 视觉 | README mode、规范化主入口和视觉门禁均已进入 v0.1.6 | 本发布后 PR 只同步徽章/证明板版本；一张主流程图表达首次成功，其它流程由任务表和详细文档覆盖 |
 
 资产管理后续可增强“资产库备份就绪与恢复验证、搜索/标签/描述、来源与许可证追踪”，
@@ -418,8 +420,8 @@ Release 能力验收；E3.4 发布包绑定与双设备/失败恢复验收已进
 | N2.3 | P0 | ✅ **准备并验收 `v0.1.6` bridge release** | main PR/CI、annotated tag、Release、线上产物、legacy no-op、显式版本升级、正式 TUI 和幂等复装全部通过 |
 | N3 | P1 | ✅ **E3.2 跨设备连续向导** | PR #24 已合入 `dev@f8b3475`；build/typed publish/versions/explicit pull/Phase C、安全输出边界和合并后 CI 已完成，待后续 Release 验收 |
 | N4 | P1 | ✅ **E3.3 换机前置检查** | PR #25 已合入 `dev@e3fa372`；device-private、secret、目标与 adapter 完整只读报告、零写入门禁、变异验证、TTY 和合并后 CI 已通过 |
-| N5 | P1 | 🚧 **E3.4 发布包绑定、双设备与失败恢复验收** | PR #26 已创建；选定 name/version/profile/SHA 包级检查和连续引导、同版本幂等、不同内容拒绝、显式旧版本恢复、发布中断恢复、索引越界和目录软链均已验收；本地门禁及首个交付 head 的远端 18/18 job 全绿，待最终 head 与所有者合并确认 |
-| N6 | P1 | **MCP 只读状态补齐与客户端验收** | 先修订 ADR-0005，再暴露统一资产状态和迁移状态；所有工具零写入；Claude/Codex/Grok 真实握手有记录 |
+| N5 | P1 | ✅ **E3.4 发布包绑定、双设备与失败恢复验收** | PR #26 已合入 `dev@0a7171b`；选定 name/version/profile/SHA 包级检查和连续引导、同版本幂等、不同内容拒绝、显式旧版本恢复、发布中断恢复、索引越界和目录软链均已验收；合并后主线 CI 9/9 全绿 |
+| N6 | P1 | 🚧 **MCP 只读状态补齐与客户端验收** | ADR-0005 已扩为 7 工具；统一资产状态/迁移状态复用 Core，扩展零写入树与机器可读 annotations；本地完整门禁与直接协议对账通过，Codex/Grok 模型调用通过，Claude 客户端 Connected、模型请求被组织策略 403 阻止；待 PR CI、所有者合并与后续 Claude 补测 |
 | N7 | P2 | **E4 设置与 i18n** | 字符串目录先行；简体中文/English golden tests；偏好文件 `0600`、原子写入、无 secret；显示密度不得隐藏路径、版本、目标工具、风险、变更、确认与恢复信息 |
 | N8 | P2 | **规模化资产管理增强评估** | 由真实使用量触发；评估备份就绪/恢复验证、搜索/标签/来源追踪，不提前引入服务端或数据库事实源 |
 
@@ -442,8 +444,8 @@ D8、仓库身份、历史公开边界、发布收口、安装脚本和 TUI D1/D
 当前产品主线是 TUI 产品体验 V2：E1/E2 与 E3.1 已随 `v0.1.6` 正式包复验；
 升级提示命令、tag installer、staged pin、bridge Release 和发布后 pin 收口均已
 完成。E3.2 跨设备发布/查看/取回编排已通过 PR #24 合入 `dev`；E3.3 换机前置
-检查已通过 PR #25 合入 `dev`。E3.4 发布包绑定、双设备/失败恢复验收已进入
-PR #26，首个交付 head 的 push/PR CI 18/18 全绿；E4 设置/i18n 尚未实现。
+检查已通过 PR #25 合入 `dev`。E3.4 发布包绑定、双设备/失败恢复验收已通过
+PR #26 合入 `dev`，合并后主线 CI 9/9 全绿；E4 设置/i18n 尚未实现。
 完整发布收口清单见
 [2026-07-27 Public readiness 评估](reviews/2026-07-27-public-readiness-assessment.md)。
 
@@ -453,8 +455,8 @@ Secret Provider ✅ → TUI Phase C ✅ → bootstrap ✅。
 当前再向后是 TUI D1 引导式本地闭环 ✅ → TUI D2 Doctor/当前回滚 ✅ →
 TUI D3 版本/只读更新检查 ✅ → 安装升级 dogfood ✅ → `v0.1.6` bridge Release、
 线上产物、显式升级、legacy no-op 与推荐升级命令修复 ✅ → E3.2 PR #24 合入
-`dev` 且合并后 CI ✅ → E3.3 PR #25 合入且主线 CI ✅ → E3.4 PR #26 首个
-交付 head CI ✅，待最终 head 与所有者合并确认。
+`dev` 且合并后 CI ✅ → E3.3 PR #25 合入且主线 CI ✅ → E3.4 PR #26 合入且
+主线 CI ✅ → N6 MCP 只读状态补齐与客户端验收中。
 **首次真机 dogfood 已完成，工具已从「工程演示」变为「自用工具」**（2026-07-25）；
 private `v0.1.0` 已完成流水线验收（2026-07-26）；public `v0.1.1`–`v0.1.6`
 已发布（2026-07-28 至 2026-07-30），其中 v0.1.5 的推荐升级命令限制已通过
