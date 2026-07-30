@@ -355,7 +355,7 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | 公开版 `v0.1.6` | CLI/Core、任务首页、统一资产状态、连续应用、Doctor/rollback、E3.1、只读 MCP、不可变通道、secret provider、修复后的升级命令 | Linux amd64 线上产物、显式 bridge 升级、正式 TUI 与幂等复装通过；旧版用户仍需显式版本 workaround |
 | 当前 `main@307041e` | `v0.1.6` 已发布 tree + PR #22 发布后 pin/docs 收口 | installer 默认 pin 为 v0.1.6；tag 内 staged pin 仍按发布契约保持 v0.1.5 |
 | 当前 `dev@f8b3475` | E3.2 typed publish、显式 versions/pull、连续 diff/apply 与 pull 输出防覆盖 | PR #24 已 squash 合入；合并后 CI 全绿，尚未进入公开 Release |
-| 当前 E3.3 开发分支 | `e 换机检查`、device-private/secret/target/adapter 完整只读报告与可导航 TUI | Core/TUI、完整门禁、两项变异验证和隔离 TTY 已完成；PR/CI 待收口 |
+| 当前 E3.3 开发分支 | `e 换机检查`、device-private/secret/target/adapter 完整只读报告与可导航 TUI | Core/TUI、完整门禁、两项变异验证和隔离 TTY 已完成；PR #25 初始 head CI 18/18，证据提交后的最终 head CI 待收口 |
 | 人工操作入口 | TUI 覆盖日常本机流程；CLI 保留全部高级、脚本和 CI 能力 | 写操作继续要求显式路径、diff 和 typed confirmation |
 | AI 接入入口 | `aiah mcp` 提供 scan/validate/diff/doctor/version 五个只读工具 | 尚无统一资产状态、迁移状态和三客户端验收矩阵；不开放写操作 |
 | README 视觉 | README mode、规范化主入口和视觉门禁均已进入 v0.1.6 | 本发布后 PR 只同步徽章/证明板版本；一张主流程图表达首次成功，其它流程由任务表和详细文档覆盖 |
@@ -410,7 +410,7 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | N2.2 | P1 | ✅ **固化 README/SVG 视觉验收** | 四图职责、视觉 token、语义核对和 900/360 SOP 已进入 `main` 与 `check-local.sh`；v0.1.6 版本证据已复验 |
 | N2.3 | P0 | ✅ **准备并验收 `v0.1.6` bridge release** | main PR/CI、annotated tag、Release、线上产物、legacy no-op、显式版本升级、正式 TUI 和幂等复装全部通过 |
 | N3 | P1 | ✅ **E3.2 跨设备连续向导** | PR #24 已合入 `dev@f8b3475`；build/typed publish/versions/explicit pull/Phase C、安全输出边界和合并后 CI 已完成，待后续 Release 验收 |
-| N4 | P1 | 🚧 **E3.3 换机前置检查** | 已实现 device-private 排除项、当前设备 secret 可用性、目标支持和 adapter dropped/degraded；零写入门禁、变异验证和 TTY 已通过。待 PR/CI 与人工合并 |
+| N4 | P1 | 🚧 **E3.3 换机前置检查** | 已实现 device-private 排除项、当前设备 secret 可用性、目标支持和 adapter dropped/degraded；零写入门禁、变异验证、TTY 与 PR #25 初始 head CI 已通过。待最终 head CI 与人工合并 |
 | N5 | P1 | **MCP 只读状态补齐与客户端验收** | 先修订 ADR-0005，再暴露统一资产状态和迁移状态；所有工具零写入；Claude/Codex/Grok 真实握手有记录 |
 | N6 | P1 | **E3.4 双设备与失败恢复验收** | 覆盖同版本幂等、不同内容拒绝、旧版本回退、中断恢复和恶意通道夹具 |
 | N7 | P2 | **E4 设置与 i18n** | 字符串目录先行；简体中文/English golden tests；偏好文件 `0600`、原子写入、无 secret；显示密度不得隐藏路径、版本、目标工具、风险、变更、确认与恢复信息 |

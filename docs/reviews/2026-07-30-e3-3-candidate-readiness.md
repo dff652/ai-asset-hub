@@ -95,12 +95,19 @@ aiah → 迁移到其他设备 → e 换机检查 → personal
 
 ## 4. 远端与合并状态
 
-本检查点创建时仅证明本地候选。仍需：
+候选实现与边界文档已拆为两个提交并推送：
 
-1. 按逻辑拆分实现与文档提交；
-2. 推送开发分支并创建面向 `dev` 的 PR；
-3. 等待 PR 当前最终 head 的 push 与 pull_request CI 全绿；
-4. 严格复核未提交/未推送差异；
-5. 由仓库所有者明确决定是否合并。
+1. `f06b887`：E3.3 Core、TUI 与测试；
+2. `4a765b7`：方案、路线图、用户文档和本检查点。
 
-不能用 PR #24 或本地绿灯替代 E3.3 最终 head 的远端 CI；未获新的合并授权前不合并。
+分支已创建面向 `dev` 的
+[PR #25](https://github.com/dff652/ai-asset-hub/pull/25)。初始 head
+`4a765b7cd1b7` 的
+[push CI 30529684619](https://github.com/dff652/ai-asset-hub/actions/runs/30529684619)
+和
+[pull_request CI 30529704787](https://github.com/dff652/ai-asset-hub/actions/runs/30529704787)
+各 9 个 job 全绿，共 18/18；PR 在检查时为 `MERGEABLE`。
+
+本节证据提交会再次改变 PR head，因此交付前仍须等待新的 push 与 pull_request CI
+都绑定最终 head 并全绿。不能用 PR #24、本地绿灯或前一 head 的 CI 替代最终 head；
+未获新的合并授权前不合并。
