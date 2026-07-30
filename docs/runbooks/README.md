@@ -11,8 +11,9 @@ review；尚未实现的能力只列缺口，不先写一份无法验证的“�
 | 假 HOME 资产闭环 | [fake-home-loop.md](fake-home-loop.md) | CI 与本机共同执行 |
 | 真实 HOME 安全预演 | [real-home-dry-run.md](real-home-dry-run.md) | 默认只读；真写有人工门槛 |
 | 跨设备资产分发 | [cross-device-transfer.md](cross-device-transfer.md) | publish/pull/bootstrap 与校验闭环 |
-| 工具安装、升级与 TUI dogfood | [install-upgrade-dogfood.md](install-upgrade-dogfood.md) | Linux amd64；`v0.1.3→v0.1.4`、D2/D3 与幂等复装已实跑 |
+| 工具安装、升级与 TUI dogfood | [install-upgrade-dogfood.md](install-upgrade-dogfood.md) | Linux amd64；显式 `v0.1.4→v0.1.5` 已实跑；修复已合入 dev，v0.1.6 bridge dogfood 待 Release |
 | 工具自身发版 | [release.md](release.md) | main CI → tag → Release → 下载验收 |
+| README 与 SVG 视觉验收 | [readme-visual-acceptance.md](readme-visual-acceptance.md) | 语义核对、视觉 token、自动门禁与 900/360 人工检查 |
 | 首次 public 切换 | [public-launch.md](public-launch.md) | 一次性历史流程，已完成；保留作取证 |
 
 ## 仍需固化

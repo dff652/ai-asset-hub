@@ -195,7 +195,7 @@ func (m Model) WithHome(enabled bool) Model {
 	return m
 }
 
-// WithMaintenance enables doctor and rollback in the regular `aiah ui`
+// WithMaintenance enables doctor and rollback in the regular `aiah`
 // workflow. Bootstrap deliberately keeps its existing deployment-only result
 // contract and does not enable these actions.
 func (m Model) WithMaintenance(enabled bool) Model {

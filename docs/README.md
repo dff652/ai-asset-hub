@@ -4,10 +4,13 @@
 
 - [上手指南](getting-started.md)
   （发现资产 → 整理资产库 → 检查并准备 → 预览变化 → 人工确认）
+- [使用流程总览](usage-flows.md)
+  （首次使用、日常维护、撤销、跨设备、MCP/自动化与工具升级）
 - [CLI 命令参考](cli-reference.md)
 - [跨设备迁移 runbook](runbooks/cross-device-transfer.md)（发布 → 搬运 → 取回 → 安装）
 - [真机 dry-run runbook](runbooks/real-home-dry-run.md)
 - [工具安装、升级与 TUI dogfood](runbooks/install-upgrade-dogfood.md)
+- [README 与 SVG 视觉验收 SOP](runbooks/readme-visual-acceptance.md)
 - [全部 Runbook / SOP 及缺口](runbooks/README.md)
 - [AI 资产管理踩坑清单](troubleshooting/ai-asset-pitfalls.md)
 
@@ -55,6 +58,7 @@
 
 ## 评审
 
+- [2026-07-30 v0.1.6 bridge 候选准备检查点](reviews/2026-07-30-v0.1.6-bridge-candidate-readiness.md)
 - [2026-07-30 v0.1.5 候选就绪检查点](reviews/2026-07-30-v0.1.5-candidate-readiness.md)
 - [2026-07-30 E1 / E2 / E3.1 严格实现复审](reviews/2026-07-30-e1-e2-e3-1-strict-review.md)
 - [2026-07-29 TUI 产品体验方案 V2 评审](reviews/2026-07-29-tui-product-experience-v2-review.md)
@@ -71,8 +75,8 @@
 - [产品形态与分发边界评估](research/product-form-and-distribution-assessment.md)
   （服务端 docker / 内网多用户 / curl 安装 / MCP server 四问收口；结论未冻结为 ADR）
 - [beautify-github-readme 适用性评估](research/beautify-github-readme-assessment.md)
-  （asset-only 与 README mode 已进入 dev 候选；公开版/dev 候选边界保留，
-  默认分支首页待 main 合入）
+  （asset-only 与 README mode 已进入 `v0.1.5` 默认分支；主 SVG 只承担首次使用
+  流程，其它任务由 README 任务表和[使用流程总览](usage-flows.md)覆盖）
 - [外部参考](references.md)
 
 ## 许可证

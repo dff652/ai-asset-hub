@@ -6,8 +6,16 @@
   [真机 dry-run runbook](real-home-dry-run.md)。
 - 默认边界：所有写入都在 `mktemp` 目录，不覆盖 `~/.local/bin/aiah`，不把
   `HOME` 环境变量改指测试目录。
-- 最近一次实跑：2026-07-29，public `v0.1.3 → v0.1.4` 升级、同版本幂等复装、
-  TUI D2 Doctor/typed rollback、D3 显式更新检查与退出后 CLI 对账全部通过。
+- 最近一次实跑：2026-07-30，public `v0.1.4 → v0.1.5` 在显式设置
+  `AIAH_VERSION=0.1.5` 时升级通过；同版本幂等复装、裸 `aiah`、统一资产状态、
+  typed apply/update/remove/rollback、E3.1 和退出后 CLI 对账均通过。
+- 已知问题：同次验收确认 `v0.1.4` / `v0.1.5` 的 `update --check` 推荐命令缺少
+  `AIAH_VERSION`，执行后可能仍停留在旧 pin。Release 说明已提供显式版本命令；
+  修复已通过 PR #20 合入 `dev@e7d813e` 并把“执行实际输出命令”加入发布门禁，
+  但 `v0.1.6` bridge Release 仍须完成真实旧版升级。
+- `v0.1.6` 候选准备：dev CI 与本地 Linux amd64 Release 产物预演已通过；main、
+  tag、线上产物和 `v0.1.5 → v0.1.6` dogfood 尚未发生，见
+  [bridge 候选检查点](../reviews/2026-07-30-v0.1.6-bridge-candidate-readiness.md)。
 - E2 候选实跑：2026-07-30，隔离 `0.1.5-dev.e2` 二进制完成统一资产状态、纳入、
   连续 profile/diff、typed apply、成功摘要、Doctor、typed update/remove 与 CLI
   对账。该记录只证明 dev 候选，不代表未发布 Release 的安装器升级已通过。
@@ -15,7 +23,7 @@
   `aiah`、纳入/更新/移出、连续 apply、Doctor/rollback、E3.1 通道对齐和重复候选
   替换；本地 `0.1.5` Release 产物也通过 SHA256/ELF/版本自检。完整证据与仍需门槛见
   [v0.1.5 候选就绪检查点](../reviews/2026-07-30-v0.1.5-candidate-readiness.md)。
-  这仍不代表尚未存在的 `v0.1.5` 线上安装器升级通过。
+  后续正式发布结果与已知问题见同一检查点 §5。
 
 ## 0. 四种验证不要混
 
@@ -52,15 +60,45 @@ test "$DOGFOOD_INSTALL" != "$HOME/.local/bin"
 
 ## 2. Release → Release 真实升级（发布后必跑）
 
-以下示例验证 `v0.1.3 → v0.1.4`。两个版本都必须已存在于 GitHub Releases：
+以下示例验证当前 bridge `v0.1.5 → v0.1.6`。两个版本都必须已存在于
+GitHub Releases：
 
 ```bash
-FROM_VERSION=0.1.3
-TO_VERSION=0.1.4
+FROM_VERSION=0.1.5
+TO_VERSION=0.1.6
 
 AIAH_VERSION=$FROM_VERSION AIAH_INSTALL_DIR=$DOGFOOD_INSTALL sh scripts/install.sh
 "$DOGFOOD_INSTALL/aiah" version --output json
 before_sha=$(sha256sum "$DOGFOOD_INSTALL/aiah" | awk '{print $1}')
+
+upgrade_command=$("$DOGFOOD_INSTALL/aiah" update --check --output json |
+  python3 -c 'import json,sys; print(json.load(sys.stdin)["upgradeCommand"])')
+expected="curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v$TO_VERSION/scripts/install.sh | AIAH_VERSION=$TO_VERSION sh"
+legacy_expected="curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v$TO_VERSION/scripts/install.sh | sh"
+case "$FROM_VERSION" in
+  0.1.4 | 0.1.5)
+    test "$upgrade_command" = "$legacy_expected"
+    printf 'known legacy upgrade command: %s\n' "$upgrade_command"
+
+    LEGACY_INSTALL=$DOGFOOD_ROOT/legacy/bin
+    mkdir -p "$LEGACY_INSTALL"
+    install -m 0755 "$DOGFOOD_INSTALL/aiah" "$LEGACY_INSTALL/aiah"
+    legacy_before_sha=$(sha256sum "$LEGACY_INSTALL/aiah" | awk '{print $1}')
+    curl -fsSL \
+      "https://raw.githubusercontent.com/dff652/ai-asset-hub/v$TO_VERSION/scripts/install.sh" |
+      env -u AIAH_VERSION AIAH_INSTALL_DIR="$LEGACY_INSTALL" sh
+    legacy_after_version=$("$LEGACY_INSTALL/aiah" version --output json |
+      python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])')
+    test "$legacy_after_version" = "$FROM_VERSION"
+    test "$legacy_before_sha" = \
+      "$(sha256sum "$LEGACY_INSTALL/aiah" | awk '{print $1}')"
+    test -z "$(find "$LEGACY_INSTALL" -maxdepth 1 \
+      -name '.aiah.install.*' -print -quit)"
+    ;;
+  *)
+    test "$upgrade_command" = "$expected"
+    ;;
+esac
 
 AIAH_VERSION=$TO_VERSION AIAH_INSTALL_DIR=$DOGFOOD_INSTALL sh scripts/install.sh
 "$DOGFOOD_INSTALL/aiah" version --output json
@@ -78,13 +116,31 @@ AIAH_VERSION=$TO_VERSION AIAH_INSTALL_DIR=$DOGFOOD_INSTALL sh scripts/install.sh
 test "$after_sha" = "$(sha256sum "$DOGFOOD_INSTALL/aiah" | awk '{print $1}')"
 ```
 
+必须在安装 `TO_VERSION` **之前**从旧版本读取并核对程序实际生成的升级命令；升级后
+再检查只会得到 `current`，不能证明旧用户看到的命令正确。不要对未经验证的网络
+返回值直接使用 `eval`；先断言命令等于“修复后模板”或明确列出的 legacy 模板。
+legacy 分支在第二个隔离目录执行固定 URL、显式清除 `AIAH_VERSION` 并确认版本和
+SHA256 均保持不变；主升级目录再显式传入目标版本，确认确实到达 `TO_VERSION`。
+
+`v0.1.5` 首次执行这条新增门禁时发现：实际命令没有 `AIAH_VERSION=0.1.5`，会让
+v0.1.4 保持原版本。因此该版本只能记为“显式版本升级通过，推荐命令失败且已公开
+告知”，不能记为安装入口完整闭环。
+
+`v0.1.4` / `v0.1.5` 二进制不可追溯修改。由 `v0.1.5` 升级到首个包含修复的版本时，
+仍会命中上面的 legacy 分支：Release 必须公开显式版本 workaround，并把实际旧命令
+执行后的 no-op 作为已知失败证据。只有从首个修复版升级到再下一版时，才能首次要求
+`upgrade_command == expected` 并宣布推荐命令端到端闭环。
+
 验收记录至少保留：
 
 - 升级前后 `aiah version --output json`；
 - 两个 SHA256；
 - 最终 mode；
 - 安装器输出；
-- staging 文件检查结果。
+- staging 文件检查结果；
+- `update --check` 实际命令文本；
+- bridge legacy 目录执行前后的版本与 SHA256；
+- 显式版本升级后的版本与 SHA256。
 
 ## 3. 发布前 dev 候选 dogfood
 
@@ -92,7 +148,7 @@ test "$after_sha" = "$(sha256sum "$DOGFOOD_INSTALL/aiah" | awk '{print $1}')"
 
 ```bash
 mkdir -p "$DOGFOOD_ROOT/candidate"
-VERSION=0.1.4-dev.1 OUT="$DOGFOOD_ROOT/candidate/aiah" ./scripts/build.sh
+VERSION=0.1.6-dev.1 OUT="$DOGFOOD_ROOT/candidate/aiah" ./scripts/build.sh
 "$DOGFOOD_ROOT/candidate/aiah" version --output json
 ```
 
@@ -132,11 +188,22 @@ PACKAGE=$DOGFOOD_DIST/$(python3 -c \
   --output json >"$DOGFOOD_ROOT/apply.json"
 ```
 
-启动真实 TTY：
+启动真实 TTY。普通入口必须使用裸 `aiah`；`ui` 仅在需要显式测试目录参数时保留：
 
 ```bash
 "$AIAH" ui --home "$DOGFOOD_HOME" --project "$DOGFOOD_PROJECT"
 ```
+
+另开一个真实 TTY，验证无参数入口：
+
+```bash
+"$AIAH"
+```
+
+裸入口会只读扫描当前用户 HOME；本项只验证任务首页和 `q` 退出，不进入任何写操作。
+隔离写流程继续使用上一条显式 `ui --home/--project` 命令。两者必须进入同一任务
+首页。自动 PTY 脚本应等待首屏实际出现后再发送按键，不能用固定的过早按键时序代替
+初始化判断。
 
 人工验收：
 

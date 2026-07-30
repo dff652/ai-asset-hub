@@ -37,7 +37,7 @@ func (m Model) doctorOptions() apply.DoctorOptions {
 
 func (m Model) startDoctor() (tea.Model, tea.Cmd) {
 	if !m.maintenance {
-		m.notice = "当前交互只提供部署审阅；请用 aiah ui 启动维护操作台"
+		m.notice = "当前交互只提供部署审阅；请用 aiah 启动完整操作台"
 		m.noticeIsWarn = true
 		return m, nil
 	}

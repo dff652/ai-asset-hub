@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
   <title id="title">AI Asset Hub 资产生命周期</title>
   <desc id="desc">Claude、Codex 和 Grok 的本机资产进入版本化资产库，经过预览和明确确认后应用到本机，或通过不可变资产包迁移到其他设备。</desc>
   <defs>
