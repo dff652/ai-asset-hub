@@ -201,23 +201,24 @@ aiah update --check [--output text|json]
 `--check`。真正升级仍由用户执行报告中的校验安装命令。
 
 已知问题：`v0.1.4` / `v0.1.5` 输出的命令虽然绑定 tag，却没有给安装器显式传入
-`AIAH_VERSION`；而 `v0.1.5` tag 内的安装器默认版本仍是 `v0.1.4`，直接执行推荐
-命令会停留在旧版。升级到 `v0.1.5` 请使用：
+`AIAH_VERSION`。`v0.1.6` tag 内的安装器按 staged-pin 规则仍默认 `v0.1.5`，
+因此从旧版复制 legacy 命令会保持在旧版。升级到 `v0.1.6` 请使用：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.5/scripts/install.sh |
-  AIAH_VERSION=0.1.5 sh
+curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.6/scripts/install.sh |
+  AIAH_VERSION=0.1.6 sh
 ```
 
-该命令已完成隔离升级验收。后续版本必须先修复命令生成和发布门禁，不能把“绑定
-tag”误当成“安装目标版本已绑定”。当前源码已把生成格式修复为：
+该命令已完成 `v0.1.5 → v0.1.6` 隔离升级验收，legacy 命令的 no-op 证据也已记录
+在 `v0.1.6` Release。`v0.1.6` 二进制已把生成格式修复为：
 
 ```text
 .../v<version>/scripts/install.sh | AIAH_VERSION=<version> sh
 ```
 
-并增加精确字符串与 TUI 窄屏可复制性回归；该修复要到后续 Release 才会进入用户
-二进制，不能追溯改变 `v0.1.4` / `v0.1.5`。
+并增加精确字符串与 TUI 窄屏可复制性回归。该修复不能追溯改变
+`v0.1.4` / `v0.1.5`；从 `v0.1.6` 升级到下一版本时，才是修复后推荐命令的首次
+完整 Release → Release 证明。
 
 ## `version`
 

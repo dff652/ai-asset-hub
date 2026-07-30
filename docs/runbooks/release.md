@@ -167,11 +167,11 @@ curl -fsSL \
 
 `v0.1.5` 是已知例外：产物、显式版本升级和 TUI 已通过，但上述命令相等性门禁失败；
 Release 说明已公开显式 `AIAH_VERSION=0.1.5` 的 workaround。不要重写 tag 或产物，
-修复已经通过 PR #20 合入 dev，并把候选 installer 默认 pin 收口到 v0.1.5；
-`v0.1.6` 仍须通过 main PR/CI，并用旧公开二进制重新执行本节门禁。不要把 dev
-测试通过写成 `v0.1.5` 已发布二进制被追溯修复。`v0.1.6` 是一次性 bridge
-release；再下一版本才是修复后推荐命令的首次完整 Release → Release 证明。当前
-候选证据见
+修复已经通过 PR #20 进入 `v0.1.6`。该 bridge Release 已通过 main/Release CI、
+线上产物复验、legacy no-op、显式版本升级、正式 TUI 和幂等复装；Release 说明也已
+公开边界。不要把结果写成 `v0.1.5` 已发布二进制被追溯修复。`v0.1.6` 仍是一次性
+bridge release；再下一版本才是修复后推荐命令的首次完整 Release → Release 证明。
+完整证据见
 [v0.1.6 bridge 检查点](../reviews/2026-07-30-v0.1.6-bridge-candidate-readiness.md)。
 
 ## 5. 出问题怎么退
