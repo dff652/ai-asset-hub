@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -485,9 +486,56 @@ func TestRunMCPServesReadOnlyToolsOverStdio(t *testing.T) {
 		names = append(names, tool.Name)
 	}
 	// The CLI must not widen the surface the server package defines.
-	want := "aiah_diff,aiah_doctor,aiah_scan,aiah_validate,aiah_version"
+	want := "aiah_asset_status,aiah_diff,aiah_doctor,aiah_migration_status," +
+		"aiah_scan,aiah_validate,aiah_version"
 	if strings.Join(names, ",") != want {
 		t.Fatalf("tools = %v, want %s", names, want)
+	}
+}
+
+func TestRunMCPCallsAssetStatusOverStdio(t *testing.T) {
+	original := stdin
+	t.Cleanup(func() { stdin = original })
+	workspaceRoot, err := filepath.Abs(filepath.Join("..", "..", "testdata", "workspace-valid"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	home, err := filepath.Abs(filepath.Join("..", "..", "testdata", "home-basic"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	stdin = strings.NewReader(fmt.Sprintf(
+		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"aiah_asset_status","arguments":{"workspace":%q,"home":%q}}}`,
+		workspaceRoot, home,
+	) + "\n")
+
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"mcp"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("mcp exit=%d stderr=%q", code, stderr.String())
+	}
+	var response struct {
+		Result struct {
+			IsError bool `json:"isError"`
+			Content []struct {
+				Text string `json:"text"`
+			} `json:"content"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &response); err != nil {
+		t.Fatalf("mcp response: %v (%q)", err, stdout.String())
+	}
+	if response.Result.IsError || len(response.Result.Content) != 1 {
+		t.Fatalf("asset status response = %#v", response.Result)
+	}
+	var report struct {
+		Kind string `json:"kind"`
+		Ok   bool   `json:"ok"`
+	}
+	if err := json.Unmarshal([]byte(response.Result.Content[0].Text), &report); err != nil {
+		t.Fatalf("asset status report: %v", err)
+	}
+	if report.Kind != "asset-catalog" || !report.Ok {
+		t.Fatalf("asset status report = %#v", report)
 	}
 }
 
