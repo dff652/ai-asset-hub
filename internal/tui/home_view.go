@@ -45,7 +45,7 @@ func homeItems() []homeItem {
 		{
 			action:      homeActionMigration,
 			title:       "迁移到其他设备",
-			description: "只读比较资产库、当前安装与分发通道",
+			description: "比较版本，发布或取回不可变安装包",
 		},
 		{
 			action:      homeActionVersion,
@@ -228,7 +228,7 @@ func (m Model) homeHelpView(style styles) string {
 		"整理本机资产      选择 skills、rules、agents 等并加入资产库",
 		"预览并应用资产库  检查资产、准备安装包、预览变化，再确认应用",
 		"安装检查与撤销    检查当前安装、文件漂移和备份",
-		"迁移到其他设备    比较资产库、当前安装与分发通道；本阶段只读",
+		"迁移到其他设备    比较版本；显式发布或取回，取回后仍须预览并确认应用",
 		"关于与更新        查看本地版本；只有再次按 c 才联网检查 Release",
 		"",
 		"资产库是跨工具统一、可编辑、可进入 Git 的事实源，不是工具安装目录。",

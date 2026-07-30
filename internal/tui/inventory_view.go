@@ -16,8 +16,14 @@ func (m Model) View() string {
 	if m.choosingProfile {
 		return m.profileInputView(style)
 	}
-	if m.choosingChannel {
+	if m.migrationFlow.choosingChannel {
 		return m.channelInputView(style)
+	}
+	if m.migrationFlow.choosingPullOut {
+		return m.pullOutputView(style)
+	}
+	if m.migrationFlow.publishConfirming {
+		return m.publishConfirmationView(style)
 	}
 	if m.confirmManage {
 		return m.manageConfirmationView(style)
@@ -395,14 +401,20 @@ func (m Model) workspaceInputView(style styles) string {
 }
 
 func (m Model) profileInputView(style styles) string {
+	title := "aiah · 预览并应用资产库"
+	next := "将先检查资产并在 dist/ 准备安装包，然后自动进入只读变更预览。"
+	if m.buildPurpose == buildForPublish {
+		title = "aiah · 发布资产库版本"
+		next = "将先检查资产并在 dist/ 准备安装包，然后显示不可变发布确认。"
+	}
 	lines := []string{
-		style.header.Render("aiah · 预览并应用资产库"),
+		style.header.Render(title),
 		"",
 		"资产库    " + m.workspace,
 		"选择 manifest.yaml 中的资产组合（profile）：",
 		m.profileInput.View(),
 		"",
-		"将先检查资产并在 dist/ 准备安装包，然后自动进入只读变更预览。",
+		next,
 		"Enter 继续 · Esc 取消 · Ctrl+C 退出",
 	}
 	if len(m.availableProfiles) > 0 {

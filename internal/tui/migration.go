@@ -4,7 +4,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/dff652/ai-asset-hub/internal/migration"
@@ -22,10 +21,31 @@ func migrationCommand(options migration.Options) tea.Cmd {
 	}
 }
 
+func (m Model) handleMigrationMessage(message migrationMsg) (tea.Model, tea.Cmd) {
+	m.migrationFlow.status = statusReady
+	m.migrationFlow.report = message.report
+	m.migrationFlow.err = message.err
+	if message.err != nil {
+		m.migrationFlow.status = statusFailed
+		m.migrationFlow.afterMigration = migrationActionNone
+		return m, nil
+	}
+	next := m.migrationFlow.afterMigration
+	m.migrationFlow.afterMigration = migrationActionNone
+	switch next {
+	case migrationActionPublish:
+		return m.startMigrationPublish()
+	case migrationActionVersions:
+		return m.startVersions()
+	default:
+		return m, nil
+	}
+}
+
 func (m Model) migrationOptions() migration.Options {
 	return migration.Options{
 		WorkspaceRoot: m.workspace,
-		Channel:       m.migrationChannel,
+		Channel:       m.migrationFlow.channel,
 		Home:          m.options.Home,
 		Project:       m.options.Project,
 	}
@@ -36,61 +56,68 @@ func (m Model) startMigration() (tea.Model, tea.Cmd) {
 		return m.startWorkspaceInputFor(homeActionMigration)
 	}
 	m.screen = screenMigration
-	m.migrationStatus = statusLoading
-	m.migrationErr = nil
+	m.migrationFlow.mode = migrationModeStatus
+	m.migrationFlow.status = statusLoading
+	m.migrationFlow.err = nil
 	m.notice = ""
 	m.noticeIsWarn = false
 	return m, migrationCommand(m.migrationOptions())
 }
 
 func (m Model) startChannelInput() (tea.Model, tea.Cmd) {
-	m.choosingChannel = true
-	m.channelInput.SetValue(m.migrationChannel)
+	return m.startChannelInputFor(migrationActionNone)
+}
+
+func (m Model) startChannelInputFor(next migrationAction) (tea.Model, tea.Cmd) {
+	m.migrationFlow.choosingChannel = true
+	m.migrationFlow.afterChannel = next
+	m.migrationFlow.channelInput.SetValue(m.migrationFlow.channel)
 	m.notice = ""
 	m.noticeIsWarn = false
-	return m, m.channelInput.Focus()
+	return m, m.migrationFlow.channelInput.Focus()
 }
 
 func (m Model) updateChannelInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if message.Type == tea.KeyEsc {
-		m.choosingChannel = false
-		m.channelInput.Blur()
+		m.migrationFlow.choosingChannel = false
+		m.migrationFlow.afterChannel = migrationActionNone
+		m.migrationFlow.channelInput.Blur()
 		return m, nil
 	}
 	if message.Type == tea.KeyEnter {
-		candidate := strings.TrimSpace(m.channelInput.Value())
+		candidate := expandHomePath(
+			strings.TrimSpace(m.migrationFlow.channelInput.Value()),
+			m.options.Home,
+		)
 		if candidate == "" {
 			m.notice = "必须输入已有的分发通道目录；本页不会创建目录"
 			m.noticeIsWarn = true
 			return m, nil
 		}
-		if candidate == "~" {
-			candidate = m.options.Home
-		} else if strings.HasPrefix(candidate, "~/") {
-			candidate = filepath.Join(m.options.Home, strings.TrimPrefix(candidate, "~/"))
-		}
-		m.migrationChannel = candidate
-		m.choosingChannel = false
-		m.channelInput.Blur()
-		return m.startMigration()
+		m.migrationFlow.channel = candidate
+		m.migrationFlow.choosingChannel = false
+		m.migrationFlow.channelInput.Blur()
+		m.migrationFlow.afterMigration = m.migrationFlow.afterChannel
+		m.migrationFlow.afterChannel = migrationActionNone
+		m.screen = screenMigration
+		m.migrationFlow.mode = migrationModeStatus
+		m.migrationFlow.status = statusLoading
+		m.migrationFlow.err = nil
+		m.notice = ""
+		m.noticeIsWarn = false
+		return m, migrationCommand(m.migrationOptions())
 	}
 	var command tea.Cmd
-	m.channelInput, command = m.channelInput.Update(message)
+	m.migrationFlow.channelInput, command = m.migrationFlow.channelInput.Update(message)
 	return m, command
 }
 
-func (m Model) updateMigrationKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch {
-	case key.Matches(message, m.keys.Quit):
-		return m, tea.Quit
-	case key.Matches(message, m.keys.Help):
-		m.showHelp = true
-	case key.Matches(message, m.keys.CheckUpdate):
-		return m.startChannelInput()
-	case key.Matches(message, m.keys.Reload):
-		return m.startMigration()
-	case key.Matches(message, m.keys.Collapse):
-		m.screen = screenHome
+func expandHomePath(candidate, home string) string {
+	if candidate == "~" {
+		return home
 	}
-	return m, nil
+	if strings.HasPrefix(candidate, "~/") {
+		return filepath.Join(home, strings.TrimPrefix(candidate, "~/"))
+	}
+	return candidate
 }
