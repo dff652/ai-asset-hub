@@ -1,7 +1,8 @@
 # N7：偏好设置与中英文支持方案
 
 - 状态：Accepted for N7.0；N7.1 首页、inventory 与资产库管理目录切片已实现，
-  diff/health/migration/version 页面实施中；设置页、语言切换和偏好文件尚未实现
+  diff/apply 也已实现，health/migration/version 页面实施中；设置页、语言切换和
+  偏好文件尚未实现
 - 日期：2026-07-30
 - 目标阶段：TUI 产品体验 V2 E4
 - 关联：[TUI 产品体验方案](tui-product-experience-v2.md)、
@@ -254,6 +255,8 @@ unchanged/skipped；`standard` 可以默认折叠这些技术字段，但用户�
 - [x] 首页 zh-CN/en golden、catalog key/格式占位符完整性和中文直写门禁；
 - [x] inventory、工作区/profile 输入、纳入/更新/移出和相关 help 完整迁移；
 - [x] inventory zh-CN/en golden、输入框语言同步和资产库操作英文验收；
+- [x] diff/apply、二次确认、应用结果和恢复提示完整迁移；
+- [x] diff/apply zh-CN/en 预览与确认 golden，English 结果与 typed `apply` 验收；
 - [ ] 提取所有 production TUI 用户可见字符串为 typed IDs；
 - [ ] 为首页、inventory、diff/确认、doctor/rollback、migration、version/help
   增加完整双语 golden（首页、inventory 已完成）；
@@ -272,6 +275,12 @@ unchanged/skipped；`standard` 可以默认折叠这些技术字段，但用户�
 同步三项变异均能使门禁失败，完整 `check-local` 通过。排除中文 catalog 后，剩余
 9 个 production TUI 文件、260 行含中文文本；下一步依次迁移 diff/apply、
 doctor/rollback、migration 和 version。用户仍看不到语言开关，也不会创建偏好文件。
+
+第三检查点 `ad230fa` 把目录扩展到 239 个 typed 消息，完成 diff/apply 切片。
+删除 English `diff.title`、重新直写中文、放宽 typed `apply` 三项变异均能使门禁
+失败；确认输入框的终端填充空格已在 golden 比较中规范化，仓库文件本身保持
+`git diff --check` clean。排除中文 catalog 后剩余 7 个 production TUI 文件、
+219 行含中文文本；下一步迁移 doctor/rollback。
 
 ### N7.2：偏好 Core
 

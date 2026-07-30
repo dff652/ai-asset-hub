@@ -5,8 +5,8 @@
 - 状态：**评估结论，未动手实现**
 - 后续修订（2026-07-30）：本评估“不做设置面板”继续约束业务配置和控制面板；
   [N7 方案](../designs/settings-and-i18n.md)已接受语言、首选资产库预填和显示密度
-  三项设备本地 UI 偏好；首页、inventory 和资产库管理双语消息目录已建立，
-  设置入口和偏好存储尚未实现
+  三项设备本地 UI 偏好；首页、inventory、资产库管理和 diff/apply 双语消息目录
+  已建立，设置入口和偏好存储尚未实现
 - 关联：[ADR-0003](../decisions/0003-cli-first-go-core-and-product-surfaces.md)
   （CLI-first、Phase 3.5 只读 Web UI）、2026-07-25 真机 dogfood
 

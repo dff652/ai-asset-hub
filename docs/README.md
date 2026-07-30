@@ -62,6 +62,7 @@
 
 ## 评审
 
+- [2026-07-30 N7.1 diff/apply 双语目录检查点](reviews/2026-07-30-n7-i18n-diff-apply-checkpoint.md)
 - [2026-07-30 N7.1 inventory 与资产库管理双语目录检查点](reviews/2026-07-30-n7-i18n-inventory-catalog-checkpoint.md)
 - [2026-07-30 N7.0 决策与 N7.1 首页双语目录检查点](reviews/2026-07-30-n7-i18n-home-catalog-checkpoint.md)
 - [2026-07-30 N6 MCP 只读状态与客户端验收检查点](reviews/2026-07-30-n6-mcp-read-only-status-candidate-readiness.md)
