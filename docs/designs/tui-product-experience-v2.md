@@ -350,9 +350,10 @@ ADR-0006 的绝对措辞并增加安全测试。
 
 - [x] N7.0 技术方案、最小设置范围、产品决定和 ADR 安全边界；
 - [x] typed zh-CN/en catalog 基础、首页 40 个消息和首页双语 golden；
+- [x] inventory、资产库管理、共享输入/通知与 inventory 双语 golden；
 - [ ] 先建立完整字符串目录，再开放语言开关；
 - [ ] UI 偏好配置文件与安全写入；
-- [ ] 其余核心页面的简体中文和 English golden tests；
+- [ ] diff、health、migration、version 的简体中文和 English golden tests；
 - [ ] 标准/详细显示密度仅影响技术详情，不得隐藏安全/决策信息；
 - [ ] 业务配置仍只来自 manifest。
 

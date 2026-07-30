@@ -1,7 +1,7 @@
 # N7：偏好设置与中英文支持方案
 
-- 状态：Accepted for N7.0；N7.1 首页字符串目录切片已实现，其余页面实施中；
-  设置页、语言切换和偏好文件尚未实现
+- 状态：Accepted for N7.0；N7.1 首页、inventory 与资产库管理目录切片已实现，
+  diff/health/migration/version 页面实施中；设置页、语言切换和偏好文件尚未实现
 - 日期：2026-07-30
 - 目标阶段：TUI 产品体验 V2 E4
 - 关联：[TUI 产品体验方案](tui-product-experience-v2.md)、
@@ -252,18 +252,26 @@ unchanged/skipped；`standard` 可以默认折叠这些技术字段，但用户�
 - [x] 建立 typed `messageID`、`zh-CN` / `en` catalog 和 English fallback；
 - [x] 首页 40 个消息完整迁移，首页 production 文件不再直写中文；
 - [x] 首页 zh-CN/en golden、catalog key/格式占位符完整性和中文直写门禁；
+- [x] inventory、工作区/profile 输入、纳入/更新/移出和相关 help 完整迁移；
+- [x] inventory zh-CN/en golden、输入框语言同步和资产库操作英文验收；
 - [ ] 提取所有 production TUI 用户可见字符串为 typed IDs；
 - [ ] 为首页、inventory、diff/确认、doctor/rollback、migration、version/help
-  增加完整双语 golden（首页已完成）；
-- [ ] 保持当前 zh-CN 默认行为，避免重构和行为切换同时发生。
+  增加完整双语 golden（首页、inventory 已完成）；
+- [x] 保持当前 zh-CN 默认行为，避免重构和行为切换同时发生。
 
 出口：两套 catalog 完整，但用户仍看不到语言开关。
 
 2026-07-30 检查点：`617b464` 完成首页首个垂直切片，`./scripts/check-local.sh`
 通过。缺翻译键、首页重新直写中文、默认语言误改为 English 三项变异都能使对应
-测试失败。当前仍有 15 个 production TUI 文件、434 行含中文文本待迁移；这里按
+测试失败。该检查点仍有 15 个 production TUI 文件、434 行含中文文本待迁移；这里按
 `rg` 行数统计，不等同于 434 个独立消息。`withLanguage` 保持 package-private，
 因此用户界面仍只有兼容默认的简体中文，且不会创建偏好文件。
+
+第二检查点 `4b68c9f` 把目录扩展到 199 个 typed 消息，完成 inventory 与资产库
+管理切片。删除 English `inventory.title`、重新直写中文、取消语言切换时的输入框
+同步三项变异均能使门禁失败，完整 `check-local` 通过。排除中文 catalog 后，剩余
+9 个 production TUI 文件、260 行含中文文本；下一步依次迁移 diff/apply、
+doctor/rollback、migration 和 version。用户仍看不到语言开关，也不会创建偏好文件。
 
 ### N7.2：偏好 Core
 
