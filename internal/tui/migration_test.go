@@ -57,6 +57,7 @@ func TestMigrationViewExplainsAlignmentAndExplicitActions(t *testing.T) {
 		"迁移到其他设备", "版本对齐", "personal / 1.2.3",
 		"claude、codex", "/mnt/aiah", "与资产库版本一致",
 		"状态读取保持只读", "p 发布当前版本", "v 查看/取回版本",
+		"e 换机检查",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("migration view omits %q:\n%s", want, view)
@@ -65,7 +66,7 @@ func TestMigrationViewExplainsAlignmentAndExplicitActions(t *testing.T) {
 }
 
 func TestMigrationWriteActionsRequireReadableStatus(t *testing.T) {
-	for _, pressed := range []string{"p", "v"} {
+	for _, pressed := range []string{"e", "p", "v"} {
 		model := readyTestModel().
 			WithWorkspace("/tmp/assets").
 			WithHome(true).
@@ -85,6 +86,73 @@ func TestMigrationWriteActionsRequireReadableStatus(t *testing.T) {
 	}
 }
 
+func TestMigrationPreflightUsesTheProfileAndWritesNothing(t *testing.T) {
+	workspaceRoot := copyMigrationFixture(t, "workspace-valid")
+	home := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(home, ".codex"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(home, ".codex", "auth.json"),
+		[]byte(`{"token":"device-private"}`),
+		0o600,
+	); err != nil {
+		t.Fatal(err)
+	}
+	model := migrationTestModel(t, workspaceRoot, home, t.TempDir())
+	beforeWorkspace := snapshotTree(t, workspaceRoot)
+	beforeHome := snapshotTree(t, home)
+
+	updated, focus := model.Update(keyPress("e"))
+	model = updated.(Model)
+	if focus == nil || !model.choosingProfile ||
+		model.profilePurpose != profileForPreflight ||
+		!strings.Contains(model.View(), "不会生成安装包") {
+		t.Fatalf("preflight profile state=choosing %v purpose=%d command nil=%v\n%s",
+			model.choosingProfile, model.profilePurpose, focus == nil, model.View())
+	}
+
+	updated, command := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(Model)
+	if command == nil || model.building ||
+		model.migrationFlow.mode != migrationModePreflight ||
+		model.migrationFlow.preflightStatus != statusLoading {
+		t.Fatalf("preflight state=mode %d status %d building %v command nil=%v",
+			model.migrationFlow.mode,
+			model.migrationFlow.preflightStatus,
+			model.building,
+			command == nil,
+		)
+	}
+	if _, err := os.Stat(filepath.Join(workspaceRoot, "dist")); !os.IsNotExist(err) {
+		t.Fatalf("starting preflight created dist: %v", err)
+	}
+
+	updated, _ = model.Update(command())
+	model = updated.(Model)
+	if model.migrationFlow.preflightStatus != statusReady ||
+		!model.migrationFlow.preflightReport.Ok ||
+		model.migrationFlow.preflightReport.Summary.DevicePrivateItems != 1 {
+		t.Fatalf("preflight report=%#v err=%v",
+			model.migrationFlow.preflightReport,
+			model.migrationFlow.preflightErr,
+		)
+	}
+	view := model.View()
+	for _, want := range []string{
+		"换机前置检查", "检查阶段零写入", "本机不迁移 1",
+		"目标工具 · claude", "本机不迁移 · home/.codex/auth.json",
+	} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("preflight view omits %q:\n%s", want, view)
+		}
+	}
+	if !reflect.DeepEqual(beforeWorkspace, snapshotTree(t, workspaceRoot)) ||
+		!reflect.DeepEqual(beforeHome, snapshotTree(t, home)) {
+		t.Fatal("preflight changed the workspace or target HOME")
+	}
+}
+
 func TestMigrationPublishRequiresTypedConfirmation(t *testing.T) {
 	workspaceRoot := copyMigrationFixture(t, "workspace-valid")
 	home := t.TempDir()
@@ -93,9 +161,9 @@ func TestMigrationPublishRequiresTypedConfirmation(t *testing.T) {
 
 	updated, focus := model.Update(keyPress("p"))
 	model = updated.(Model)
-	if focus == nil || !model.choosingProfile || model.buildPurpose != buildForPublish {
+	if focus == nil || !model.choosingProfile || model.profilePurpose != profileForPublish {
 		t.Fatalf("publish profile state=choosing %v purpose=%d command nil=%v",
-			model.choosingProfile, model.buildPurpose, focus == nil)
+			model.choosingProfile, model.profilePurpose, focus == nil)
 	}
 	updated, buildCommand := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	model = updated.(Model)

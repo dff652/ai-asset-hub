@@ -9,6 +9,9 @@ func (m Model) migrationView(style styles) string {
 	if m.migrationFlow.mode == migrationModeVersions {
 		return m.versionsView(style)
 	}
+	if m.migrationFlow.mode == migrationModePreflight {
+		return m.preflightView(style)
+	}
 	header := joinEdges(
 		style.header.Render("aiah · 迁移到其他设备"),
 		"版本对齐",
@@ -90,7 +93,7 @@ func (m Model) migrationView(style styles) string {
 	}
 	lines = append(lines,
 		"",
-		style.muted.Render("p 发布当前版本 · v 查看/取回版本 · c 选择通道 · r 刷新 · m 首页 · ? 帮助"),
+		style.muted.Render("e 换机检查 · p 发布当前版本 · v 查看/取回版本 · c 选择通道 · r 刷新 · m 首页 · ? 帮助"),
 	)
 	if m.notice != "" {
 		noticeStyle := style.muted
@@ -101,6 +104,202 @@ func (m Model) migrationView(style styles) string {
 	}
 	for index := range lines {
 		lines[index] = truncate(lines[index], max(20, m.width))
+	}
+	return strings.Join(lines, "\n")
+}
+
+type preflightRow struct {
+	label   string
+	status  string
+	details []string
+}
+
+func (m Model) preflightRows() []preflightRow {
+	report := m.migrationFlow.preflightReport
+	rows := make([]preflightRow, 0,
+		len(report.Targets)+len(report.Secrets)+len(report.DevicePrivate)+len(report.Findings))
+	for _, target := range report.Targets {
+		status := "正常"
+		switch {
+		case !target.Supported:
+			status = "不支持"
+		case len(target.Dropped) > 0:
+			status = "有阻止项"
+		case len(target.Degraded) > 0:
+			status = "有降级"
+		}
+		details := []string{
+			"检查类型    目标工具适配",
+			"目标工具    " + target.Target,
+			"支持状态    " + status,
+			fmt.Sprintf("将生成文件  %d", target.Emitted),
+			fmt.Sprintf("阻止/降级   %d / %d", len(target.Dropped), len(target.Degraded)),
+		}
+		for _, item := range target.Dropped {
+			details = append(details, "  阻止："+item)
+		}
+		for _, item := range target.Degraded {
+			details = append(details, "  降级："+item)
+		}
+		rows = append(rows, preflightRow{
+			label: "目标工具 · " + target.Target, status: status, details: details,
+		})
+	}
+	for _, secret := range report.Secrets {
+		status := "可用"
+		if !secret.Available {
+			status = "缺失"
+		}
+		rows = append(rows, preflightRow{
+			label:  fmt.Sprintf("secret · %s:%s", secret.Provider, secret.Name),
+			status: status,
+			details: []string{
+				"检查类型    secret 引用",
+				fmt.Sprintf("引用        %s:%s", secret.Provider, secret.Name),
+				"本机状态    " + status,
+				"影响目标    " + valueOrDash(strings.Join(secret.Targets, "、")),
+				"",
+				"只检查可用性；不会把 secret 值写入报告或安装包。",
+			},
+		})
+	}
+	for _, item := range report.DevicePrivate {
+		rows = append(rows, preflightRow{
+			label:  "本机不迁移 · " + item.LogicalPath,
+			status: "按设计排除",
+			details: []string{
+				"检查类型    本机私有项",
+				"路径        " + item.LogicalPath,
+				"来源工具    " + item.Source,
+				"类型        " + item.Type,
+				"状态        " + item.Status,
+				"",
+				"登录态、会话、缓存和设备状态不会进入迁移包。",
+			},
+		})
+	}
+	for _, finding := range report.Findings {
+		details := []string{
+			"检查类型    风险与问题",
+			"代码        " + finding.Code,
+			"级别        " + finding.Severity,
+			"说明        " + finding.Message,
+		}
+		for _, path := range finding.Paths {
+			details = append(details, "  "+path)
+		}
+		rows = append(rows, preflightRow{
+			label: "问题 · " + finding.Code, status: finding.Severity, details: details,
+		})
+	}
+	return rows
+}
+
+func (m Model) preflightView(style styles) string {
+	header := joinEdges(
+		style.header.Render("aiah · 换机前置检查"),
+		valueOrDash(m.migrationFlow.preflightProfile),
+		max(20, m.width),
+	)
+	switch m.migrationFlow.preflightStatus {
+	case statusLoading:
+		return header + "\n\n正在只读检查本机排除项、secret 和目标工具适配…"
+	case statusFailed:
+		message := "换机前置检查失败"
+		if m.migrationFlow.preflightErr != nil {
+			message += "：" + m.migrationFlow.preflightErr.Error()
+		}
+		return header + "\n\n" + style.error.Render(message) +
+			"\n\n按 r 重试 · Esc 返回版本对齐 · m 首页"
+	}
+
+	report := m.migrationFlow.preflightReport
+	result := "可继续：未发现阻止项"
+	resultStyle := style.header
+	if !report.Ok {
+		result = "需处理：存在阻止项"
+		resultStyle = style.error
+	} else if report.Summary.DegradedItems > 0 {
+		result = "可继续：存在需确认的降级项"
+		resultStyle = style.warning
+	}
+	summary := fmt.Sprintf(
+		"目标 %d · 不支持 %d · 丢弃 %d · 降级 %d · secret 缺失 %d/%d · 本机不迁移 %d",
+		report.Summary.TargetCount,
+		report.Summary.UnsupportedTargets,
+		report.Summary.DroppedItems,
+		report.Summary.DegradedItems,
+		report.Summary.MissingSecrets,
+		report.Summary.SecretReferences,
+		report.Summary.DevicePrivateItems,
+	)
+	rows := m.preflightRows()
+	if len(rows) == 0 {
+		return strings.Join([]string{
+			header,
+			style.muted.Render("检查阶段零写入；本页不会生成安装包、发布版本或应用资产。"),
+			"",
+			resultStyle.Render(result),
+			summary,
+			"",
+			"没有需要展示的检查项。",
+			"",
+			style.muted.Render("r 重查 · p 发布 · v 查看/取回版本 · Esc 返回 · m 首页 · ? 帮助"),
+		}, "\n")
+	}
+
+	cursor := m.migrationFlow.preflightCursor
+	if cursor < 0 || cursor >= len(rows) {
+		cursor = 0
+	}
+	bodyHeight := max(5, m.height-9)
+	start, end := visibleRange(len(rows), cursor, bodyHeight)
+	leftWidth := max(32, min(60, m.width*48/100))
+	rightWidth := max(24, m.width-leftWidth-3)
+	leftLines := make([]string, 0, bodyHeight)
+	for index := start; index < end; index++ {
+		prefix := "  "
+		if index == cursor {
+			prefix = "> "
+		}
+		line := fmt.Sprintf("%s%s [%s]", prefix, rows[index].label, rows[index].status)
+		line = truncate(line, leftWidth)
+		if index == cursor {
+			line = style.selected.Render(line)
+		}
+		leftLines = append(leftLines, line)
+	}
+	for len(leftLines) < bodyHeight {
+		leftLines = append(leftLines, "")
+	}
+	detailLines := append([]string(nil), rows[cursor].details...)
+	for index := range detailLines {
+		detailLines[index] = truncate(detailLines[index], rightWidth)
+	}
+	for len(detailLines) < bodyHeight {
+		detailLines = append(detailLines, "")
+	}
+	if len(detailLines) > bodyHeight {
+		detailLines = detailLines[:bodyHeight]
+	}
+	combined := make([]string, 0, bodyHeight)
+	for index := 0; index < bodyHeight; index++ {
+		left := padRight(truncate(leftLines[index], leftWidth), leftWidth)
+		right := truncate(detailLines[index], rightWidth)
+		line := left + " " + style.border.Render("│")
+		if right != "" {
+			line += " " + right
+		}
+		combined = append(combined, line)
+	}
+
+	lines := []string{
+		header,
+		style.muted.Render("检查阶段零写入；本页不会生成安装包、发布版本或应用资产。"),
+		resultStyle.Render(result),
+		truncate(summary, max(20, m.width)),
+		strings.Join(combined, "\n"),
+		style.muted.Render("↑↓/jk 查看全部项 · r 重查 · p 发布 · v 查看/取回版本 · Esc 返回 · m 首页 · ? 帮助"),
 	}
 	return strings.Join(lines, "\n")
 }
@@ -230,6 +429,7 @@ func (m Model) migrationHelpView(style styles) string {
 		"本页比较资产库版本、当前受管安装和分发通道最近发布版本。",
 		"“版本不同”只表示不能证明相同，不会猜测哪个版本更新。",
 		"",
+		"e             选择资产组合并运行零写入换机前置检查",
 		"p             选择资产组合、生成安装包，输入 publish 后发布",
 		"v             查看该资产库的全部通道版本；明确选择后才能取回",
 		"c             选择或更换已有分发通道目录",
@@ -238,6 +438,7 @@ func (m Model) migrationHelpView(style styles) string {
 		"?             关闭帮助",
 		"q / Ctrl+C    退出",
 		"",
+		"换机检查显示本机不迁移项、secret 可用性、不支持目标与 adapter 降级。",
 		"取回后复用现有变更预览；仍须完整输入 apply 才写目标工具目录。",
 		"发布与取回直接调用同一 Core，不执行 shell，也不接管 Git/rsync/U 盘传输。",
 		"通道只负责不可变版本分发，不是后台双向同步。",

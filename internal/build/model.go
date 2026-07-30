@@ -39,6 +39,13 @@ type ValidationSummary struct {
 	ErrorCount int  `json:"errorCount"`
 }
 
+// Prepared is the resolved in-memory package input produced by Prepare.
+// It deliberately contains no output path or artifact metadata.
+type Prepared struct {
+	Manifest PackageManifest
+	Files    map[string][]byte
+}
+
 // PackageManifest is the resolved, hashed manifest written into the package.
 type PackageManifest struct {
 	SchemaVersion int            `json:"schemaVersion"`

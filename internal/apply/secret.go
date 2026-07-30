@@ -10,6 +10,64 @@ import (
 	"github.com/dff652/ai-asset-hub/internal/adapter"
 )
 
+// SecretReferenceStatus reports whether one portable secret reference can be
+// resolved on this device. Resolved values are deliberately discarded.
+type SecretReferenceStatus struct {
+	Provider  adapter.SecretProvider `json:"provider"`
+	Name      string                 `json:"name"`
+	Available bool                   `json:"available"`
+	Targets   []string               `json:"targets"`
+}
+
+// InspectSecretReferences validates staged MCP templates and checks their
+// referenced providers without changing the templates or exposing values.
+func InspectSecretReferences(staged []adapter.StagedFile) ([]SecretReferenceStatus, error) {
+	byTarget, err := adapter.CollectMCPTemplates(staged)
+	if err != nil {
+		return nil, err
+	}
+
+	targetsByReference := make(map[adapter.SecretReference]map[string]bool)
+	for _, target := range sortedKeys(byTarget) {
+		for _, serverName := range sortedKeys(byTarget[target]) {
+			entry := byTarget[target][serverName]
+			for _, envKey := range sortedKeys(entry.Env) {
+				ref, ok := adapter.ParseSecretReference(entry.Env[envKey])
+				if !ok {
+					continue
+				}
+				if targetsByReference[ref] == nil {
+					targetsByReference[ref] = make(map[string]bool)
+				}
+				targetsByReference[ref][target] = true
+			}
+		}
+	}
+
+	references := make([]adapter.SecretReference, 0, len(targetsByReference))
+	for ref := range targetsByReference {
+		references = append(references, ref)
+	}
+	sort.Slice(references, func(i, j int) bool {
+		if references[i].Provider != references[j].Provider {
+			return references[i].Provider < references[j].Provider
+		}
+		return references[i].Name < references[j].Name
+	})
+
+	statuses := make([]SecretReferenceStatus, 0, len(references))
+	for _, ref := range references {
+		_, resolveErr := resolveSecretReference(ref)
+		statuses = append(statuses, SecretReferenceStatus{
+			Provider:  ref.Provider,
+			Name:      ref.Name,
+			Available: resolveErr == nil,
+			Targets:   sortedKeys(targetsByReference[ref]),
+		})
+	}
+	return statuses, nil
+}
+
 func resolveMCPSecretReferences(byTarget map[string]map[string]adapter.MCPServerEntry) error {
 	resolved := make(map[adapter.SecretReference]string)
 	for _, target := range sortedKeys(byTarget) {

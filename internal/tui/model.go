@@ -47,7 +47,7 @@ type Model struct {
 	choosingProfile    bool
 	availableProfiles  []string
 	building           bool
-	buildPurpose       buildPurpose
+	profilePurpose     profilePurpose
 	findingsOnly       bool
 	cursor             int
 	expanded           map[string]bool
@@ -342,7 +342,7 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.noticeIsWarn = true
 			return m, nil
 		}
-		if message.purpose == buildForPublish {
+		if message.purpose == profileForPublish {
 			return m.startPublishConfirmation(message.packagePath)
 		}
 		m.deployOptions.Package = message.packagePath
@@ -423,6 +423,8 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case migrationMsg:
 		return m.handleMigrationMessage(message)
+	case preflightMsg:
+		return m.handlePreflightMessage(message)
 	case versionsMsg:
 		return m.handleVersionsMessage(message)
 	case publishMsg:
