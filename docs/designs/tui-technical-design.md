@@ -203,18 +203,31 @@ development，并在可更新时展示精确 tag 安装命令。TUI 不自替换
 
 ### Phase E3.2：跨设备连续发布与取回
 
-**实现状态：当前开发候选（2026-07-30），尚未发布。** 在 E3.1 只读状态页上增加：
+**实现状态：已合入 `dev`（2026-07-30），尚未发布。** 在 E3.1 只读状态页上增加：
 
 - `p` → profile → `build.Build` → 显示包/通道 → typed `publish`
   → `channel.Publish`；
 - `v` → `channel.List` 全部坐标 → 人工选择 version/profile → 输入已有输出目录
-  → `channel.Pull` → Phase C diff/typed `apply`。
+  → `channel.Pull`。
 
 TUI 不 shell out、不自动选定或取回最后发布项、不创建通道目录、不接管传输层。
 用户可明确选择一个空目录；只有 typed publish 成功后才由 Core 初始化索引和包
 布局。pull 输出完整同内容普通文件四件套时幂等；残缺、不同内容或符号链接在写入前
-拒绝，exclusive create 防止并发覆盖。publish/pull 执行期间吞掉按键；pull 成功
-只进入 diff，不直接 apply。
+拒绝，exclusive create 防止并发覆盖。publish/pull 执行期间吞掉按键。
+
+### Phase E3.3/E3.4：资产库前置检查与取回包检查
+
+**实现状态：E3.3 已合入 `dev`；E3.4 为当前候选（2026-07-30），均尚未发布。**
+
+- `e` 选择资产库 profile 后调用 `migration.InspectPreflight`，零写入展示
+  device-private、secret、目标支持和 adapter dropped/degraded；
+- pull 成功后，E3.4 用返回的 name/version/profile/SHA256 调
+  `migration.InspectPackagePreflight`，绑定实际取回包与目标设备；
+- 同一 SHA256 继续进入 `apply.Options.ExpectedSHA256`，diff/apply 重新打开包时
+  仍会拒绝替换；
+- 包级检查有阻止项时不进入 Phase C；通过后仍须用户 Enter 才进入 diff，再 typed
+  `apply`；
+- TUI 不复制 package/adapter/secret 规则，不新增自动 apply 或 `--yes`。
 
 ## 5. 代码落位与状态模型
 
@@ -230,8 +243,8 @@ internal/tui/
   health_view.go        Phase D2 Doctor / 当前部署回滚视图
   version_view.go       Phase D3 构建身份 / deployment / Release 检查
   migration.go          Phase E3.1 状态与通道路径编排
-  migration_actions.go  Phase E3.2 typed publish、版本列表、取回与 Phase C 交接
-  migration_view.go     Phase E3 状态、确认、版本选择与输出路径视图
+  migration_actions.go  Phase E3.2–E3.4 typed publish、取回、包级检查与 Phase C 交接
+  migration_view.go     Phase E3 状态、确认、版本选择、检查与输出路径视图
   styles.go             lipgloss 样式，语义色集中在此
 ```
 

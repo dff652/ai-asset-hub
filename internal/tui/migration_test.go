@@ -223,7 +223,7 @@ func TestMigrationPublishRequiresTypedConfirmation(t *testing.T) {
 	}
 }
 
-func TestMigrationPullEntersExistingDiffAndDoesNotWriteHome(t *testing.T) {
+func TestMigrationPullChecksTheSelectedPackageBeforeDiffAndDoesNotWriteHome(t *testing.T) {
 	workspaceRoot := copyMigrationFixture(t, "workspace-valid")
 	channelRoot := t.TempDir()
 	buildOut := t.TempDir()
@@ -318,12 +318,59 @@ func TestMigrationPullEntersExistingDiffAndDoesNotWriteHome(t *testing.T) {
 			model.migrationFlow.choosingPullOut,
 			pullCommand == nil)
 	}
-	updated, diffCommand := model.Update(pullCommand())
+	updated, packageCheckCommand := model.Update(pullCommand())
 	model = updated.(Model)
-	if diffCommand == nil || model.screen != screenDeployment ||
-		model.deployOptions.Package == "" || model.packageFromBuild {
-		t.Fatalf("pull did not enter diff: screen=%d package=%q generated=%v command nil=%v",
-			model.screen, model.deployOptions.Package, model.packageFromBuild, diffCommand == nil)
+	if packageCheckCommand == nil ||
+		model.screen != screenMigration ||
+		model.migrationFlow.mode != migrationModePreflight ||
+		model.migrationFlow.preflightStatus != statusLoading ||
+		!model.hasPackagePreflight() ||
+		model.deployOptions.Package != "" ||
+		model.packageFromBuild {
+		t.Fatalf("pull did not enter package check: screen=%d mode=%d status=%d package=%q generated=%v command nil=%v",
+			model.screen,
+			model.migrationFlow.mode,
+			model.migrationFlow.preflightStatus,
+			model.deployOptions.Package,
+			model.packageFromBuild,
+			packageCheckCommand == nil,
+		)
+	}
+	updated, _ = model.Update(packageCheckCommand())
+	model = updated.(Model)
+	if model.migrationFlow.preflightStatus != statusReady ||
+		!model.migrationFlow.preflightReport.Ok ||
+		model.migrationFlow.preflightReport.Subject.Source != "package" ||
+		model.migrationFlow.preflightReport.Subject.Version != "2026.07.1" {
+		t.Fatalf("package check report=%#v err=%v",
+			model.migrationFlow.preflightReport,
+			model.migrationFlow.preflightErr,
+		)
+	}
+	for _, want := range []string{
+		"取回版本检查", "已绑定所选版本、资产组合与 SHA256",
+		"Enter 进入变更预览", "2026.07.1",
+	} {
+		if view := model.View(); !strings.Contains(view, want) {
+			t.Fatalf("package check view omits %q:\n%s", want, view)
+		}
+	}
+	if strings.Contains(model.View(), "正在检查目标设备") {
+		t.Fatalf("completed package check retained a loading notice:\n%s", model.View())
+	}
+	if !reflect.DeepEqual(beforeHome, snapshotTree(t, home)) {
+		t.Fatal("versions, pull, or package check wrote the target HOME")
+	}
+
+	updated, diffCommand := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(Model)
+	if diffCommand == nil || model.screen != screenDeployment {
+		t.Fatalf("a successful package check did not enter diff: screen=%d command nil=%v",
+			model.screen, diffCommand == nil)
+	}
+	if model.deployOptions.Package == "" ||
+		model.deployOptions.ExpectedSHA256 != model.migrationFlow.pulledReport.SHA256 {
+		t.Fatalf("diff was not bound to pulled package: %#v", model.deployOptions)
 	}
 	updated, _ = model.Update(diffCommand())
 	model = updated.(Model)
@@ -332,7 +379,78 @@ func TestMigrationPullEntersExistingDiffAndDoesNotWriteHome(t *testing.T) {
 			model.diffStatus, model.deployErr, model.diffReport)
 	}
 	if !reflect.DeepEqual(beforeHome, snapshotTree(t, home)) {
-		t.Fatal("versions, pull, or diff wrote the target HOME before typed apply")
+		t.Fatal("versions, pull, package check, or diff wrote the target HOME before typed apply")
+	}
+}
+
+func TestPulledPackageBlockersPreventEnteringDiff(t *testing.T) {
+	model := readyTestModel().WithHome(true).WithMaintenance(true)
+	model.screen = screenMigration
+	model.migrationFlow.mode = migrationModePreflight
+	model.migrationFlow.pulledReport = channel.PullReport{
+		Package: filepath.Join(t.TempDir(), "selected.tar"),
+		SHA256:  strings.Repeat("a", 64),
+	}
+	model.migrationFlow.preflightStatus = statusReady
+	model.migrationFlow.preflightReport = migration.PreflightReport{Ok: false}
+	model.deployOptions = apply.Options{
+		Home: t.TempDir(),
+	}
+
+	updated, command := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	next := updated.(Model)
+	if command != nil || next.screen != screenMigration ||
+		!next.noticeIsWarn ||
+		!strings.Contains(next.notice, "目标设备检查未通过") {
+		t.Fatalf("blocked package entered diff: screen=%d command nil=%v notice=%q",
+			next.screen, command == nil, next.notice)
+	}
+	if strings.Contains(next.View(), "Enter 进入变更预览") {
+		t.Fatalf("blocked package view still offered continuation:\n%s", next.View())
+	}
+}
+
+func TestPulledPackageCheckDoesNotExposePublishOrVersionShortcuts(t *testing.T) {
+	for _, pressed := range []string{"p", "v"} {
+		model := readyTestModel().WithHome(true).WithMaintenance(true)
+		model.screen = screenMigration
+		model.migrationFlow.mode = migrationModePreflight
+		model.migrationFlow.status = statusReady
+		model.migrationFlow.preflightStatus = statusReady
+		model.migrationFlow.preflightReport = migration.PreflightReport{Ok: true}
+		model.migrationFlow.pulledReport = channel.PullReport{
+			Package: filepath.Join(t.TempDir(), "selected.tar"),
+		}
+
+		updated, command := model.Update(keyPress(pressed))
+		next := updated.(Model)
+		if command != nil || next.migrationFlow.mode != migrationModePreflight ||
+			next.choosingProfile {
+			t.Fatalf("key %q escaped package check: mode=%d choosing=%v command nil=%v",
+				pressed, next.migrationFlow.mode, next.choosingProfile, command == nil)
+		}
+	}
+}
+
+func TestMigrationHomeKeyWorksInEveryMode(t *testing.T) {
+	for _, mode := range []migrationMode{
+		migrationModeStatus,
+		migrationModeVersions,
+		migrationModePreflight,
+	} {
+		model := readyTestModel().WithHome(true).WithMaintenance(true)
+		model.screen = screenMigration
+		model.migrationFlow.mode = mode
+		model.migrationFlow.status = statusReady
+		model.migrationFlow.versionsStatus = statusReady
+		model.migrationFlow.preflightStatus = statusReady
+
+		updated, command := model.Update(keyPress("m"))
+		next := updated.(Model)
+		if command != nil || next.screen != screenHome {
+			t.Fatalf("mode %d did not return home: screen=%d command nil=%v",
+				mode, next.screen, command == nil)
+		}
 	}
 }
 

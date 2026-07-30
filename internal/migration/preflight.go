@@ -10,6 +10,7 @@ import (
 	"github.com/dff652/ai-asset-hub/internal/apply"
 	"github.com/dff652/ai-asset-hub/internal/build"
 	"github.com/dff652/ai-asset-hub/internal/inventory"
+	"github.com/dff652/ai-asset-hub/internal/pkgload"
 	"github.com/dff652/ai-asset-hub/internal/version"
 	"github.com/dff652/ai-asset-hub/internal/workspace"
 )
@@ -20,6 +21,7 @@ const (
 	codePreflightAdapterDegraded   = "preflight_adapter_degraded"
 	codePreflightMissingSecret     = "preflight_missing_secret"
 	codePreflightMCPInvalid        = "preflight_mcp_invalid"
+	codePreflightReleaseMismatch   = "preflight_release_mismatch"
 )
 
 // PreflightOptions selects the profile and local device roots inspected before
@@ -30,6 +32,36 @@ type PreflightOptions struct {
 	Profile       string
 	Home          string
 	Project       string
+}
+
+// PackagePreflightOptions checks one already retrieved immutable package on
+// the target device. Expected fields bind the package to the exact channel
+// release selected by the caller.
+type PackagePreflightOptions struct {
+	Package  string
+	Home     string
+	Project  string
+	Expected ReleaseIdentity
+}
+
+// ReleaseIdentity is the immutable channel coordinate and archive digest a
+// caller selected before target-device inspection.
+type ReleaseIdentity struct {
+	Name    string
+	Version string
+	Profile string
+	SHA256  string
+}
+
+// PreflightSubject identifies the exact workspace selection or immutable
+// package checked by this report.
+type PreflightSubject struct {
+	Source  string `json:"source"`
+	Name    string `json:"name,omitempty"`
+	Version string `json:"version,omitempty"`
+	Profile string `json:"profile"`
+	Package string `json:"package,omitempty"`
+	SHA256  string `json:"sha256,omitempty"`
 }
 
 // DevicePrivateItem is local harness state that is intentionally excluded
@@ -67,6 +99,7 @@ type PreflightReport struct {
 	ProducedBy    string                        `json:"producedBy"`
 	Ok            bool                          `json:"ok"`
 	Profile       string                        `json:"profile"`
+	Subject       PreflightSubject              `json:"subject"`
 	Targets       []TargetPreflight             `json:"targets"`
 	Secrets       []apply.SecretReferenceStatus `json:"secrets"`
 	DevicePrivate []DevicePrivateItem           `json:"devicePrivate"`
@@ -77,38 +110,15 @@ type PreflightReport struct {
 // InspectPreflight evaluates one migration profile without building, publishing,
 // pulling, applying, or writing any repository or device state.
 func InspectPreflight(options PreflightOptions) (PreflightReport, error) {
-	report := PreflightReport{
-		SchemaVersion: 1,
-		Kind:          "migration-preflight",
-		ProducedBy:    version.ProducedBy(),
-		Profile:       strings.TrimSpace(options.Profile),
-		Targets:       []TargetPreflight{},
-		Secrets:       []apply.SecretReferenceStatus{},
-		DevicePrivate: []DevicePrivateItem{},
-		Findings:      []workspace.Finding{},
-	}
+	report := newPreflightReport(strings.TrimSpace(options.Profile))
 	if strings.TrimSpace(options.WorkspaceRoot) == "" ||
 		report.Profile == "" ||
 		strings.TrimSpace(options.Home) == "" {
 		return report, build.ErrInvalidOptions
 	}
 
-	inventoryReport, err := inventory.Scan(inventory.Options{
-		Home: options.Home, Project: options.Project,
-	})
-	if err != nil {
+	if err := inspectDevicePrivate(&report, options.Home, options.Project); err != nil {
 		return report, err
-	}
-	for _, entry := range inventoryReport.Entries {
-		if entry.Scope != inventory.ScopeDevicePrivate {
-			continue
-		}
-		report.DevicePrivate = append(report.DevicePrivate, DevicePrivateItem{
-			LogicalPath: entry.LogicalPath,
-			Source:      string(entry.Source),
-			Type:        string(entry.Type),
-			Status:      string(entry.Status),
-		})
 	}
 
 	manifestPath := strings.TrimSpace(options.ManifestPath)
@@ -127,8 +137,101 @@ func InspectPreflight(options PreflightOptions) (PreflightReport, error) {
 	if !buildReport.Ok {
 		return finishPreflight(report), nil
 	}
+	report.Subject = PreflightSubject{
+		Source:  "workspace",
+		Name:    prepared.Manifest.Name,
+		Version: prepared.Manifest.Version,
+		Profile: prepared.Manifest.Profile,
+	}
+	return inspectPrepared(report, prepared.Manifest, prepared.Files)
+}
 
-	selected, rejected := adapter.ResolveTargets(nil, prepared.Manifest.Targets)
+// InspectPackagePreflight evaluates the exact package selected from a channel.
+// It reads package and device state but never builds, publishes, applies, or
+// writes an asset/tool directory.
+func InspectPackagePreflight(options PackagePreflightOptions) (PreflightReport, error) {
+	report := newPreflightReport(strings.TrimSpace(options.Expected.Profile))
+	if strings.TrimSpace(options.Package) == "" || strings.TrimSpace(options.Home) == "" {
+		return report, build.ErrInvalidOptions
+	}
+	pkg, err := pkgload.Open(options.Package)
+	if err != nil {
+		return report, err
+	}
+	report.Profile = pkg.Manifest.Profile
+	report.Subject = PreflightSubject{
+		Source:  "package",
+		Name:    pkg.Manifest.Name,
+		Version: pkg.Manifest.Version,
+		Profile: pkg.Manifest.Profile,
+		Package: filepath.Base(pkg.Source),
+		SHA256:  pkg.ArchiveSHA256,
+	}
+	checks := []struct {
+		path string
+		want string
+		got  string
+	}{
+		{path: "name", want: options.Expected.Name, got: pkg.Manifest.Name},
+		{path: "version", want: options.Expected.Version, got: pkg.Manifest.Version},
+		{path: "profile", want: options.Expected.Profile, got: pkg.Manifest.Profile},
+		{path: "sha256", want: options.Expected.SHA256, got: pkg.ArchiveSHA256},
+	}
+	for _, check := range checks {
+		if strings.TrimSpace(check.want) != "" && strings.TrimSpace(check.want) != check.got {
+			report.Findings = append(report.Findings, workspace.Finding{
+				Code:     codePreflightReleaseMismatch,
+				Severity: workspace.SeverityError,
+				Message:  "The retrieved package no longer matches the selected channel release.",
+				Paths:    []string{"release/" + check.path},
+			})
+		}
+	}
+	if err := inspectDevicePrivate(&report, options.Home, options.Project); err != nil {
+		return report, err
+	}
+	return inspectPrepared(report, pkg.Manifest, pkg.Files)
+}
+
+func newPreflightReport(profile string) PreflightReport {
+	return PreflightReport{
+		SchemaVersion: 1,
+		Kind:          "migration-preflight",
+		ProducedBy:    version.ProducedBy(),
+		Profile:       profile,
+		Subject:       PreflightSubject{Source: "workspace", Profile: profile},
+		Targets:       []TargetPreflight{},
+		Secrets:       []apply.SecretReferenceStatus{},
+		DevicePrivate: []DevicePrivateItem{},
+		Findings:      []workspace.Finding{},
+	}
+}
+
+func inspectDevicePrivate(report *PreflightReport, home, project string) error {
+	inventoryReport, err := inventory.Scan(inventory.Options{Home: home, Project: project})
+	if err != nil {
+		return err
+	}
+	for _, entry := range inventoryReport.Entries {
+		if entry.Scope != inventory.ScopeDevicePrivate {
+			continue
+		}
+		report.DevicePrivate = append(report.DevicePrivate, DevicePrivateItem{
+			LogicalPath: entry.LogicalPath,
+			Source:      string(entry.Source),
+			Type:        string(entry.Type),
+			Status:      string(entry.Status),
+		})
+	}
+	return nil
+}
+
+func inspectPrepared(
+	report PreflightReport,
+	manifest build.PackageManifest,
+	files map[string][]byte,
+) (PreflightReport, error) {
+	selected, rejected := adapter.ResolveTargets(nil, manifest.Targets)
 	for _, target := range rejected {
 		report.Targets = append(report.Targets, TargetPreflight{
 			Target: target, Supported: false, Dropped: []string{}, Degraded: []string{},
@@ -142,8 +245,8 @@ func InspectPreflight(options PreflightOptions) (PreflightReport, error) {
 	}
 
 	staged, compileReports := adapter.CompileTargets(
-		prepared.Manifest,
-		prepared.Files,
+		manifest,
+		files,
 		selected,
 	)
 	for _, compiled := range compileReports {

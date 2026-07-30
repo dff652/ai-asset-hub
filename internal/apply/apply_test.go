@@ -183,3 +183,33 @@ func TestApplyRejectsTargetOutsidePackage(t *testing.T) {
 		t.Fatalf("report = %#v", report)
 	}
 }
+
+func TestDiffRejectsAPackageOutsideTheSelectedDigest(t *testing.T) {
+	workspace := filepath.Join("..", "..", "testdata", "workspace-valid")
+	out := t.TempDir()
+	built, err := build.Build(build.Options{
+		Manifest: filepath.Join(workspace, "manifest.yaml"),
+		Profile:  "personal",
+		OutDir:   out,
+	})
+	if err != nil || !built.Ok || built.Package == nil {
+		t.Fatalf("build: err=%v report=%#v", err, built)
+	}
+	home := t.TempDir()
+	report, err := Diff(Options{
+		Package:        filepath.Join(out, built.Package.Archive),
+		ExpectedSHA256: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		Home:           home,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.Ok || !hasFindingCode(report.Findings, codeInvalidPackage) {
+		t.Fatalf("report = %#v", report)
+	}
+	for _, relative := range []string{".aiah", ".claude", ".codex", ".agents"} {
+		if _, err := os.Stat(filepath.Join(home, relative)); !os.IsNotExist(err) {
+			t.Fatalf("digest mismatch wrote %s: %v", relative, err)
+		}
+	}
+}

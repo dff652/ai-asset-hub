@@ -91,7 +91,7 @@ Linux amd64 已完成端到端行为验证。`v0.1.1` 中现存的 macOS、Windo
 |---|---|---|
 | 日常维护 | 查看统一状态 → 更新/移出 → 预览 → 应用 | TUI |
 | 检查与撤销 | 安装检查 → 判断漂移 → typed `rollback` | TUI / CLI |
-| 跨设备迁移 | build/publish → 外部搬运 → versions/pull → diff/apply | TUI（开发候选）/ CLI |
+| 跨设备迁移 | build/publish → 外部搬运 → pull → 目标检查 → diff/apply | TUI（开发候选）/ CLI |
 | AI 与自动化 | MCP 只读查询，或 CLI JSON 编排 | `aiah mcp` / CLI |
 | 升级 aiah | 只读检查 → 指定 Release → 校验并原子替换 | installer |
 
@@ -118,15 +118,18 @@ Linux amd64 已完成端到端行为验证。`v0.1.1` 中现存的 macOS、Windo
 - **迁移到其他设备**：只读比较资产库、当前安装和用户选择的分发通道；
 - **关于与更新**：默认离线，只有明确触发才检查 GitHub Release。
 
-`v0.1.6` 的迁移页仍是上图所示只读状态。当前开发候选已经加入 E3.2：按 `p`
-选择资产组合并 typed `publish`，按 `v` 明确选择版本/profile 和已有输出目录；
-取回后仍进入同一 diff，并且必须 typed `apply` 才写目标工具目录。aiah 不创建
+`v0.1.6` 的迁移页仍是上图所示只读状态。当前 `dev` 已加入 E3.2/E3.3：按 `p`
+选择资产组合并 typed `publish`，按 `v` 明确选择版本/profile 和已有输出目录，
+按 `e` 检查当前资产库/profile。E3.4 候选在取回后先检查所选发布包与目标设备，
+通过后才允许进入同一 diff，并且必须 typed `apply` 才写目标工具目录。aiah 不创建
 通道目录、不自动取回“最新版”，也不接管 Git/NAS/rsync/U 盘传输；首次发布可在
 用户明确选择的空目录中初始化通道索引和不可变包布局。
 
-E3.3 开发候选继续增加 `e 换机检查`：选择资产组合后只读列出本机不迁移项、
+`e 换机检查`选择资产组合后只读列出本机不迁移项、
 缺失 secret、不支持或会丢弃资产的目标，以及 adapter 能力降级。检查不生成安装包、
-不创建 `dist/`、不发布、不取回，也不应用资产；`v0.1.6` 公开版尚不包含该入口。
+不创建 `dist/`、不发布、不取回，也不应用资产。取回后的包级检查再绑定
+name/version/profile/SHA256；任一不匹配都阻止进入 diff。`v0.1.6` 公开版尚不包含
+这些入口。
 
 完整图解和首次操作见[上手指南](docs/getting-started.md)，TUI 产品用语与状态边界见
 [产品体验方案](docs/designs/tui-product-experience-v2.md)。

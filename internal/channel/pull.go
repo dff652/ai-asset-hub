@@ -73,7 +73,13 @@ func Pull(options PullOptions) (PullReport, error) {
 	report.Name, report.Version, report.Profile = release.Name, release.Version, release.Profile
 	report.ResolvedLatest = strings.TrimSpace(options.Version) == ""
 
-	source := filepath.Join(channelRoot, filepath.FromSlash(release.Path))
+	source, err := secureChannelDirectory(channelRoot, release.Path, false)
+	if err != nil {
+		return report, fmt.Errorf(
+			"%w: the channel index lists %s %s outside a safe release tree",
+			ErrChannelBlocked, release.Name, release.Version,
+		)
+	}
 	artifacts := artifactsFor(strings.TrimSuffix(release.Archive, ".tar"))
 	for _, member := range artifacts.names() {
 		if !regularFile(filepath.Join(source, member)) {

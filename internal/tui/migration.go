@@ -6,6 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/dff652/ai-asset-hub/internal/channel"
 	"github.com/dff652/ai-asset-hub/internal/migration"
 )
 
@@ -29,6 +30,13 @@ func migrationCommand(options migration.Options) tea.Cmd {
 func preflightCommand(options migration.PreflightOptions) tea.Cmd {
 	return func() tea.Msg {
 		report, err := migration.InspectPreflight(options)
+		return preflightMsg{report: report, err: err}
+	}
+}
+
+func packagePreflightCommand(options migration.PackagePreflightOptions) tea.Cmd {
+	return func() tea.Msg {
+		report, err := migration.InspectPackagePreflight(options)
 		return preflightMsg{report: report, err: err}
 	}
 }
@@ -59,6 +67,8 @@ func (m Model) handlePreflightMessage(message preflightMsg) (tea.Model, tea.Cmd)
 	m.migrationFlow.preflightReport = message.report
 	m.migrationFlow.preflightErr = message.err
 	m.migrationFlow.preflightCursor = 0
+	m.notice = ""
+	m.noticeIsWarn = false
 	if message.err != nil {
 		m.migrationFlow.preflightStatus = statusFailed
 	}
@@ -83,6 +93,23 @@ func (m Model) preflightOptions(profile string) migration.PreflightOptions {
 	}
 }
 
+func (m Model) packagePreflightOptions() migration.PackagePreflightOptions {
+	release := m.migrationFlow.pulledReport
+	return migration.PackagePreflightOptions{
+		Package: release.Package,
+		Home:    m.options.Home,
+		Project: m.options.Project,
+		Expected: migration.ReleaseIdentity{
+			Name: release.Name, Version: release.Version,
+			Profile: release.Profile, SHA256: release.SHA256,
+		},
+	}
+}
+
+func (m Model) hasPackagePreflight() bool {
+	return strings.TrimSpace(m.migrationFlow.pulledReport.Package) != ""
+}
+
 func (m Model) startMigration() (tea.Model, tea.Cmd) {
 	if m.workspace == "" {
 		return m.startWorkspaceInputFor(homeActionMigration)
@@ -102,12 +129,21 @@ func (m Model) startMigrationPreflight() (tea.Model, tea.Cmd) {
 		m.noticeIsWarn = true
 		return m, nil
 	}
+	m.migrationFlow.pulledReport = channel.PullReport{}
 	m.notice = "选择要迁移的资产组合"
 	m.noticeIsWarn = false
 	return m.startProfileInputFor(profileForPreflight)
 }
 
 func (m Model) reloadMigrationPreflight() (tea.Model, tea.Cmd) {
+	if m.hasPackagePreflight() {
+		m.migrationFlow.preflightStatus = statusLoading
+		m.migrationFlow.preflightErr = nil
+		m.migrationFlow.preflightCursor = 0
+		m.notice = ""
+		m.noticeIsWarn = false
+		return m, packagePreflightCommand(m.packagePreflightOptions())
+	}
 	profile := strings.TrimSpace(m.migrationFlow.preflightProfile)
 	if profile == "" {
 		return m.startMigrationPreflight()
@@ -118,6 +154,19 @@ func (m Model) reloadMigrationPreflight() (tea.Model, tea.Cmd) {
 	m.notice = ""
 	m.noticeIsWarn = false
 	return m, preflightCommand(m.preflightOptions(profile))
+}
+
+func (m *Model) beginWorkspacePreflight(profile string) tea.Cmd {
+	m.screen = screenMigration
+	m.migrationFlow.mode = migrationModePreflight
+	m.migrationFlow.pulledReport = channel.PullReport{}
+	m.migrationFlow.preflightStatus = statusLoading
+	m.migrationFlow.preflightErr = nil
+	m.migrationFlow.preflightProfile = profile
+	m.migrationFlow.preflightCursor = 0
+	m.notice = ""
+	m.noticeIsWarn = false
+	return preflightCommand(m.preflightOptions(profile))
 }
 
 func (m Model) startChannelInput() (tea.Model, tea.Cmd) {

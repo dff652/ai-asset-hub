@@ -26,7 +26,11 @@ var (
 // (or global without --home) fails the entire apply. Device-scoped assets never apply.
 type Options struct {
 	Package string
-	Home    string
+	// ExpectedSHA256 optionally binds Diff and Apply to immutable archive bytes
+	// selected by a channel pull. Extracted package directories cannot satisfy
+	// this contract.
+	ExpectedSHA256 string
+	Home           string
 	// Project is optional. Project-scoped assets install here when set.
 	Project string
 	Targets []string
@@ -124,6 +128,15 @@ func Apply(options Options) (Report, error) {
 			Severity: workspace.SeverityError,
 			Message:  "Package could not be opened or failed integrity checks.",
 			Paths:    []string{"package"},
+		})
+		return finish(report), nil
+	}
+	if options.ExpectedSHA256 != "" && pkg.ArchiveSHA256 != options.ExpectedSHA256 {
+		report.Findings = append(report.Findings, workspace.Finding{
+			Code:     codeInvalidPackage,
+			Severity: workspace.SeverityError,
+			Message:  "Package no longer matches the selected immutable release.",
+			Paths:    []string{"package/sha256"},
 		})
 		return finish(report), nil
 	}
