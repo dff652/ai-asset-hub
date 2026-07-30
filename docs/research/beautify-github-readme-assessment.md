@@ -17,18 +17,20 @@
 | README 项目原生首屏 | ✅ 完成 | 新增 terminal-first 静态 hero，不依赖远程字体或脚本 |
 | README 文案、阅读顺序与首屏重构 | ✅ 已发布 | 先回答定位与状态，再给安装、流程、TUI 证据、入口和安全边界 |
 | 把 SVG 嵌入 README | ✅ 已发布 | 三张 SVG 均有文字替代说明，正文保留命令与限制 |
-| 默认分支 GitHub 页面验收 | ⚠️ 已发布基线 | `main@8ca70f0` 已上线；后续发现 hero 仍写兼容入口、证明板内文仍是 dev candidate，本地候选已修复但尚未 push |
-| 项目原生视觉门禁 | ✅ 本地完成 | 四张 SVG、README/上手指南嵌入和 900/360 人工检查已纳入 SOP 与 `check-local.sh` |
+| 默认分支 GitHub 页面验收 | ⚠️ 已发布基线 | `main@8ca70f0` 已上线；后续入口与证明文字修复已由 PR #20 合入 dev，随下一 Release 提升 main |
+| 项目原生视觉门禁 | ✅ dev 完成 | 四张 SVG、README/上手指南嵌入和 900/360 人工检查已纳入 SOP 与 `check-local.sh`，dev CI 已通过 |
 
 README mode 已随 `v0.1.5` 发布；任务首页、统一状态、更新/移出、连续应用和迁移
-能力也已完成正式包验收。但默认分支 SVG 内部仍有两处旧文案，本地候选才完成
-`aiah` 主入口和 `v0.1.5` 证明口径统一。安装命令仍必须如实反映 installer pin 和
-已知升级提示问题，不能因为视觉发布完成而省略运行边界。
+能力也已完成正式包验收。但默认分支 SVG 内部仍有两处旧文案；PR #20 已在 dev
+完成 `aiah` 主入口和 `v0.1.5` 证明口径统一，等待下一 Release 提升 main。安装命令
+仍必须如实反映 installer pin 和已知升级提示问题，不能因为视觉发布完成而省略
+运行边界。
 
-2026-07-30 后续规范化已完成本地候选：hero 的主命令从兼容入口 `aiah ui` 改为
+2026-07-30 后续规范化已合入 `dev@e7d813e`：hero 的主命令从兼容入口 `aiah ui` 改为
 正式主入口 `aiah`；证明板内部从 dev-candidate 文案更新为 `v0.1.5` 正式安装包
 证据；四张 SVG 补齐显式尺寸和统一安全边距，并新增项目原生静态检查脚本及
-[README/SVG 验收 SOP](../runbooks/readme-visual-acceptance.md)。该候选尚未 push。
+[README/SVG 验收 SOP](../runbooks/readme-visual-acceptance.md)。PR #20 与合并后的
+dev CI 已通过；main 页面要在 `v0.1.6` 候选提升后才取得这些修订。
 
 ## 为什么适合
 

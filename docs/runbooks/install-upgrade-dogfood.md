@@ -11,8 +11,11 @@
   typed apply/update/remove/rollback、E3.1 和退出后 CLI 对账均通过。
 - 已知问题：同次验收确认 `v0.1.4` / `v0.1.5` 的 `update --check` 推荐命令缺少
   `AIAH_VERSION`，执行后可能仍停留在旧 pin。Release 说明已提供显式版本命令；
-  当前源码已修复生成格式并把“执行实际输出命令”加入发布门禁，但下一正式版本仍须
-  完成真实旧版升级。
+  修复已通过 PR #20 合入 `dev@e7d813e` 并把“执行实际输出命令”加入发布门禁，
+  但 `v0.1.6` bridge Release 仍须完成真实旧版升级。
+- `v0.1.6` 候选准备：dev CI 与本地 Linux amd64 Release 产物预演已通过；main、
+  tag、线上产物和 `v0.1.5 → v0.1.6` dogfood 尚未发生，见
+  [bridge 候选检查点](../reviews/2026-07-30-v0.1.6-bridge-candidate-readiness.md)。
 - E2 候选实跑：2026-07-30，隔离 `0.1.5-dev.e2` 二进制完成统一资产状态、纳入、
   连续 profile/diff、typed apply、成功摘要、Doctor、typed update/remove 与 CLI
   对账。该记录只证明 dev 候选，不代表未发布 Release 的安装器升级已通过。
@@ -57,11 +60,12 @@ test "$DOGFOOD_INSTALL" != "$HOME/.local/bin"
 
 ## 2. Release → Release 真实升级（发布后必跑）
 
-以下示例验证 `v0.1.4 → v0.1.5`。两个版本都必须已存在于 GitHub Releases：
+以下示例验证当前 bridge `v0.1.5 → v0.1.6`。两个版本都必须已存在于
+GitHub Releases：
 
 ```bash
-FROM_VERSION=0.1.4
-TO_VERSION=0.1.5
+FROM_VERSION=0.1.5
+TO_VERSION=0.1.6
 
 AIAH_VERSION=$FROM_VERSION AIAH_INSTALL_DIR=$DOGFOOD_INSTALL sh scripts/install.sh
 "$DOGFOOD_INSTALL/aiah" version --output json
@@ -75,6 +79,21 @@ case "$FROM_VERSION" in
   0.1.4 | 0.1.5)
     test "$upgrade_command" = "$legacy_expected"
     printf 'known legacy upgrade command: %s\n' "$upgrade_command"
+
+    LEGACY_INSTALL=$DOGFOOD_ROOT/legacy/bin
+    mkdir -p "$LEGACY_INSTALL"
+    install -m 0755 "$DOGFOOD_INSTALL/aiah" "$LEGACY_INSTALL/aiah"
+    legacy_before_sha=$(sha256sum "$LEGACY_INSTALL/aiah" | awk '{print $1}')
+    curl -fsSL \
+      "https://raw.githubusercontent.com/dff652/ai-asset-hub/v$TO_VERSION/scripts/install.sh" |
+      env -u AIAH_VERSION AIAH_INSTALL_DIR="$LEGACY_INSTALL" sh
+    legacy_after_version=$("$LEGACY_INSTALL/aiah" version --output json |
+      python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])')
+    test "$legacy_after_version" = "$FROM_VERSION"
+    test "$legacy_before_sha" = \
+      "$(sha256sum "$LEGACY_INSTALL/aiah" | awk '{print $1}')"
+    test -z "$(find "$LEGACY_INSTALL" -maxdepth 1 \
+      -name '.aiah.install.*' -print -quit)"
     ;;
   *)
     test "$upgrade_command" = "$expected"
@@ -99,8 +118,9 @@ test "$after_sha" = "$(sha256sum "$DOGFOOD_INSTALL/aiah" | awk '{print $1}')"
 
 必须在安装 `TO_VERSION` **之前**从旧版本读取并核对程序实际生成的升级命令；升级后
 再检查只会得到 `current`，不能证明旧用户看到的命令正确。不要对未经验证的网络
-返回值直接使用 `eval`；先断言命令等于“修复后模板”或明确列出的 legacy 模板，再在
-另一个隔离目录执行固定 URL 和显式版本，确认确实到达 `TO_VERSION`。
+返回值直接使用 `eval`；先断言命令等于“修复后模板”或明确列出的 legacy 模板。
+legacy 分支在第二个隔离目录执行固定 URL、显式清除 `AIAH_VERSION` 并确认版本和
+SHA256 均保持不变；主升级目录再显式传入目标版本，确认确实到达 `TO_VERSION`。
 
 `v0.1.5` 首次执行这条新增门禁时发现：实际命令没有 `AIAH_VERSION=0.1.5`，会让
 v0.1.4 保持原版本。因此该版本只能记为“显式版本升级通过，推荐命令失败且已公开
@@ -117,8 +137,10 @@ v0.1.4 保持原版本。因此该版本只能记为“显式版本升级通过�
 - 两个 SHA256；
 - 最终 mode；
 - 安装器输出；
-- staging 文件检查结果。
-- `update --check` 实际命令文本与执行后的版本。
+- staging 文件检查结果；
+- `update --check` 实际命令文本；
+- bridge legacy 目录执行前后的版本与 SHA256；
+- 显式版本升级后的版本与 SHA256。
 
 ## 3. 发布前 dev 候选 dogfood
 

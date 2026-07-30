@@ -29,7 +29,7 @@ aiah
 日常启动只需 `aiah`。`aiah ui` 仅作为兼容入口和高级参数入口保留，不需要新用户
 记忆。安装器校验 Release SHA256 后原子替换到
 `~/.local/bin`，不用 sudo，也不修改 shell profile；同版本复装零下载、零写入。
-当前 `main` 安装器默认固定为已验收的 `v0.1.5`。也可以固定版本和安装目录：
+当前源码中的安装器默认固定为已验收的 `v0.1.5`。也可以固定版本和安装目录：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.5/scripts/install.sh |

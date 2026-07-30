@@ -331,18 +331,19 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 ## 当前资产管理完成度（2026-07-30）
 
 结论：aiah 已形成“发现 → 资产库 → 校验/组包 → 预览/应用 → 检查/撤销 →
-不可变分发”的资产生命周期 MVP；TUI E1/E2/E3.1 已随 `v0.1.5` 发布。当前优先
-不足是升级提示修复尚未进入正式 Release、跨设备连续向导尚未完成，以及 AI 接口
-还没有覆盖统一资产状态。
+不可变分发”的资产生命周期 MVP；TUI E1/E2/E3.1 已随 `v0.1.5` 发布。升级提示
+修复和 README/SVG 门禁已经合入 dev，但尚未进入正式 Release；其后优先不足是
+跨设备连续向导尚未完成，以及 AI 接口还没有覆盖统一资产状态。
 
 | 层面 | 已完成 | 当前边界 |
 |---|---|---|
 | 公开版 `v0.1.5` | CLI/Core、任务首页、统一资产状态、连续应用、Doctor/rollback、E3.1、只读 MCP、不可变通道、secret provider | Linux amd64 产物与显式版本升级通过；`update --check` 推荐命令缺少显式版本 |
-| 当前 dev / main | `dev@88094cd` 与 `main@8ca70f0` tree 一致，E1/E2/E3.1 已发布 | 已发布的 v0.1.5 二进制仍带旧升级命令 |
-| 本地 N2.1 候选 | upgradeCommand 显式版本、TUI 换行、installer pin v0.1.5、README SVG 门禁 | 尚未 PR/CI/发布；不能写成线上用户已经获得修复 |
+| 当前 `main@8ca70f0` | `v0.1.5` 的已发布 tree | 已发布二进制仍带旧升级命令；不能追溯修改 |
+| 当前 `dev@e7d813e` | PR #20 已合入 upgradeCommand 显式版本、TUI 换行、installer pin v0.1.5、README/SVG 门禁 | 合并后 dev CI 9 个 job 全绿；尚未提升 main 或发布 |
+| `v0.1.6` bridge 候选 | `release/v0.1.6` 本地准备；0.1.6 Linux amd64 产物预演通过 | 候选文档尚未提交/push；main PR、tag、Release 与旧版升级 dogfood 均未发生 |
 | 人工操作入口 | TUI 覆盖日常本机流程；CLI 保留全部高级、脚本和 CI 能力 | 写操作继续要求显式路径、diff 和 typed confirmation |
 | AI 接入入口 | `aiah mcp` 提供 scan/validate/diff/doctor/version 五个只读工具 | 尚无统一资产状态、迁移状态和三客户端验收矩阵；不开放写操作 |
-| README 视觉 | README mode、项目首屏、五步主流程、生命周期图和 TUI 证明板已完成宽屏/窄屏验证 | 已进入默认分支；一张主流程图只表达首次成功，其它流程由任务表和详细文档覆盖 |
+| README 视觉 | README mode 已随 v0.1.5 发布；后续入口/证明文字与视觉门禁已合入 dev | main 尚未取得 dev 的规范化修订；一张主流程图只表达首次成功，其它流程由任务表和详细文档覆盖 |
 
 资产管理后续可增强“资产库备份就绪与恢复验证、搜索/标签/描述、来源与许可证追踪”，
 但这些不是当前发布阻塞项。aiah 仍不实现网络传输、后台双向同步或云端账户体系。
@@ -390,8 +391,9 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | N0 | P0 | ✅ **严格 review 当前 E1/E2/E3.1 + 文档/视觉改动** | 已修复“读取失败误报待更新”和首页缺少自动安装状态；变异验证、完整 `check-local`、真 TTY 与 900/360 视觉检查通过；无剩余 P0/P1；[复审记录](reviews/2026-07-30-e1-e2-e3-1-strict-review.md)列出建议提交拆分，未自行 commit |
 | N1 | P0 | ⚠️ **`v0.1.5` 发布与正式安装包 dogfood** | main/Release CI、线上产物、显式版本升级和正式 TUI dogfood 已通过；`update --check` 实际推荐命令复现为 no-op，Release 已标注 Known issue；准确证据见[检查点 §5](reviews/2026-07-30-v0.1.5-candidate-readiness.md#5-发布结果与已知问题) |
 | N2 | P0 | ✅ **README mode：整体结构、首屏与五步使用流程** | 已进入 `main@8ca70f0`；“发现 → 整理 → 准备 → 预览 → 人工确认”已固化到上手指南和项目原生 SVG；900px/360px、链接、SVG 安全、无障碍和默认分支内容检查通过 |
-| N2.1 | P0 | 🚧 **修复升级提示命令并收口 installer pin** | 本地已实现精确 `AIAH_VERSION`、TUI 可复制换行、变异验证和 installer pin v0.1.5；下一版是 legacy bridge，需公开 workaround；再下一版完成首次修复后端到端命令证明 |
-| N2.2 | P1 | ✅ **本地固化 README/SVG 视觉验收** | 四图职责、颜色/字体/安全边距、语义核对和 900/360 人工检查写入 SOP；静态检查进入 `check-local.sh`；尚未 push |
+| N2.1 | P0 | 🚧 **修复升级提示命令并收口 installer pin** | PR #20 已合入 dev，精确 `AIAH_VERSION`、TUI 可复制换行、变异验证和 installer pin v0.1.5 均通过；仍待 v0.1.6 bridge Release 验收 |
+| N2.2 | P1 | ✅ **固化 README/SVG 视觉验收** | PR #20 已合入 dev；四图职责、视觉 token、语义核对和 900/360 SOP 已进入 `check-local.sh`，main 随下一候选提升 |
+| N2.3 | P0 | 🚧 **准备并验收 `v0.1.6` bridge release** | 本地候选分支与产物预演已建立；仍需最终候选门禁、main PR/CI、tag/Release、legacy no-op 证据和显式版本升级 |
 | N3 | P1 | **E3.2 跨设备连续向导** | TUI 编排 build/publish/versions/pull/bootstrap；通道由用户明确选择；pull 后仍必须 diff + typed apply |
 | N4 | P1 | **E3.3 换机前置检查** | 显示 device-private 排除项、缺失 secret、目标支持和 adapter 降级；检查阶段零写入 |
 | N5 | P1 | **MCP 只读状态补齐与客户端验收** | 先修订 ADR-0005，再暴露统一资产状态和迁移状态；所有工具零写入；Claude/Codex/Grok 真实握手有记录 |
@@ -401,9 +403,11 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 
 `v0.1.5` 已从 `main@8ca70f0cde4b` 发布：main 与 Release CI、线上
 SHA256/版本/架构、显式版本升级、TUI E1/E2/E3.1 和幂等复装均通过；推荐升级命令
-缺少 `AIAH_VERSION`，Release 说明已给出 workaround。当前源码候选已经修复生成
-命令并把 installer 默认 pin 更新到 v0.1.5，但尚未进入新的正式 Release。发布与
-升级步骤分别见
+缺少 `AIAH_VERSION`，Release 说明已给出 workaround。修复已经通过 PR #20 合入
+`dev@e7d813e`，并把 installer 默认 pin 更新到 v0.1.5；`v0.1.6` bridge 候选的
+本地产物预演已经通过，但尚未进入 main 或正式 Release。候选证据、发布与升级步骤
+分别见
+[v0.1.6 bridge 候选检查点](reviews/2026-07-30-v0.1.6-bridge-candidate-readiness.md)、
 [发版 runbook](runbooks/release.md)和
 [安装/升级 dogfood SOP](runbooks/install-upgrade-dogfood.md)。
 
@@ -415,9 +419,9 @@ public `v0.1.1` tag 实跑通过。
 
 D8、仓库身份、历史公开边界、发布收口、安装脚本和 TUI D1/D2/D3 均已完成。
 当前产品主线是 TUI 产品体验 V2：E1/E2 与 E3.1 已随 `v0.1.5` 发布。升级提示命令、
-tag installer 与 staged pin 契约已形成 N2.1 本地候选；下一步先完成严格 review、
-PR/CI 和新 Release 验收，之后进入 E3.2 跨设备发布/查看/取回编排和 E3.3 换机
-前置检查。
+tag installer 与 staged pin 契约已完成 dev 合并和 CI；下一步先完成
+`v0.1.6` bridge 候选提交、main 提升、Release 与旧版升级验收，之后进入 E3.2
+跨设备发布/查看/取回编排和 E3.3 换机前置检查。
 E4 设置/i18n 尚未实现。完整发布收口清单见
 [2026-07-27 Public readiness 评估](reviews/2026-07-27-public-readiness-assessment.md)。
 

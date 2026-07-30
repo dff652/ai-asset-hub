@@ -58,6 +58,7 @@
 
 ## 评审
 
+- [2026-07-30 v0.1.6 bridge 候选准备检查点](reviews/2026-07-30-v0.1.6-bridge-candidate-readiness.md)
 - [2026-07-30 v0.1.5 候选就绪检查点](reviews/2026-07-30-v0.1.5-candidate-readiness.md)
 - [2026-07-30 E1 / E2 / E3.1 严格实现复审](reviews/2026-07-30-e1-e2-e3-1-strict-review.md)
 - [2026-07-29 TUI 产品体验方案 V2 评审](reviews/2026-07-29-tui-product-experience-v2-review.md)

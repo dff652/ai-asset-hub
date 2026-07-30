@@ -16,7 +16,7 @@ less /tmp/aiah-install.sh
 sh /tmp/aiah-install.sh
 ```
 
-当前 `main` 安装器的默认 pin 是已经完成线上产物和正式 TUI 验收的 `0.1.5`。
+当前源码中的安装器默认 pin 是已经完成线上产物和正式 TUI 验收的 `0.1.5`。
 要固定不可变 tag、安装目录或版本，显式设置：
 
 ```bash
