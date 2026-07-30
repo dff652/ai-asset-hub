@@ -336,8 +336,9 @@ ADR-0006 的绝对措辞并增加安全测试。
   `apply`；不新增 `--yes` 或 TUI 私有部署逻辑；
 - [x] pull 输出冲突 fail-closed：完整同内容四件套幂等，残缺或不同内容拒绝且
   不覆盖；
-- [ ] 显示 device-private、secret 与 adapter 兼容性检查；
-- [ ] 不接管 Git、rsync、U 盘等传输层。
+- [x] E3.3 `e 换机检查`：选择资产组合后零写入检查 device-private、secret
+  可用性、目标支持、adapter dropped/degraded，并提供完整可导航明细；
+- [x] 不接管 Git、rsync、U 盘等传输层。
 
 ### E4：设置与 i18n
 
