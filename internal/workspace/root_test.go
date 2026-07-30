@@ -85,3 +85,31 @@ func TestPrepareRootRejectsSymlinkIntoManagedToolDirectory(t *testing.T) {
 		t.Fatalf("rejected symlink path created a directory: %v", err)
 	}
 }
+
+func TestValidateExistingRootNeverCreatesAndUsesTheSameSafetyBoundary(t *testing.T) {
+	home := t.TempDir()
+	missing := filepath.Join(home, "missing")
+	if _, err := ValidateExistingRoot(missing, home, ""); !errors.Is(err, ErrInvalidOptions) {
+		t.Fatalf("missing root error = %v, want ErrInvalidOptions", err)
+	}
+	if _, err := os.Stat(missing); !os.IsNotExist(err) {
+		t.Fatalf("validation created the missing root: %v", err)
+	}
+
+	existing := filepath.Join(home, "ai-assets")
+	if err := os.Mkdir(existing, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	root, err := ValidateExistingRoot(existing, home, "")
+	if err != nil || root != existing {
+		t.Fatalf("existing root = (%q, %v), want (%q, nil)", root, err, existing)
+	}
+
+	managed := filepath.Join(home, ".codex")
+	if err := os.Mkdir(managed, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ValidateExistingRoot(managed, home, ""); !errors.Is(err, ErrInvalidOptions) {
+		t.Fatalf("managed root error = %v, want ErrInvalidOptions", err)
+	}
+}
