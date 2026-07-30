@@ -6,16 +6,16 @@
   [真机 dry-run runbook](real-home-dry-run.md)。
 - 默认边界：所有写入都在 `mktemp` 目录，不覆盖 `~/.local/bin/aiah`，不把
   `HOME` 环境变量改指测试目录。
-- 最近一次实跑：2026-07-30，public `v0.1.4 → v0.1.5` 在显式设置
-  `AIAH_VERSION=0.1.5` 时升级通过；同版本幂等复装、裸 `aiah`、统一资产状态、
-  typed apply/update/remove/rollback、E3.1 和退出后 CLI 对账均通过。
+- 最近一次实跑：2026-07-30，public `v0.1.5 → v0.1.6` bridge 在显式设置
+  `AIAH_VERSION=0.1.6` 时升级通过；同版本幂等复装、裸 `aiah`、Doctor、
+  typed rollback、版本检查和退出后 CLI 对账均通过。
 - 已知问题：同次验收确认 `v0.1.4` / `v0.1.5` 的 `update --check` 推荐命令缺少
   `AIAH_VERSION`，执行后可能仍停留在旧 pin。Release 说明已提供显式版本命令；
-  修复已通过 PR #20 合入 `dev@e7d813e` 并把“执行实际输出命令”加入发布门禁，
-  但 `v0.1.6` bridge Release 仍须完成真实旧版升级。
-- `v0.1.6` 候选准备：dev CI 与本地 Linux amd64 Release 产物预演已通过；main、
-  tag、线上产物和 `v0.1.5 → v0.1.6` dogfood 尚未发生，见
-  [bridge 候选检查点](../reviews/2026-07-30-v0.1.6-bridge-candidate-readiness.md)。
+  `v0.1.6` 验收已在第二个隔离目录执行 legacy 命令，确认版本与 SHA256 均保持
+  `v0.1.5` 且无 stage 残留；主目录显式升级成功。
+- `v0.1.6` 已从 `main@46e6efccc9ba` 发布，Release workflow、线上 SHA256、静态
+  ELF、版本/commit、许可材料和正式 TTY 均通过；完整证据见
+  [bridge 检查点](../reviews/2026-07-30-v0.1.6-bridge-candidate-readiness.md)。
 - E2 候选实跑：2026-07-30，隔离 `0.1.5-dev.e2` 二进制完成统一资产状态、纳入、
   连续 profile/diff、typed apply、成功摘要、Doctor、typed update/remove 与 CLI
   对账。该记录只证明 dev 候选，不代表未发布 Release 的安装器升级已通过。
