@@ -62,6 +62,7 @@
 
 ## 评审
 
+- [2026-07-30 N7.1 migration 双语目录检查点](reviews/2026-07-30-n7-i18n-migration-checkpoint.md)
 - [2026-07-30 N7.1 doctor/rollback 双语目录检查点](reviews/2026-07-30-n7-i18n-health-rollback-checkpoint.md)
 - [2026-07-30 N7.1 diff/apply 双语目录检查点](reviews/2026-07-30-n7-i18n-diff-apply-checkpoint.md)
 - [2026-07-30 N7.1 inventory 与资产库管理双语目录检查点](reviews/2026-07-30-n7-i18n-inventory-catalog-checkpoint.md)
