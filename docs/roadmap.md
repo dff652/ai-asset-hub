@@ -337,7 +337,7 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | 层面 | 已完成 | 当前边界 |
 |---|---|---|
 | 公开版 `v0.1.4` | CLI/Core、TUI D1–D3、只读 MCP、不可变通道、secret provider、Linux amd64 安装升级 | 不包含当前工作树中的 E1/E2/E3.1 |
-| 当前 dev 候选 | 任务首页、统一资产状态、纳入/更新/移出、连续应用向导、E3.1 跨设备只读状态 | 已进入 dev 提交并通过本地复审；尚未合入 main 或完成正式 Release 安装验收 |
+| 当前 dev 候选 | `dev@8552bef`：任务首页、统一资产状态、纳入/更新/移出、连续应用向导、E3.1 跨设备只读状态 | PR #16、dev CI、本地 Release 产物预演和隔离候选安装 dogfood 已通过；尚未合入 main 或完成正式 Release 安装验收 |
 | 人工操作入口 | TUI 覆盖日常本机流程；CLI 保留全部高级、脚本和 CI 能力 | 写操作继续要求显式路径、diff 和 typed confirmation |
 | AI 接入入口 | `aiah mcp` 提供 scan/validate/diff/doctor/version 五个只读工具 | 尚无统一资产状态、迁移状态和三客户端验收矩阵；不开放写操作 |
 | README 视觉 | README mode、项目首屏、生命周期图和 TUI 证明板已完成宽屏/窄屏验证 | 仅进入 dev 候选；默认分支首页待 main 合入，且未宣称 dev 能力已经发布 |
@@ -386,7 +386,7 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | 顺序 | 优先级 | 任务 | 验收出口 |
 |---|---|---|---|
 | N0 | P0 | ✅ **严格 review 当前 E1/E2/E3.1 + 文档/视觉改动** | 已修复“读取失败误报待更新”和首页缺少自动安装状态；变异验证、完整 `check-local`、真 TTY 与 900/360 视觉检查通过；无剩余 P0/P1；[复审记录](reviews/2026-07-30-e1-e2-e3-1-strict-review.md)列出建议提交拆分，未自行 commit |
-| N1 | P0 | 🚧 **形成下一 Release 候选并做正式安装包 dogfood** | owner 已授权候选阶段；dev 提交/push/CI、候选替换与 TUI dogfood 完成后，再按 main CI → tag → Release → 真实升级顺序收口 |
+| N1 | P0 | 🚧 **形成下一 Release 候选并做正式安装包 dogfood** | `dev@8552bef`、PR #16、dev CI、候选替换/TUI dogfood 和本地 `0.1.5` Release 产物已通过；[检查点](reviews/2026-07-30-v0.1.5-candidate-readiness.md)之后仍需 main CI → tag → Release → `v0.1.4→v0.1.5` 真实升级 |
 | N2 | P0 | ✅ **README mode：整体结构、文案、首屏与现有 SVG 嵌入** | 已进入 dev 候选；保留重构前历史快照并明确公开版/dev 候选边界；900px/360px、链接、SVG 安全和无障碍检查通过；默认分支 GitHub 页面验收待 main 合入 |
 | N3 | P1 | **E3.2 跨设备连续向导** | TUI 编排 build/publish/versions/pull/bootstrap；通道由用户明确选择；pull 后仍必须 diff + typed apply |
 | N4 | P1 | **E3.3 换机前置检查** | 显示 device-private 排除项、缺失 secret、目标支持和 adapter 降级；检查阶段零写入 |
@@ -408,9 +408,9 @@ SHA256/版本/架构、真实升级、TUI D2/D3 和幂等复装均通过；安�
 public `v0.1.1` tag 实跑通过。
 
 D8、仓库身份、历史公开边界、发布收口、安装脚本和 TUI D1/D2/D3 均已完成。
-当前产品主线是 TUI 产品体验 V2：E1/E2 与 E3.1 已进入 dev 提交；N0 严格复审和
-N2 README mode 已通过。owner 已授权 N1 候选阶段，下一步按 dev CI、候选安装
-dogfood、main CI、tag/Release 和发布后真实升级的顺序收口，再进入 E3.2 跨设备
+当前产品主线是 TUI 产品体验 V2：E1/E2 与 E3.1 已进入 dev；N0 严格复审、
+N2 README mode 和 owner 已授权的 N1 dev 候选阶段均已通过。下一步按 main 提升
+评审、main CI、tag/Release 和发布后真实升级的顺序收口，再进入 E3.2 跨设备
 发布/查看/取回编排和 E3.3 换机前置检查。
 E4 设置/i18n 尚未实现。完整发布收口清单见
 [2026-07-27 Public readiness 评估](reviews/2026-07-27-public-readiness-assessment.md)。
