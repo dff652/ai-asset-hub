@@ -60,7 +60,7 @@ Linux amd64 已完成端到端行为验证。`v0.1.1` 中现存的 macOS、Windo
 ## 从“散落配置”到“可恢复资产”
 
 <p align="center">
-  <img src="assets/readme/asset-lifecycle.svg" width="100%" alt="AI 资产从 Claude、Codex、Grok 进入版本化资产库，再经过预览应用或不可变分发迁移到其他设备">
+  <img src="assets/readme/usage-flow.svg" width="100%" alt="AI Asset Hub 五步安全流程：发现资产、整理资产库、检查并准备、预览变化、人工确认；只有最后一步写入目标工具目录">
 </p>
 
 只需要分清三个角色：
@@ -74,8 +74,12 @@ Linux amd64 已完成端到端行为验证。`v0.1.1` 中现存的 macOS、Windo
 日常流程是：
 
 ```text
-发现本机资产 → 加入资产库 → 检查并准备安装包 → 预览变化 → 输入 apply → 安装检查
+发现资产 → 整理资产库 → 检查并准备 → 预览变化 → 人工确认
 ```
+
+前四步都不写 `.claude`、`.codex` 或 `.grok`；只有审阅变化后完整输入 `apply`
+才会应用，并在写入前创建本机安装恢复点。随后运行安装检查，必要时可以撤销。
+五步各自的输入、输出和写入边界见[上手指南](docs/getting-started.md#2-五步完成一次安全应用)。
 
 跨设备时，私有 Git/NAS 负责**资产库备份**，Git、NAS、U 盘等负责搬运不可变包；
 `publish/pull` 不是双向同步，`.aiah/backups` 也只是本机**安装恢复点**。

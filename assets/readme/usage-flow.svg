@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" role="img" aria-labelledby="title desc">
+  <title id="title">AI Asset Hub 五步安全使用流程</title>
+  <desc id="desc">从发现资产、整理资产库、检查并准备、预览变化到人工确认。前四步不写目标工具目录，只有完整输入 apply 后才写入并创建恢复点。</desc>
+
+  <rect width="1200" height="600" rx="24" fill="#0D1117"/>
+
+  <g id="heading">
+    <text x="52" y="53" fill="#58A6FF"
+          font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="18" font-weight="700" letter-spacing="2">NO TARGET WRITES UNTIL APPLY</text>
+    <text x="52" y="105" fill="#E6EDF3"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="42" font-weight="760">五步完成一次安全应用</text>
+    <text x="52" y="139" fill="#8B949E"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="20">整理成事实源 · 写入前看清变化 · 写入后可以撤销</text>
+  </g>
+
+  <g id="connectors" fill="none" stroke="#58A6FF" stroke-width="3" stroke-linecap="round">
+    <path d="M252 332H268"/>
+    <path d="M476 332H492"/>
+    <path d="M700 332H716"/>
+    <path d="M924 332H940"/>
+  </g>
+  <g fill="#58A6FF">
+    <path d="M268 332l-9-6v12z"/>
+    <path d="M492 332l-9-6v12z"/>
+    <path d="M716 332l-9-6v12z"/>
+    <path d="M940 332l-9-6v12z"/>
+  </g>
+
+  <g id="discover" transform="translate(44 180)">
+    <rect width="208" height="320" rx="18" fill="#161B22" stroke="#30363D" stroke-width="2"/>
+    <text x="22" y="39" fill="#58A6FF"
+          font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="18" font-weight="700">01 / DISCOVER</text>
+    <g transform="translate(52 70)" fill="none" stroke="#E6EDF3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="0" y="10" width="72" height="58" rx="8"/>
+      <path d="M17 27h30M17 41h21"/>
+      <circle cx="75" cy="63" r="20"/>
+      <path d="M89 78l14 14"/>
+    </g>
+    <text x="22" y="199" fill="#E6EDF3"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="27" font-weight="750">发现资产</text>
+    <text x="22" y="238" fill="#8B949E"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="18">只读扫描本机工具</text>
+    <text x="22" y="266" fill="#8B949E"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="18">不创建资产库</text>
+    <rect x="22" y="284" width="98" height="24" rx="12" fill="#58A6FF" fill-opacity=".12"/>
+    <text x="71" y="302" text-anchor="middle" fill="#58A6FF"
+          font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="16" font-weight="700">READ ONLY</text>
+  </g>
+
+  <g id="organize" transform="translate(268 180)">
+    <rect width="208" height="320" rx="18" fill="#161B22" stroke="#30363D" stroke-width="2"/>
+    <text x="22" y="39" fill="#58A6FF"
+          font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="18" font-weight="700">02 / ORGANIZE</text>
+    <g transform="translate(50 76)" fill="none" stroke="#E6EDF3" stroke-width="4" stroke-linejoin="round">
+      <path d="M0 11h38l10 12h59v72H0z"/>
+      <path d="M26 49h55M26 66h42"/>
+    </g>
+    <text x="22" y="199" fill="#E6EDF3"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="27" font-weight="750">整理资产库</text>
+    <text x="22" y="238" fill="#8B949E"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="18">纳入 · 更新 · 移出</text>
+    <text x="22" y="266" fill="#8B949E"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="18">只改明确选择的库</text>
+    <rect x="22" y="284" width="120" height="24" rx="12" fill="#3FB950" fill-opacity=".12"/>
+    <text x="82" y="302" text-anchor="middle" fill="#3FB950"
+          font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="16" font-weight="700">assets/ + yaml</text>
+  </g>
+
+  <g id="prepare" transform="translate(492 180)">
+    <rect width="208" height="320" rx="18" fill="#161B22" stroke="#30363D" stroke-width="2"/>
+    <text x="22" y="39" fill="#58A6FF"
+          font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="18" font-weight="700">03 / PREPARE</text>
+    <g transform="translate(52 71)" fill="none" stroke="#E6EDF3" stroke-width="4" stroke-linejoin="round">
+      <path d="M0 25l52-24 52 24-52 24z"/>
+      <path d="M0 25v59l52 25 52-25V25M52 49v60"/>
+      <path d="M28 13l52 24"/>
+    </g>
+    <text x="22" y="199" fill="#E6EDF3"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="27" font-weight="750">检查并准备</text>
+    <text x="22" y="238" fill="#8B949E"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="18">校验后生成不可变包</text>
+    <text x="22" y="266" fill="#8B949E"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="18">失败即停止</text>
+    <rect x="22" y="284" width="98" height="24" rx="12" fill="#58A6FF" fill-opacity=".12"/>
+    <text x="71" y="302" text-anchor="middle" fill="#58A6FF"
+          font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="16" font-weight="700">IMMUTABLE</text>
+  </g>
+
+  <g id="review" transform="translate(716 180)">
+    <rect width="208" height="320" rx="18" fill="#13233B" stroke="#58A6FF" stroke-width="2"/>
+    <text x="22" y="39" fill="#79C0FF"
+          font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="18" font-weight="700">04 / REVIEW</text>
+    <g transform="translate(49 75)" fill="none" stroke="#E6EDF3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="0" y="0" width="110" height="94" rx="9"/>
+      <path d="M20 26h49M20 47h70M20 68h41"/>
+      <path d="M82 18v20M72 28h20" stroke="#3FB950"/>
+      <path d="M75 67h22" stroke="#F85149"/>
+    </g>
+    <text x="22" y="199" fill="#E6EDF3"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="27" font-weight="750">预览变化</text>
+    <text x="22" y="238" fill="#B6C8E0"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="18">新增 · 修改 · 冲突</text>
+    <text x="22" y="266" fill="#B6C8E0"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="18">写入目标数：0</text>
+    <rect x="22" y="284" width="72" height="24" rx="12" fill="#79C0FF" fill-opacity=".14"/>
+    <text x="58" y="302" text-anchor="middle" fill="#79C0FF"
+          font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="16" font-weight="700">DIFF</text>
+  </g>
+
+  <g id="human-confirmation" transform="translate(940 180)">
+    <rect width="208" height="320" rx="18" fill="#1C160B" stroke="#D29922" stroke-width="3" stroke-dasharray="9 7"/>
+    <text x="22" y="39" fill="#D29922"
+          font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="18" font-weight="700">05 / HUMAN</text>
+    <g transform="translate(52 72)" fill="none" stroke="#E6EDF3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="52" cy="28" r="24"/>
+      <path d="M8 96c3-28 21-43 44-43s41 15 44 43"/>
+      <circle cx="91" cy="78" r="22" fill="#D29922" stroke="#D29922"/>
+      <path d="M80 78l8 8 15-18" stroke="#0D1117"/>
+    </g>
+    <text x="22" y="199" fill="#E6EDF3"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="27" font-weight="750">人工确认</text>
+    <text x="22" y="238" fill="#C9B98D"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="18">完整输入 apply</text>
+    <text x="22" y="266" fill="#C9B98D"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="18">先建恢复点再写入</text>
+    <rect x="22" y="284" width="92" height="24" rx="12" fill="#D29922"/>
+    <text x="68" y="302" text-anchor="middle" fill="#0D1117"
+          font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="16" font-weight="800">apply</text>
+  </g>
+
+  <g id="safety-boundary">
+    <path d="M58 541H920" stroke="#58A6FF" stroke-width="2" stroke-dasharray="7 7"/>
+    <circle cx="58" cy="541" r="5" fill="#58A6FF"/>
+    <circle cx="920" cy="541" r="5" fill="#58A6FF"/>
+    <text x="489" y="572" text-anchor="middle" fill="#8B949E"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="18">前四步：目标工具目录零写入</text>
+    <text x="1044" y="550" text-anchor="middle" fill="#D29922"
+          font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
+          font-size="18" font-weight="700">apply → 检查 / 撤销</text>
+  </g>
+</svg>

@@ -2,7 +2,8 @@
 
 ## 用户指南
 
-- [上手指南](getting-started.md)（整理资产 → 资产库 → 预览应用 → 安装检查）
+- [上手指南](getting-started.md)
+  （发现资产 → 整理资产库 → 检查并准备 → 预览变化 → 人工确认）
 - [CLI 命令参考](cli-reference.md)
 - [跨设备迁移 runbook](runbooks/cross-device-transfer.md)（发布 → 搬运 → 取回 → 安装）
 - [真机 dry-run runbook](runbooks/real-home-dry-run.md)
