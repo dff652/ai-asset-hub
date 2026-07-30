@@ -3,10 +3,11 @@
 - 日期：2026-07-30
 - 基线：`dev@3b4856629cb5`
 - 开发分支：`feat/tui-cross-device-wizard`
-- 结论：**本地候选验证通过；PR 与远端 CI 待收口，尚未发布**
+- 结论：**本地与实现头远端候选验证通过；PR 已打开但未合并，尚未发布**
 - 关联：[跨设备迁移方案](../designs/cross-device-migration-and-version-sync.md)、
   [ADR-0007](../decisions/0007-immutable-channel-distribution.md)、
-  [迁移 runbook](../runbooks/cross-device-transfer.md)
+  [迁移 runbook](../runbooks/cross-device-transfer.md)、
+  [PR #24](https://github.com/dff652/ai-asset-hub/pull/24)
 
 ## 1. 候选范围
 
@@ -124,12 +125,21 @@ validate/build/diff/apply/doctor/rollback 闭环。
 
 全过程只写临时目录，未读取或修改真实 HOME 中的工具资产。
 
-## 4. 尚未完成
+## 4. 远端候选结果与剩余边界
 
-- 尚未提交或推送当前开发分支；
-- 尚未创建面向 `dev` 的 PR；
-- push / pull_request CI 尚未运行；
-- 尚未合并，也不属于任何 Release。
+三组提交组成实现头 `f412f93de5f`：
 
-上述远端结果补齐并再次通过最终提交的本地门禁后，E3.2 才能标记为 dev 候选完成。
-下一阶段是 E3.3 换机前置检查，不在本 PR 扩展范围。
+1. `07b3720`：pull 输出防覆盖与回归；
+2. `a0f66e9`：E3.2 TUI 连续向导与测试；
+3. `f412f93`：方案、路线图和候选证据。
+
+分支已推送并创建面向 `dev` 的
+[PR #24](https://github.com/dff652/ai-asset-hub/pull/24)。该实现头的
+[push CI 30527796193](https://github.com/dff652/ai-asset-hub/actions/runs/30527796193)
+和
+[pull_request CI 30527813995](https://github.com/dff652/ai-asset-hub/actions/runs/30527813995)
+各 9 个 job 全绿，共 18/18；PR 在检查时为 `MERGEABLE / CLEAN`。
+
+本节本身属于后续证据文档提交，不改变实现树；合并前仍必须以 PR 当前 head 的 CI
+为准，不能用前一提交的绿灯替代当前 head。当前尚未合并，也不属于任何 Release。
+下一阶段是 E3.3 换机前置检查，不在 PR #24 扩展范围。

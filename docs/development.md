@@ -205,7 +205,9 @@ E3.2 当前开发候选在此基线上实现 TUI typed publish、显式 versions
 pull→现有 diff/typed apply 连续向导；同时修复 pull 覆盖输出目录同名产物的安全
 缺口。相关单测、完整 `check-local`、两项变异验证、隔离 TTY
 publish→pull→diff→typed apply→Doctor→typed rollback 闭环与严格 review 已通过；
-PR/CI 仍待候选检查点收口，因此当前不属于 `v0.1.6` Release 能力。
+[PR #24](https://github.com/dff652/ai-asset-hub/pull/24) 的实现头 push /
+pull_request CI 共 18 个 job 全绿，最终文档头仍须保持 CI 全绿后才可合并。当前
+PR 未合并，也不属于 `v0.1.6` Release 能力。
 
 首次发布时 GitHub 把 `actions/checkout@v4`、`actions/setup-go@v5` 与
 `softprops/action-gh-release@v2` 的 Node.js 20 action 强制运行在 Node.js 24，

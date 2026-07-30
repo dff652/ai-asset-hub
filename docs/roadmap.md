@@ -349,7 +349,7 @@ Release 能力验收；当前后续不足是 E3.3 换机前置检查，以及 AI
 | 公开版 `v0.1.6` | CLI/Core、任务首页、统一资产状态、连续应用、Doctor/rollback、E3.1、只读 MCP、不可变通道、secret provider、修复后的升级命令 | Linux amd64 线上产物、显式 bridge 升级、正式 TUI 与幂等复装通过；旧版用户仍需显式版本 workaround |
 | 当前 `main@307041e` | `v0.1.6` 已发布 tree + PR #22 发布后 pin/docs 收口 | installer 默认 pin 为 v0.1.6；tag 内 staged pin 仍按发布契约保持 v0.1.5 |
 | 当前 `dev@3b48566` | PR #23 已把 `main@307041e` 文件树同步回 dev | 分支保护禁止 merge commit，因此按 squash 合入；文件树相同但 main 不是 dev 祖先 |
-| 当前 E3.2 开发分支 | typed publish、显式 versions/pull、连续 diff/apply 与 pull 输出防覆盖 | 本地完整门禁、变异验证、TTY apply/doctor/rollback 闭环和严格 review 已通过；尚待 PR/CI |
+| 当前 E3.2 开发分支 | typed publish、显式 versions/pull、连续 diff/apply 与 pull 输出防覆盖 | 本地完整门禁、变异验证、TTY apply/doctor/rollback 闭环和严格 review 已通过；PR #24 实现头 CI 18/18，全流程尚未合并 |
 | 人工操作入口 | TUI 覆盖日常本机流程；CLI 保留全部高级、脚本和 CI 能力 | 写操作继续要求显式路径、diff 和 typed confirmation |
 | AI 接入入口 | `aiah mcp` 提供 scan/validate/diff/doctor/version 五个只读工具 | 尚无统一资产状态、迁移状态和三客户端验收矩阵；不开放写操作 |
 | README 视觉 | README mode、规范化主入口和视觉门禁均已进入 v0.1.6 | 本发布后 PR 只同步徽章/证明板版本；一张主流程图表达首次成功，其它流程由任务表和详细文档覆盖 |
@@ -403,7 +403,7 @@ Release 能力验收；当前后续不足是 E3.3 换机前置检查，以及 AI
 | N2.1 | P0 | ✅ **修复升级提示命令并收口 installer pin** | 精确 `AIAH_VERSION`、TUI 可复制换行和变异验证已进入 v0.1.6；bridge 验收通过，本发布后 PR 把默认 pin 收口到 v0.1.6 |
 | N2.2 | P1 | ✅ **固化 README/SVG 视觉验收** | 四图职责、视觉 token、语义核对和 900/360 SOP 已进入 `main` 与 `check-local.sh`；v0.1.6 版本证据已复验 |
 | N2.3 | P0 | ✅ **准备并验收 `v0.1.6` bridge release** | main PR/CI、annotated tag、Release、线上产物、legacy no-op、显式版本升级、正式 TUI 和幂等复装全部通过 |
-| N3 | P1 | 🚧 **E3.2 跨设备连续向导** | 当前开发候选已编排 build/typed publish/versions/explicit pull/Phase C；通道和输出目录由用户明确选择，pull 后仍必须 diff + typed apply；本地完整门禁、变异验证、TTY 闭环和严格 review 已通过，待 PR/CI |
+| N3 | P1 | 🚧 **E3.2 跨设备连续向导** | 当前开发候选已编排 build/typed publish/versions/explicit pull/Phase C；通道和输出目录由用户明确选择，pull 后仍必须 diff + typed apply；本地验证通过，PR #24 实现头 CI 18/18，尚待最终 head 绿灯与人工合并 |
 | N4 | P1 | **E3.3 换机前置检查** | 显示 device-private 排除项、缺失 secret、目标支持和 adapter 降级；检查阶段零写入 |
 | N5 | P1 | **MCP 只读状态补齐与客户端验收** | 先修订 ADR-0005，再暴露统一资产状态和迁移状态；所有工具零写入；Claude/Codex/Grok 真实握手有记录 |
 | N6 | P1 | **E3.4 双设备与失败恢复验收** | 覆盖同版本幂等、不同内容拒绝、旧版本回退、中断恢复和恶意通道夹具 |
@@ -429,7 +429,8 @@ D8、仓库身份、历史公开边界、发布收口、安装脚本和 TUI D1/D
 当前产品主线是 TUI 产品体验 V2：E1/E2 与 E3.1 已随 `v0.1.6` 正式包复验；
 升级提示命令、tag installer、staged pin、bridge Release 和发布后 pin 收口均已
 完成。E3.2 跨设备发布/查看/取回编排已进入开发候选；本地门禁、变异验证、TTY
-dogfood 与严格 review 已完成，PR/CI 收口后再进入 E3.3 换机前置检查。E4
+dogfood 与严格 review 已完成，PR #24 实现头 CI 18/18；最终 head 绿灯并人工
+合并后再进入 E3.3 换机前置检查。E4
 设置/i18n 尚未实现。完整发布收口清单见
 [2026-07-27 Public readiness 评估](reviews/2026-07-27-public-readiness-assessment.md)。
 
@@ -438,8 +439,8 @@ TUI dogfood ✅ → doctor ✅ → MCP ✅ / TUI Phase B ✅ → 跨设备分发
 Secret Provider ✅ → TUI Phase C ✅ → bootstrap ✅。
 当前再向后是 TUI D1 引导式本地闭环 ✅ → TUI D2 Doctor/当前回滚 ✅ →
 TUI D3 版本/只读更新检查 ✅ → 安装升级 dogfood ✅ → `v0.1.6` bridge Release、
-线上产物、显式升级、legacy no-op 与推荐升级命令修复 ✅ → E3.2 本地候选验证 ✅、
-PR/CI 待收口。
+线上产物、显式升级、legacy no-op 与推荐升级命令修复 ✅ → E3.2 本地候选与实现头
+CI 18/18 ✅、PR #24 待人工合并。
 **首次真机 dogfood 已完成，工具已从「工程演示」变为「自用工具」**（2026-07-25）；
 private `v0.1.0` 已完成流水线验收（2026-07-26）；public `v0.1.1`–`v0.1.6`
 已发布（2026-07-28 至 2026-07-30），其中 v0.1.5 的推荐升级命令限制已通过
