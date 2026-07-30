@@ -1,8 +1,8 @@
 # N7：偏好设置与中英文支持方案
 
-- 状态：Accepted for N7.0；N7.1 首页、inventory 与资产库管理目录切片已实现，
-  diff/apply 也已实现，health/migration/version 页面实施中；设置页、语言切换和
-  偏好文件尚未实现
+- 状态：Accepted for N7.0；N7.1 首页、inventory 与资产库管理、diff/apply、
+  doctor/rollback 目录切片已实现，migration/version 页面实施中；设置页、语言
+  切换和偏好文件尚未实现
 - 日期：2026-07-30
 - 目标阶段：TUI 产品体验 V2 E4
 - 关联：[TUI 产品体验方案](tui-product-experience-v2.md)、
@@ -24,9 +24,10 @@ N7 应做，但必须按“**字符串目录先行，偏好持久化后置**”�
 不在首版加入最近资产库自动历史、主题、自动升级、网络源、target/profile/scope、
 secret 或任何“关闭校验/备份/确认”的开关。
 
-当前代码**没有**设置页、偏好文件或语言切换。TUI 以中文为主，界面字符串分散在
-多个 view/action 文件；仓库当前只有一份 inventory golden。本文描述的能力不能在
-实现和验收完成前写成已支持。
+当前代码**没有**设置页、偏好文件或用户可操作的语言切换。TUI 仍以中文为兼容默认，
+但首页、inventory、diff/apply 和 doctor/rollback 已进入 typed 双语目录并有对应
+golden；migration/version 仍有界面字符串待迁移。完整目录、设置入口和发布包验收
+完成前，不能把“双语设置”写成已支持。
 
 ## 2. 产品边界
 
@@ -257,9 +258,12 @@ unchanged/skipped；`standard` 可以默认折叠这些技术字段，但用户�
 - [x] inventory zh-CN/en golden、输入框语言同步和资产库操作英文验收；
 - [x] diff/apply、二次确认、应用结果和恢复提示完整迁移；
 - [x] diff/apply zh-CN/en 预览与确认 golden，English 结果与 typed `apply` 验收；
+- [x] doctor/rollback、检查结果、阻止提示和恢复结果完整迁移；
+- [x] doctor/rollback zh-CN/en 检查与确认 golden，English 结果与 typed
+  `rollback` 验收；
 - [ ] 提取所有 production TUI 用户可见字符串为 typed IDs；
 - [ ] 为首页、inventory、diff/确认、doctor/rollback、migration、version/help
-  增加完整双语 golden（首页、inventory 已完成）；
+  增加完整双语 golden（首页、inventory、diff/确认、doctor/rollback 已完成）；
 - [x] 保持当前 zh-CN 默认行为，避免重构和行为切换同时发生。
 
 出口：两套 catalog 完整，但用户仍看不到语言开关。
@@ -281,6 +285,13 @@ doctor/rollback、migration 和 version。用户仍看不到语言开关，也�
 失败；确认输入框的终端填充空格已在 golden 比较中规范化，仓库文件本身保持
 `git diff --check` clean。排除中文 catalog 后剩余 7 个 production TUI 文件、
 219 行含中文文本；下一步迁移 doctor/rollback。
+
+第四检查点 `29ab586` 把目录扩展到 277 个 typed 消息，完成 doctor/rollback
+切片。Doctor 继续只读；只有检查通过并存在当前安装 backup ID 才开放撤销，且必须
+完整输入 `rollback`。删除 English `health.title`、重新直写中文、把确认判断放宽为
+任意非空值三项变异均能使门禁失败，完整 `check-local` 通过。排除中文 catalog 后
+剩余 5 个 production TUI 文件、181 行含中文文本；下一步迁移 migration，再迁移
+version。用户仍看不到语言开关，也不会创建偏好文件。
 
 ### N7.2：偏好 Core
 
