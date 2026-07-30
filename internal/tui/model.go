@@ -6,6 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dff652/ai-asset-hub/internal/apply"
 	"github.com/dff652/ai-asset-hub/internal/inventory"
+	"github.com/dff652/ai-asset-hub/internal/preferences"
 	updater "github.com/dff652/ai-asset-hub/internal/update"
 	"github.com/dff652/ai-asset-hub/internal/workspace"
 )
@@ -33,6 +34,7 @@ const (
 	screenHealth
 	screenVersion
 	screenMigration
+	screenSettings
 )
 
 type Model struct {
@@ -109,6 +111,20 @@ type Model struct {
 	updateErr      error
 
 	migrationFlow migrationFlow
+
+	preferenceStore    preferences.StoreOptions
+	preferencePath     string
+	preferenceWarnings []preferences.WarningCode
+	currentPreferences preferences.Document
+	localeEnvironment  preferences.LocaleEnvironment
+	languageOverride   preferences.Language
+	autoLanguage       language
+	settingsDraft      preferences.Document
+	settingsCursor     int
+	settingsDirty      bool
+	settingsSaving     bool
+	settingsNotice     string
+	settingsErr        error
 }
 
 func NewModel(options inventory.Options) Model {
@@ -156,15 +172,17 @@ func NewModel(options inventory.Options) Model {
 			"action:skipped":   true,
 			"findings":         true,
 		},
-		confirmInput:  confirm,
-		rollbackInput: rollbackInput,
-		screen:        screenInventory,
-		status:        statusLoading,
-		width:         100,
-		height:        30,
-		generation:    1,
-		keys:          defaultKeys(),
-		language:      languageZhCN,
+		confirmInput:       confirm,
+		rollbackInput:      rollbackInput,
+		screen:             screenInventory,
+		status:             statusLoading,
+		width:              100,
+		height:             30,
+		generation:         1,
+		keys:               defaultKeys(),
+		language:           languageZhCN,
+		currentPreferences: preferences.Defaults(),
+		autoLanguage:       languageZhCN,
 	}
 	model.syncLocalizedInputs()
 	return model
@@ -424,6 +442,8 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.updateReport = message.report
 		m.updateErr = message.err
 		return m, nil
+	case preferencesSaveMsg:
+		return m.handlePreferencesSave(message)
 	case migrationMsg:
 		return m.handleMigrationMessage(message)
 	case preflightMsg:
@@ -458,7 +478,7 @@ func (m *Model) refreshCatalog() {
 
 func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.applying || m.rollbacking || m.managing ||
-		m.migrationFlow.publishing || m.migrationFlow.pulling {
+		m.migrationFlow.publishing || m.migrationFlow.pulling || m.settingsSaving {
 		m.notice = m.text(msgCommonWriteInProgress)
 		m.noticeIsWarn = true
 		return m, nil
@@ -539,6 +559,9 @@ func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.screen == screenMigration {
 		return m.updateMigrationKey(message)
+	}
+	if m.screen == screenSettings {
+		return m.updateSettingsKey(message)
 	}
 
 	rows := m.visibleRows()

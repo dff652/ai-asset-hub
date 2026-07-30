@@ -141,6 +141,7 @@ func TestMigratedTUIFilesHaveNoHanStringLiterals(t *testing.T) {
 		"migration_view.go",
 		"version.go",
 		"version_view.go",
+		"settings.go",
 	}
 	for _, path := range files {
 		file, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)

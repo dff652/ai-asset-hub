@@ -11,5 +11,6 @@ What would you like to do?
   Check or undo install        Inspect drift and undo the last install if needed
   Move to another device       Compare versions and publish or retrieve immutable packages
   About and updates            View the version and manually check Releases
+  Preferences                  Choose the interface language; preview before saving
 
 ↑↓/jk Select · Enter Open · ? Help · q Quit

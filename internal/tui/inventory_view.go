@@ -46,6 +46,9 @@ func (m Model) View() string {
 	if m.screen == screenMigration {
 		return m.migrationView(style)
 	}
+	if m.screen == screenSettings {
+		return m.settingsView(style)
+	}
 
 	header := style.header.Render(m.text(msgInventoryTitle))
 	counts := m.text(msgInventoryCountsScanned,
@@ -323,6 +326,9 @@ func (m Model) helpView(style styles) string {
 	}
 	if m.screen == screenMigration {
 		return m.migrationHelpView(style)
+	}
+	if m.screen == screenSettings {
+		return m.settingsHelpView(style)
 	}
 	lines := []string{
 		style.header.Render(m.text(msgInventoryHelpTitle)),

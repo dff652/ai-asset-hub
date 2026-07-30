@@ -197,6 +197,38 @@ func TestRunUIAcceptsTargetsForGuidedBuild(t *testing.T) {
 	}
 }
 
+func TestRunUILanguageOverrideIsValidatedAndPassedToTUI(t *testing.T) {
+	previousLaunch := launchUI
+	defer func() { launchUI = previousLaunch }()
+
+	var received tui.Options
+	launchUI = func(options tui.Options) error {
+		received = options
+		return nil
+	}
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"ui", "--language", "en"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("exit code = %d, stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	if received.Language != "en" {
+		t.Fatalf("language override = %q, want en", received.Language)
+	}
+
+	called := false
+	launchUI = func(tui.Options) error {
+		called = true
+		return nil
+	}
+	stdout.Reset()
+	stderr.Reset()
+	if code := run([]string{"ui", "--language", "fr"}, &stdout, &stderr); code != 2 {
+		t.Fatalf("invalid language exit code = %d, want 2", code)
+	}
+	if called || !strings.Contains(stderr.String(), "unsupported interface language") {
+		t.Fatalf("invalid language called TUI=%v stderr=%q", called, stderr.String())
+	}
+}
+
 func TestRunValidateWritesJSONReport(t *testing.T) {
 	manifest, err := filepath.Abs(filepath.Join("..", "..", "testdata", "workspace-valid", "manifest.yaml"))
 	if err != nil {

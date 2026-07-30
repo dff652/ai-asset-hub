@@ -228,10 +228,12 @@ func TestRunRejectsNonTTYAndMissingTERM(t *testing.T) {
 
 func TestRunRejectsNonTTYBeforeCreatingExplicitWorkspace(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "new-workspace")
+	configPath := filepath.Join(t.TempDir(), "config", "aiah", "preferences.json")
 	err := run(
 		Options{
 			Home: t.TempDir(), Workspace: root,
-			Input: strings.NewReader(""), Output: &strings.Builder{},
+			ConfigPath: configPath,
+			Input:      strings.NewReader(""), Output: &strings.Builder{},
 		},
 		func(string) string { return "xterm-256color" },
 		func(uintptr) bool { return false },
@@ -241,6 +243,9 @@ func TestRunRejectsNonTTYBeforeCreatingExplicitWorkspace(t *testing.T) {
 	}
 	if _, err := os.Stat(root); !os.IsNotExist(err) {
 		t.Fatalf("non-TTY invocation created the workspace: %v", err)
+	}
+	if _, err := os.Stat(filepath.Dir(configPath)); !os.IsNotExist(err) {
+		t.Fatalf("non-TTY invocation created the preference directory: %v", err)
 	}
 }
 

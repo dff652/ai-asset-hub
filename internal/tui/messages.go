@@ -28,6 +28,9 @@ const (
 	msgHomeMigrationDesc      messageID = "home.migration.description"
 	msgHomeVersionTitle       messageID = "home.version.title"
 	msgHomeVersionDesc        messageID = "home.version.description"
+	msgHomeSettingsTitle      messageID = "home.settings.title"
+	msgHomeSettingsDesc       messageID = "home.settings.description"
+	msgHomePreferencesWarning messageID = "home.preferences_warning"
 	msgHomeFooter             messageID = "home.footer"
 	msgHomeWorkspaceUnset     messageID = "home.workspace_unset"
 	msgHomeScanLoading        messageID = "home.scan_loading"
@@ -50,6 +53,7 @@ const (
 	msgHomeHelpHealth         messageID = "home.help.health"
 	msgHomeHelpMigration      messageID = "home.help.migration"
 	msgHomeHelpVersion        messageID = "home.help.version"
+	msgHomeHelpSettings       messageID = "home.help.settings"
 	msgHomeHelpLibrary        messageID = "home.help.library"
 	msgHomeHelpFooter         messageID = "home.help.footer"
 
@@ -140,6 +144,46 @@ const (
 	msgHelpHome         messageID = "help.home"
 	msgHelpClose        messageID = "help.close"
 	msgHelpQuit         messageID = "help.quit"
+
+	msgSettingsTitle                   messageID = "settings.title"
+	msgSettingsSummary                 messageID = "settings.summary"
+	msgSettingsLanguageTitle           messageID = "settings.language.title"
+	msgSettingsLanguageAuto            messageID = "settings.language.auto"
+	msgSettingsLanguageAutoDesc        messageID = "settings.language.auto_description"
+	msgSettingsLanguageZhCN            messageID = "settings.language.zh_cn"
+	msgSettingsLanguageZhCNDesc        messageID = "settings.language.zh_cn_description"
+	msgSettingsLanguageEnglish         messageID = "settings.language.english"
+	msgSettingsLanguageEnglishDesc     messageID = "settings.language.english_description"
+	msgSettingsEffectiveZhCN           messageID = "settings.effective.zh_cn"
+	msgSettingsEffectiveEnglish        messageID = "settings.effective.english"
+	msgSettingsSaveTitle               messageID = "settings.save.title"
+	msgSettingsSaveDesc                messageID = "settings.save.description"
+	msgSettingsResetTitle              messageID = "settings.reset.title"
+	msgSettingsResetDesc               messageID = "settings.reset.description"
+	msgSettingsPath                    messageID = "settings.path"
+	msgSettingsOverride                messageID = "settings.override"
+	msgSettingsWarningsTitle           messageID = "settings.warnings.title"
+	msgSettingsWarningConfigPath       messageID = "settings.warning.config_path"
+	msgSettingsWarningUnsafeStore      messageID = "settings.warning.unsafe_store"
+	msgSettingsWarningUnreadableStore  messageID = "settings.warning.unreadable_store"
+	msgSettingsWarningInvalidDocument  messageID = "settings.warning.invalid_document"
+	msgSettingsWarningPreferredLibrary messageID = "settings.warning.preferred_library"
+	msgSettingsWarningUnknown          messageID = "settings.warning.unknown"
+	msgSettingsStateSaved              messageID = "settings.state.saved"
+	msgSettingsStateUnsaved            messageID = "settings.state.unsaved"
+	msgSettingsSaving                  messageID = "settings.saving"
+	msgSettingsSaved                   messageID = "settings.saved"
+	msgSettingsSaveFailed              messageID = "settings.save_failed"
+	msgSettingsResetReady              messageID = "settings.reset_ready"
+	msgSettingsFooter                  messageID = "settings.footer"
+	msgSettingsHelpTitle               messageID = "settings.help.title"
+	msgSettingsHelpChoose              messageID = "settings.help.choose"
+	msgSettingsHelpPreview             messageID = "settings.help.preview"
+	msgSettingsHelpSave                messageID = "settings.help.save"
+	msgSettingsHelpReset               messageID = "settings.help.reset"
+	msgSettingsHelpOverride            messageID = "settings.help.override"
+	msgSettingsHelpCancel              messageID = "settings.help.cancel"
+	msgSettingsHelpBoundary            messageID = "settings.help.boundary"
 
 	msgWorkspaceInputTitle      messageID = "workspace_input.title"
 	msgWorkspaceInputDefinition messageID = "workspace_input.definition"
@@ -504,9 +548,8 @@ func (m Model) text(id messageID, args ...any) string {
 	return fmt.Sprintf(template, args...)
 }
 
-// withLanguage is deliberately package-private until the Settings screen and
-// persisted UI preferences are implemented. It lets tests exercise every
-// catalog without exposing an incomplete product setting.
+// withLanguage stays package-private so callers use the validated preferences
+// Core instead of assigning presentation state directly.
 func (m Model) withLanguage(value language) Model {
 	m.language = value
 	m.syncLocalizedInputs()

@@ -16,6 +16,7 @@ const (
 	homeActionHealth
 	homeActionMigration
 	homeActionVersion
+	homeActionSettings
 )
 
 type homeItem struct {
@@ -51,6 +52,11 @@ func (m Model) homeItems() []homeItem {
 			title:       m.text(msgHomeVersionTitle),
 			description: m.text(msgHomeVersionDesc),
 		},
+		{
+			action:      homeActionSettings,
+			title:       m.text(msgHomeSettingsTitle),
+			description: m.text(msgHomeSettingsDesc),
+		},
 	}
 }
 
@@ -67,9 +73,11 @@ func (m Model) homeView(style styles) string {
 		padRight(m.text(msgHomeLibraryLabel), 15) + " " + m.homeWorkspaceStatus(),
 		padRight(m.text(msgHomeAssetStatusLabel), 15) + " " + m.homeInventoryStatus(),
 		padRight(m.text(msgHomeInstallLabel), 15) + " " + m.homeDeploymentStatus(),
-		"",
-		style.header.Render(m.text(msgHomeTaskPrompt)),
 	}
+	if len(m.preferenceWarnings) > 0 {
+		lines = append(lines, style.warning.Render(m.text(msgHomePreferencesWarning)))
+	}
+	lines = append(lines, "", style.header.Render(m.text(msgHomeTaskPrompt)))
 
 	for index, item := range m.homeItems() {
 		prefix := "  "
@@ -213,6 +221,8 @@ func (m Model) startHomeAction(action homeAction) (tea.Model, tea.Cmd) {
 		return m.startMigration()
 	case homeActionVersion:
 		return m.startVersion()
+	case homeActionSettings:
+		return m.startSettings()
 	default:
 		return m, nil
 	}
@@ -230,6 +240,7 @@ func (m Model) homeHelpView(style styles) string {
 		m.text(msgHomeHelpHealth),
 		m.text(msgHomeHelpMigration),
 		m.text(msgHomeHelpVersion),
+		m.text(msgHomeHelpSettings),
 		"",
 		m.text(msgHomeHelpLibrary),
 		m.text(msgHomeHelpFooter),

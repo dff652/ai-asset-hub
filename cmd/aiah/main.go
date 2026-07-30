@@ -14,6 +14,7 @@ import (
 	"github.com/dff652/ai-asset-hub/internal/channel"
 	"github.com/dff652/ai-asset-hub/internal/inventory"
 	"github.com/dff652/ai-asset-hub/internal/mcp"
+	"github.com/dff652/ai-asset-hub/internal/preferences"
 	"github.com/dff652/ai-asset-hub/internal/tui"
 	updater "github.com/dff652/ai-asset-hub/internal/update"
 	"github.com/dff652/ai-asset-hub/internal/validate"
@@ -33,7 +34,7 @@ const usage = `usage:
   aiah pull --channel DIR --name NAME [--version V] [--profile P] --out DIR [--output json]
   aiah versions --channel DIR [--name NAME] [--output json]
   aiah bootstrap --channel DIR --name NAME [--version V] [--profile P] --out DIR [--home PATH] [--project PATH] [--targets LIST]
-  aiah ui [--home PATH] [--project PATH] [--workspace PATH] [--package PATH] [--targets LIST]
+  aiah ui [--home PATH] [--project PATH] [--workspace PATH] [--package PATH] [--targets LIST] [--language auto|zh-CN|en]
   aiah mcp
   aiah update --check [--output text|json]
   aiah version [--output text|json]
@@ -155,12 +156,23 @@ func runUI(args []string, stdout, stderr io.Writer) int {
 	workspace := flags.String("workspace", "", "asset workspace root; enables composing a manifest")
 	pkg := flags.String("package", "", "package .tar or extracted directory; enables diff/apply review")
 	targets := flags.String("targets", "", "comma-separated deployment targets (claude,codex,grok)")
+	language := flags.String("language", "", "interface language for this process (auto|zh-CN|en)")
 	if ok, code := parseFlagSet(flags, args); !ok {
 		return code
 	}
 	if flags.NArg() != 0 {
 		_, _ = io.WriteString(stderr, usage)
 		return 2
+	}
+	languageOverride := preferences.Language(*language)
+	if languageOverride != "" {
+		if _, err := preferences.Resolve(preferences.ResolveOptions{
+			Current:          preferences.Defaults(),
+			LanguageOverride: languageOverride,
+		}); err != nil {
+			_, _ = io.WriteString(stderr, "aiah: unsupported interface language\n")
+			return 2
+		}
 	}
 
 	err = launchUI(tui.Options{
@@ -169,6 +181,7 @@ func runUI(args []string, stdout, stderr io.Writer) int {
 		Workspace: *workspace,
 		Package:   *pkg,
 		Targets:   splitCSV(*targets),
+		Language:  languageOverride,
 		Input:     stdin,
 		Output:    stdout,
 	})

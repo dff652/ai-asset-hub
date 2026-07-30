@@ -1,0 +1,13 @@
+aiah · 偏好设置                                                                         无未保存修改
+这里只管理本机界面偏好，不改变资产、目标工具、校验、备份或确认规则。
+
+界面语言
+> [x] 自动（当前：简体中文）         按 LC_ALL / LC_MESSAGES / LANG 选择
+      简体中文                       本次预览简体中文
+      English                        Preview this session in English
+      保存偏好                       明确写入本机偏好文件
+      重置全部本机偏好               重置语言、显示密度和首选资产库；仍需保存
+
+偏好文件  /tmp/aiah/preferences.json
+
+↑↓/jk 选择 · Enter 预览/执行 · Esc/m 放弃并返回 · ? 帮助 · q 退出

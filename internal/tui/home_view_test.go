@@ -26,6 +26,7 @@ func TestHomeViewExplainsPurposeStateAndTasks(t *testing.T) {
 		"安装检查与撤销",
 		"迁移到其他设备",
 		"关于与更新",
+		"偏好设置",
 	} {
 		if !strings.Contains(view, needle) {
 			t.Fatalf("home view omits %q:\n%s", needle, view)
@@ -149,7 +150,7 @@ func TestHomeHelpUsesUserLanguage(t *testing.T) {
 	model := readyTestModel().WithHome(true).WithMaintenance(true)
 	updated, _ := model.Update(keyPress("?"))
 	view := updated.(Model).View()
-	for _, needle := range []string{"加入资产库", "预览变化", "撤销", "事实源"} {
+	for _, needle := range []string{"加入资产库", "预览变化", "撤销", "事实源", "偏好设置"} {
 		if !strings.Contains(view, needle) {
 			t.Fatalf("home help omits %q:\n%s", needle, view)
 		}
