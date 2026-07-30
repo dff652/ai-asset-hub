@@ -1,8 +1,7 @@
 # N7：偏好设置与中英文支持方案
 
-- 状态：Accepted for N7.0；N7.1 首页、inventory 与资产库管理、diff/apply、
-  doctor/rollback、migration 目录切片已实现，version 页面实施中；设置页、语言
-  切换和偏好文件尚未实现
+- 状态：Accepted for N7.0；N7.1 的 457 条完整双语消息目录和核心页面 golden 已于
+  2026-07-31 实现；设置页、语言切换和偏好文件尚未实现
 - 日期：2026-07-30
 - 目标阶段：TUI 产品体验 V2 E4
 - 关联：[TUI 产品体验方案](tui-product-experience-v2.md)、
@@ -25,9 +24,9 @@ N7 应做，但必须按“**字符串目录先行，偏好持久化后置**”�
 secret 或任何“关闭校验/备份/确认”的开关。
 
 当前代码**没有**设置页、偏好文件或用户可操作的语言切换。TUI 仍以中文为兼容默认，
-但首页、inventory、diff/apply、doctor/rollback 和 migration 已进入 typed 双语
-目录并有对应 golden；version 仍有界面字符串待迁移。完整目录、设置入口和发布包
-验收完成前，不能把“双语设置”写成已支持。
+但所有 production TUI 用户文案已进入 typed 双语目录，并有 zh-CN/en 核心页面
+golden、help 断言和 catalog 完整性门禁。设置入口和发布包验收完成前，不能把
+“双语设置”写成已支持。
 
 ## 2. 产品边界
 
@@ -265,9 +264,11 @@ unchanged/skipped；`standard` 可以默认折叠这些技术字段，但用户�
   完整迁移；
 - [x] migration zh-CN/en 状态、换机检查、发布确认、版本列表 golden，以及
   English 取回目录和包级阻止路径验收；
-- [ ] 提取所有 production TUI 用户可见字符串为 typed IDs；
-- [ ] 为首页、inventory、diff/确认、doctor/rollback、migration、version/help
-  增加完整双语 golden（除 version 外均已完成）；
+- [x] version 本机信息、当前资产安装、显式 Release 检查、失败与升级命令完整迁移；
+- [x] version 离线/更新可用 zh-CN/en golden，English 状态、失败与 help 验收；
+- [x] 提取所有 production TUI 用户可见字符串为 typed IDs；
+- [x] 为首页、inventory、diff/确认、doctor/rollback、migration、version 增加
+  双语核心页面/确认页 golden，并覆盖 help English 验收；
 - [x] 保持当前 zh-CN 默认行为，避免重构和行为切换同时发生。
 
 出口：两套 catalog 完整，但用户仍看不到语言开关。
@@ -304,6 +305,13 @@ version。用户仍看不到语言开关，也不会创建偏好文件。
 三项变异均能使门禁失败，完整 `check-local` 通过。排除中文 catalog 后仅剩
 `version.go` / `version_view.go` 两个 production 文件、29 行含中文文本；下一步完成
 version，仍不开放语言开关或创建偏好文件。
+
+第六检查点 `71f2f7c` 把目录扩展到 457 个 typed 消息，完成 version 并达到 N7.1
+出口。打开版本页仍只读取本机程序与当前安装，只有用户按 `c` 后才运行只读 GitHub
+Release 检查；升级命令只展示，不自动执行或替换二进制。删除 English
+`version.title`、重新直写中文、让打开页面直接进入在线检查状态三项变异均能使门禁
+失败，完整 `check-local` 通过。排除中文 catalog 后，production TUI 含中文 literal
+为 0；下一步进入 N7.2 偏好 Core，而不是直接声明双语设置已可用。
 
 ### N7.2：偏好 Core
 
