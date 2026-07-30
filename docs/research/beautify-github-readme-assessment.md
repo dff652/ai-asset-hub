@@ -3,7 +3,8 @@
 - 日期：2026-07-30
 - 对象：[oil-oil/beautify-github-readme](https://github.com/oil-oil/beautify-github-readme)
 - 结论：**可用；asset-only 与 README mode 均已进入 dev 候选，默认分支首页待合入**
-- 本机状态：Skill 已安装；已生成项目首屏、资产生命周期图和真实 TUI 状态证明板。
+- 本机状态：Skill 已安装；已生成项目首屏、五步使用流程、资产生命周期图和真实
+  TUI 状态证明板。
 - 已执行：在项目所有者明确授权后进入 README mode，重构阅读顺序与首屏并嵌入
   静态 SVG；开发态证明继续与公开 Release 验收分开标注。
 
@@ -12,7 +13,7 @@
 | 范围 | 状态 | 说明 |
 |---|---|---|
 | Skill 安装与适用性评估 | ✅ 完成 | 已按仓库真实内容确定终端/资产生命周期视觉方向 |
-| asset-only 静态素材 | ✅ 完成 | 生命周期图和 TUI 状态证明板已生成 |
+| asset-only 静态素材 | ✅ 完成 | 五步使用流程、生命周期图和 TUI 状态证明板已生成 |
 | README 项目原生首屏 | ✅ 完成 | 新增 terminal-first 静态 hero，不依赖远程字体或脚本 |
 | README 文案、阅读顺序与首屏重构 | ✅ 本地完成 | 先回答定位与状态，再给安装、流程、TUI 证据、入口和安全边界 |
 | 把 SVG 嵌入 README | ✅ 本地完成 | 三张 SVG 均有文字替代说明，正文保留命令与限制 |
@@ -32,8 +33,10 @@ GitHub 可安全渲染的静态 SVG，把可复制命令和正文保留在 Markd
 aiah 也有适合可视化的真实产品流程：
 
 ```text
-发现本机资产 → 纳入/更新/移出资产库 → 变更预览 → 确认应用 → 安装检查/撤销
+发现资产 → 整理资产库 → 检查并准备 → 预览变化 → 人工确认
 ```
+
+安装检查与撤销作为应用后的安全闭环单独说明，不挤进需要首次用户记忆的五步主线。
 
 ## 采用方式
 
@@ -54,13 +57,18 @@ aiah 也有适合可视化的真实产品流程：
 
 本轮产物：
 
+- [`assets/readme/usage-flow.svg`](../../assets/readme/usage-flow.svg)：
+  发现资产 → 整理资产库 → 检查并准备 → 预览变化 → 人工确认；各阶段输出和
+  “前四步目标目录零写入”的边界在上手指南正文中可搜索；
+
 - [`assets/readme/asset-lifecycle.svg`](../../assets/readme/asset-lifecycle.svg)：
-  工具来源 → 版本化资产库 → 本机应用 / 跨设备迁移；
+  工具来源 → 版本化资产库 → 本机应用 / 跨设备迁移；README 主流程图替换后，
+  该图继续用于上手指南的跨设备章节；
 - [`assets/readme/tui-proof-board.svg`](../../assets/readme/tui-proof-board.svg)：
   统一资产状态、typed apply 结果和 E3.1 只读迁移状态；
 - [`assets/readme/hero.svg`](../../assets/readme/hero.svg)：终端式项目首屏，强调
   多工具来源、版本化资产库和 read-only-first 生命周期；
-- 三张 SVG 都包含 `<title>` / `<desc>`，不含脚本、远程资源或外部字体；已用
+- 四张 SVG 都包含 `<title>` / `<desc>`，不含脚本、远程资源或外部字体；已用
   librsvg 分别渲染 900px 和 360px 并人工检查，首屏重叠问题在验收中修正。
 
 ## 仍然不做的事

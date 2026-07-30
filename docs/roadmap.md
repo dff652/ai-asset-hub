@@ -387,7 +387,7 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 |---|---|---|---|
 | N0 | P0 | ✅ **严格 review 当前 E1/E2/E3.1 + 文档/视觉改动** | 已修复“读取失败误报待更新”和首页缺少自动安装状态；变异验证、完整 `check-local`、真 TTY 与 900/360 视觉检查通过；无剩余 P0/P1；[复审记录](reviews/2026-07-30-e1-e2-e3-1-strict-review.md)列出建议提交拆分，未自行 commit |
 | N1 | P0 | 🚧 **形成下一 Release 候选并做正式安装包 dogfood** | `dev@8552bef`、PR #16、dev CI、候选替换/TUI dogfood 和本地 `0.1.5` Release 产物已通过；[检查点](reviews/2026-07-30-v0.1.5-candidate-readiness.md)之后仍需 main CI → tag → Release → `v0.1.4→v0.1.5` 真实升级 |
-| N2 | P0 | ✅ **README mode：整体结构、文案、首屏与现有 SVG 嵌入** | 已进入 dev 候选；保留重构前历史快照并明确公开版/dev 候选边界；900px/360px、链接、SVG 安全和无障碍检查通过；默认分支 GitHub 页面验收待 main 合入 |
+| N2 | P0 | ✅ **README mode：整体结构、首屏与五步使用流程** | 已进入 dev 候选；保留重构前历史快照并明确公开版/dev 候选边界；“发现 → 整理 → 准备 → 预览 → 人工确认”已固化到上手指南和项目原生 SVG；900px/360px、链接、SVG 安全和无障碍检查通过；默认分支 GitHub 页面验收待 main 合入 |
 | N3 | P1 | **E3.2 跨设备连续向导** | TUI 编排 build/publish/versions/pull/bootstrap；通道由用户明确选择；pull 后仍必须 diff + typed apply |
 | N4 | P1 | **E3.3 换机前置检查** | 显示 device-private 排除项、缺失 secret、目标支持和 adapter 降级；检查阶段零写入 |
 | N5 | P1 | **MCP 只读状态补齐与客户端验收** | 先修订 ADR-0005，再暴露统一资产状态和迁移状态；所有工具零写入；Claude/Codex/Grok 真实握手有记录 |
