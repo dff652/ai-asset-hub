@@ -91,7 +91,7 @@ Linux amd64 已完成端到端行为验证。`v0.1.1` 中现存的 macOS、Windo
 |---|---|---|
 | 日常维护 | 查看统一状态 → 更新/移出 → 预览 → 应用 | TUI |
 | 检查与撤销 | 安装检查 → 判断漂移 → typed `rollback` | TUI / CLI |
-| 跨设备迁移 | build/publish → 外部搬运 → pull → diff/apply | TUI 看状态，CLI 执行 |
+| 跨设备迁移 | build/publish → 外部搬运 → versions/pull → diff/apply | TUI（开发候选）/ CLI |
 | AI 与自动化 | MCP 只读查询，或 CLI JSON 编排 | `aiah mcp` / CLI |
 | 升级 aiah | 只读检查 → 指定 Release → 校验并原子替换 | installer |
 
@@ -117,6 +117,12 @@ Linux amd64 已完成端到端行为验证。`v0.1.1` 中现存的 macOS、Windo
 - **安装检查与撤销**：显示包版本、目标工具、漂移和恢复点；
 - **迁移到其他设备**：只读比较资产库、当前安装和用户选择的分发通道；
 - **关于与更新**：默认离线，只有明确触发才检查 GitHub Release。
+
+`v0.1.6` 的迁移页仍是上图所示只读状态。当前开发候选已经加入 E3.2：按 `p`
+选择资产组合并 typed `publish`，按 `v` 明确选择版本/profile 和已有输出目录；
+取回后仍进入同一 diff，并且必须 typed `apply` 才写目标工具目录。aiah 不创建
+通道目录、不自动取回“最新版”，也不接管 Git/NAS/rsync/U 盘传输；首次发布可在
+用户明确选择的空目录中初始化通道索引和不可变包布局。
 
 完整图解和首次操作见[上手指南](docs/getting-started.md)，TUI 产品用语与状态边界见
 [产品体验方案](docs/designs/tui-product-experience-v2.md)。
@@ -146,6 +152,8 @@ MCP 当前不开放写操作，也尚未覆盖 TUI 已有的统一资产状态�
 - TUI 应用必须完整输入 `apply`；`bootstrap` 没有 `--yes` 或非交互旁路。
 - TUI 撤销只针对安装检查识别到的当前安装，且必须完整输入 `rollback`；选择
   历史 backup 仍使用 CLI。
+- TUI 发布必须完整输入 `publish`；取回必须明确选择版本/profile 和已有输出目录，
+  不覆盖不同或残缺的同名产物，取回成功也不会跳过 diff/typed `apply`。
 - MCP server 只暴露 `scan`、`validate`、`diff`、`doctor`、`version`，不暴露
   `build`、`apply` 或 `rollback`。
 - MCP 原生配置采用 create-only 所有权；冲突时整单 fail-closed。

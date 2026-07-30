@@ -6,7 +6,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dff652/ai-asset-hub/internal/apply"
 	"github.com/dff652/ai-asset-hub/internal/inventory"
-	"github.com/dff652/ai-asset-hub/internal/migration"
 	updater "github.com/dff652/ai-asset-hub/internal/update"
 	"github.com/dff652/ai-asset-hub/internal/workspace"
 )
@@ -48,6 +47,7 @@ type Model struct {
 	choosingProfile    bool
 	availableProfiles  []string
 	building           bool
+	buildPurpose       buildPurpose
 	findingsOnly       bool
 	cursor             int
 	expanded           map[string]bool
@@ -107,12 +107,7 @@ type Model struct {
 	updateReport   updater.Report
 	updateErr      error
 
-	migrationStatus  status
-	migrationReport  migration.Report
-	migrationErr     error
-	migrationChannel string
-	channelInput     textinput.Model
-	choosingChannel  bool
+	migrationFlow migrationFlow
 }
 
 func NewModel(options inventory.Options) Model {
@@ -145,18 +140,13 @@ func NewModel(options inventory.Options) Model {
 	manageInput.Prompt = "> "
 	manageInput.CharLimit = 6
 	manageInput.Width = 12
-	channelInput := textinput.New()
-	channelInput.Prompt = "> "
-	channelInput.Placeholder = "/mnt/usb/aiah"
-	channelInput.CharLimit = 512
-	channelInput.Width = 64
 	return Model{
 		options:        options,
 		filterInput:    input,
 		workspaceInput: workspaceInput,
 		profileInput:   profileInput,
 		manageInput:    manageInput,
-		channelInput:   channelInput,
+		migrationFlow:  newMigrationFlow(),
 		expanded:       make(map[string]bool),
 		selected:       make(map[string]bool),
 		diffExpanded: map[string]bool{
@@ -256,7 +246,8 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = message.Height
 		m.filterInput.Width = max(10, min(48, message.Width-6))
 		m.workspaceInput.Width = max(10, min(64, message.Width-6))
-		m.channelInput.Width = max(10, min(64, message.Width-6))
+		m.migrationFlow.channelInput.Width = max(10, min(64, message.Width-6))
+		m.migrationFlow.pullOutInput.Width = max(10, min(64, message.Width-6))
 		return m, nil
 	case scanMsg:
 		if message.generation != m.generation {
@@ -351,6 +342,9 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.noticeIsWarn = true
 			return m, nil
 		}
+		if message.purpose == buildForPublish {
+			return m.startPublishConfirmation(message.packagePath)
+		}
 		m.deployOptions.Package = message.packagePath
 		m.deployOptions.DryRun = false
 		m.packageFromBuild = true
@@ -428,13 +422,13 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.updateErr = message.err
 		return m, nil
 	case migrationMsg:
-		m.migrationStatus = statusReady
-		m.migrationReport = message.report
-		m.migrationErr = message.err
-		if message.err != nil {
-			m.migrationStatus = statusFailed
-		}
-		return m, nil
+		return m.handleMigrationMessage(message)
+	case versionsMsg:
+		return m.handleVersionsMessage(message)
+	case publishMsg:
+		return m.handlePublishMessage(message)
+	case pullMsg:
+		return m.handlePullMessage(message)
 	case tea.KeyMsg:
 		return m.updateKey(message)
 	}
@@ -458,7 +452,8 @@ func (m *Model) refreshCatalog() {
 }
 
 func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
-	if m.applying || m.rollbacking || m.managing {
+	if m.applying || m.rollbacking || m.managing ||
+		m.migrationFlow.publishing || m.migrationFlow.pulling {
 		m.notice = "正在写入文件，请等待操作完成"
 		m.noticeIsWarn = true
 		return m, nil
@@ -472,11 +467,17 @@ func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.choosingWorkspace {
 		return m.updateWorkspaceInput(message)
 	}
-	if m.choosingChannel {
+	if m.migrationFlow.choosingChannel {
 		return m.updateChannelInput(message)
+	}
+	if m.migrationFlow.choosingPullOut {
+		return m.updatePullOutput(message)
 	}
 	if m.choosingProfile {
 		return m.updateProfileInput(message)
+	}
+	if m.migrationFlow.publishConfirming {
+		return m.updatePublishConfirmation(message)
 	}
 	if m.confirmManage {
 		return m.updateManageConfirmation(message)

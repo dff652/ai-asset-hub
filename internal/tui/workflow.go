@@ -20,8 +20,16 @@ type workspaceMsg struct {
 type buildMsg struct {
 	report      build.Report
 	packagePath string
+	purpose     buildPurpose
 	err         error
 }
+
+type buildPurpose int
+
+const (
+	buildForDeployment buildPurpose = iota
+	buildForPublish
+)
 
 func prepareWorkspaceCommand(candidate, home, project string) tea.Cmd {
 	return func() tea.Msg {
@@ -30,10 +38,10 @@ func prepareWorkspaceCommand(candidate, home, project string) tea.Cmd {
 	}
 }
 
-func buildCommand(options build.Options) tea.Cmd {
+func buildCommand(options build.Options, purpose buildPurpose) tea.Cmd {
 	return func() tea.Msg {
 		report, err := build.Build(options)
-		message := buildMsg{report: report, err: err}
+		message := buildMsg{report: report, purpose: purpose, err: err}
 		if err == nil && report.Ok && report.Package != nil {
 			message.packagePath = filepath.Join(options.OutDir, report.Package.Archive)
 		}
@@ -81,6 +89,10 @@ func (m Model) updateWorkspaceInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) startProfileInput() (tea.Model, tea.Cmd) {
+	return m.startProfileInputFor(buildForDeployment)
+}
+
+func (m Model) startProfileInputFor(purpose buildPurpose) (tea.Model, tea.Cmd) {
 	if m.composing {
 		m.notice = "正在加入资产库，请完成后再继续"
 		m.noticeIsWarn = true
@@ -108,6 +120,7 @@ func (m Model) startProfileInput() (tea.Model, tea.Cmd) {
 		profile = m.availableProfiles[0]
 	}
 	m.choosingProfile = true
+	m.buildPurpose = purpose
 	m.profileInput.SetValue(profile)
 	m.notice = ""
 	m.noticeIsWarn = false
@@ -117,6 +130,7 @@ func (m Model) startProfileInput() (tea.Model, tea.Cmd) {
 func (m Model) updateProfileInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if message.Type == tea.KeyEsc {
 		m.choosingProfile = false
+		m.buildPurpose = buildForDeployment
 		m.profileInput.Blur()
 		return m, nil
 	}
@@ -131,14 +145,20 @@ func (m Model) updateProfileInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.profileInput.Blur()
 		m.invalidateBuiltPackage()
 		m.building = true
-		m.notice = "正在检查资产并准备安装包…"
+		purpose := m.buildPurpose
+		m.buildPurpose = buildForDeployment
+		if purpose == buildForPublish {
+			m.notice = "正在检查资产并准备待发布安装包…"
+		} else {
+			m.notice = "正在检查资产并准备安装包…"
+		}
 		m.noticeIsWarn = false
 		return m, buildCommand(build.Options{
 			Manifest: filepath.Join(m.workspace, "manifest.yaml"),
 			Root:     m.workspace,
 			Profile:  profile,
 			OutDir:   filepath.Join(m.workspace, "dist"),
-		})
+		}, purpose)
 	}
 	var command tea.Cmd
 	m.profileInput, command = m.profileInput.Update(message)
