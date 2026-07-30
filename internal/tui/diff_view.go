@@ -28,9 +28,9 @@ type deploymentRow struct {
 }
 
 func (m Model) deploymentView(style styles) string {
-	title := "aiah · 变更预览"
+	title := m.text(msgDiffTitle)
 	if m.applyResult != nil {
-		title = "aiah · 应用结果"
+		title = m.text(msgDiffResultTitle)
 	}
 	header := joinEdges(
 		style.header.Render(title),
@@ -42,15 +42,15 @@ func (m Model) deploymentView(style styles) string {
 	case m.confirming:
 		return header + "\n" + m.confirmationView(style)
 	case m.applying:
-		return header + "\n\n" + style.warning.Render("正在应用到目标工具…请等待事务完成")
+		return header + "\n\n" + style.warning.Render(m.text(msgDiffApplying))
 	case m.diffStatus == statusLoading:
-		return header + "\n\n正在计算只读变更预览…（可按 q 退出）"
+		return header + "\n\n" + m.text(msgDiffLoading)
 	case m.diffStatus == statusFailed:
-		message := "变更预览失败"
+		message := m.text(msgDiffFailed)
 		if m.deployErr != nil {
 			message += ": " + m.deployErr.Error()
 		}
-		return header + "\n\n" + style.error.Render(message) + "\n按 d 重试，m 返回首页"
+		return header + "\n\n" + style.error.Render(message) + "\n" + m.text(msgDiffRetry)
 	}
 
 	var banner string
@@ -59,10 +59,10 @@ func (m Model) deploymentView(style styles) string {
 		report = *m.applyResult
 		banner = m.applyResultBanner(style, report)
 	} else if !report.Ok {
-		banner = style.error.Render("变更预览未通过；以下为 Core 原始风险与问题")
+		banner = style.error.Render(m.text(msgDiffBlockedBanner))
 	} else {
-		banner = fmt.Sprintf(
-			"尚未写入 · 新建 %d · 更新 %d · 不变 %d · 跳过 %d",
+		banner = m.text(
+			msgDiffPreviewSummary,
 			report.Summary.Create,
 			report.Summary.Update,
 			report.Summary.Unchanged,
@@ -71,14 +71,14 @@ func (m Model) deploymentView(style styles) string {
 	}
 
 	body := m.deploymentBody(style, report)
-	footer := style.muted.Render("↑↓/jk 导航 · ←→ 折叠 · a 确认应用 · d 重算预览 · m 首页 · ? 帮助 · q 退出")
+	footer := style.muted.Render(m.text(msgDiffFooterPreview))
 	if m.applyResult != nil || !report.Ok {
-		footer = style.muted.Render("↑↓/jk 导航 · ←→ 折叠 · d 重算预览 · m 首页 · ? 帮助 · q 退出")
+		footer = style.muted.Render(m.text(msgDiffFooterReadOnly))
 	}
 	if m.maintenance {
-		footer = style.muted.Render("↑↓/jk 导航 · a 确认应用 · d 重算预览 · h 安装检查 · m 首页 · ? 帮助 · q 退出")
+		footer = style.muted.Render(m.text(msgDiffFooterMaintenance))
 		if m.applyResult != nil || !report.Ok {
-			footer = style.muted.Render("↑↓/jk 导航 · d 重算预览 · h 安装检查 · v 版本 · m 首页 · ? 帮助 · q 退出")
+			footer = style.muted.Render(m.text(msgDiffFooterResultMaintenance))
 		}
 	}
 	if m.notice != "" {
@@ -95,19 +95,19 @@ func (m Model) confirmationView(style styles) string {
 	report := m.diffReport
 	lines := []string{
 		"",
-		style.error.Render("即将把以上变化应用到目标工具"),
-		fmt.Sprintf(
-			"新建 %d · 更新 %d · 不变 %d · 跳过 %d",
+		style.error.Render(m.text(msgDiffConfirmWarning)),
+		m.text(
+			msgDiffConfirmSummary,
 			report.Summary.Create,
 			report.Summary.Update,
 			report.Summary.Unchanged,
 			report.Summary.Skipped,
 		),
 		"",
-		"这是第二次确认。完整输入 apply 后按 Enter 确认应用：",
+		m.text(msgDiffConfirmPrompt),
 		m.confirmInput.View(),
 		"",
-		"Esc 取消；打开本页不会写入。",
+		m.text(msgDiffConfirmFooter),
 	}
 	if m.notice != "" {
 		lines = append(lines, "", style.warning.Render(m.notice))
@@ -117,14 +117,14 @@ func (m Model) confirmationView(style styles) string {
 
 func (m Model) applyResultBanner(style styles, report apply.Report) string {
 	if !report.Ok || m.deployErr != nil {
-		return style.error.Render("应用失败；以下为 Core 原始风险与问题")
+		return style.error.Render(m.text(msgDiffApplyFailed))
 	}
 	targets := "—"
 	if len(report.Targets) > 0 {
-		targets = strings.Join(report.Targets, "、")
+		targets = strings.Join(report.Targets, m.text(msgCommonListSeparator))
 	}
-	summary := fmt.Sprintf(
-		"目标工具  %s · 写入 %d · 不变 %d · 跳过 %d",
+	summary := m.text(
+		msgDiffResultSummary,
 		targets,
 		report.Summary.Written,
 		report.Summary.Unchanged,
@@ -132,23 +132,26 @@ func (m Model) applyResultBanner(style styles, report apply.Report) string {
 	)
 	if report.BackupID == "" {
 		return strings.Join([]string{
-			style.header.Render("应用完成"),
+			style.header.Render(m.text(msgDiffResultComplete)),
 			summary,
-			"安装恢复点 (backupId)  — · 没有写入，无需撤销",
-			style.muted.Render("下一步  返回首页继续管理资产，或按 d 重新计算变更预览。"),
+			m.text(msgDiffResultNoRestore),
+			style.muted.Render(m.text(msgDiffResultNextNoWrite)),
 		}, "\n")
 	}
 	lines := []string{
-		style.header.Render("应用完成"),
+		style.header.Render(m.text(msgDiffResultComplete)),
 		summary,
-		style.header.Render("安装恢复点 (backupId)  " + report.BackupID),
-		style.warning.Render("撤销命令  " + rollbackCommand(m.deployOptions, report.BackupID)),
-		style.muted.Render("下一步  运行安装检查；确认正常后再迁移或分发这个资产版本。"),
+		style.header.Render(m.text(msgDiffResultRestorePoint, report.BackupID)),
+		style.warning.Render(
+			m.text(
+				msgDiffResultRollbackCommand,
+				rollbackCommand(m.deployOptions, report.BackupID),
+			),
+		),
+		style.muted.Render(m.text(msgDiffResultNext)),
 	}
 	if m.maintenance {
-		lines[len(lines)-1] = style.muted.Render(
-			"下一步  按 h 运行安装检查；确认正常后再迁移或分发这个资产版本。",
-		)
+		lines[len(lines)-1] = style.muted.Render(m.text(msgDiffResultNextMaintenance))
 	}
 	return strings.Join(lines, "\n")
 }
@@ -160,7 +163,7 @@ func (m Model) deploymentBody(style styles, report apply.Report) string {
 
 	rows := m.deploymentRowsFor(report)
 	if len(rows) == 0 {
-		return "\n没有文件变化"
+		return m.text(msgDiffNoChanges)
 	}
 	bodyHeight := max(4, m.height-7)
 	start, end := visibleRange(len(rows), m.diffCursor, bodyHeight)
@@ -240,7 +243,7 @@ func (m Model) deploymentRowsFor(report apply.Report) []deploymentRow {
 		expanded := m.diffExpanded[key]
 		rows = append(rows, deploymentRow{
 			kind: deploymentGroupRow, key: key,
-			label: fmt.Sprintf("%s (%d)", changeActionLabel(action), count), expanded: expanded,
+			label: fmt.Sprintf("%s (%d)", m.changeActionLabel(action), count), expanded: expanded,
 		})
 		if !expanded {
 			continue
@@ -260,7 +263,7 @@ func (m Model) deploymentRowsFor(report apply.Report) []deploymentRow {
 		expanded := m.diffExpanded["findings"]
 		rows = append(rows, deploymentRow{
 			kind: deploymentGroupRow, key: "findings",
-			label: fmt.Sprintf("风险与问题 (%d)", len(report.Findings)), expanded: expanded,
+			label: m.text(msgDiffFindingsGroup, len(report.Findings)), expanded: expanded,
 		})
 		if expanded {
 			for index := range report.Findings {
@@ -303,15 +306,15 @@ func (m Model) deploymentDetailLines(rows []deploymentRow, style styles) []strin
 	if row.change != nil {
 		return []string{
 			style.header.Render(row.change.Path),
-			"变化        " + changeActionLabel(row.change.Action),
+			m.text(msgDiffDetailChange, m.changeActionLabel(row.change.Action)),
 			"SHA256      " + row.change.SHA256,
 		}
 	}
 	if row.finding != nil {
 		lines := []string{
 			style.header.Render(row.finding.Code),
-			"级别        " + string(row.finding.Severity),
-			"说明        " + row.finding.Message,
+			m.text(msgDiffDetailSeverity, row.finding.Severity),
+			m.text(msgDiffDetailDescription, row.finding.Message),
 		}
 		for _, path := range row.finding.Paths {
 			lines = append(lines, "  "+path)
@@ -320,20 +323,20 @@ func (m Model) deploymentDetailLines(rows []deploymentRow, style styles) []strin
 	}
 	return []string{
 		style.header.Render(row.label),
-		"→/Enter 展开 · ← 收起",
+		m.text(msgDiffDetailExpand),
 	}
 }
 
-func changeActionLabel(action string) string {
+func (m Model) changeActionLabel(action string) string {
 	switch action {
 	case "create":
-		return "新建"
+		return m.text(msgDiffActionCreate)
 	case "update":
-		return "更新"
+		return m.text(msgDiffActionUpdate)
 	case "unchanged":
-		return "不变"
+		return m.text(msgDiffActionUnchanged)
 	case "skipped":
-		return "跳过"
+		return m.text(msgDiffActionSkipped)
 	default:
 		return action
 	}

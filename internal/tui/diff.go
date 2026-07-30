@@ -34,7 +34,7 @@ func applyCommand(options apply.Options) tea.Cmd {
 
 func (m Model) startDiff() (tea.Model, tea.Cmd) {
 	if m.deployOptions.Package == "" {
-		m.notice = "未指定安装包；用 aiah ui --package PATH 启动才能预览变化"
+		m.notice = m.text(msgDiffPackageRequired)
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -95,12 +95,12 @@ func (m Model) updateDeploymentKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m Model) startApplyConfirmation() (tea.Model, tea.Cmd) {
 	if m.diffStatus != statusReady || !m.diffReport.Ok {
-		m.notice = "变更预览未通过，不能确认应用；请先查看风险与问题"
+		m.notice = m.text(msgDiffPreviewBlocked)
 		m.noticeIsWarn = true
 		return m, nil
 	}
 	if m.applyResult != nil {
-		m.notice = "本次应用已经完成；按 d 重新计算变更预览"
+		m.notice = m.text(msgDiffAlreadyApplied)
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -117,13 +117,13 @@ func (m Model) updateConfirmation(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.confirming = false
 		m.confirmInput.SetValue("")
 		m.confirmInput.Blur()
-		m.notice = "已取消应用"
+		m.notice = m.text(msgDiffCancelled)
 		m.noticeIsWarn = false
 		return m, nil
 	}
 	if message.Type == tea.KeyEnter {
 		if m.confirmInput.Value() != "apply" {
-			m.notice = "确认文本不匹配；必须完整输入 apply"
+			m.notice = m.text(msgDiffConfirmMismatch)
 			m.noticeIsWarn = true
 			m.confirmInput.SetValue("")
 			return m, nil

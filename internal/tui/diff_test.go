@@ -193,6 +193,95 @@ func TestNoOpApplyResultSaysNoRollbackIsNeeded(t *testing.T) {
 	}
 }
 
+func TestDeploymentViewGoldenByLanguage(t *testing.T) {
+	tests := []struct {
+		name       string
+		language   language
+		confirming bool
+		golden     string
+	}{
+		{
+			name: "preview zh-CN", language: languageZhCN,
+			golden: "deployment.preview.zh-CN.golden",
+		},
+		{
+			name: "preview en", language: languageEnglish,
+			golden: "deployment.preview.en.golden",
+		},
+		{
+			name: "confirm zh-CN", language: languageZhCN, confirming: true,
+			golden: "deployment.confirm.zh-CN.golden",
+		},
+		{
+			name: "confirm en", language: languageEnglish, confirming: true,
+			golden: "deployment.confirm.en.golden",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			model := deploymentModel(
+				apply.Options{Package: "fixture.tar", Home: "/unused", Targets: []string{"claude"}},
+				successfulDiffReport(),
+			).WithMaintenance(true).withLanguage(test.language)
+			model.confirming = test.confirming
+			model.width = 100
+			model.height = 18
+			model.plain = true
+
+			got := model.View()
+			path := filepath.Join("testdata", test.golden)
+			want, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("read golden: %v\n--- got ---\n%s", err, got)
+			}
+			if normalizeTerminalGolden(got) != normalizeTerminalGolden(string(want)) {
+				t.Fatalf(
+					"view differs from %s:\n--- got ---\n%s\n--- want ---\n%s",
+					path,
+					got,
+					want,
+				)
+			}
+		})
+	}
+}
+
+func normalizeTerminalGolden(value string) string {
+	lines := strings.Split(strings.TrimSuffix(value, "\n"), "\n")
+	for index := range lines {
+		lines[index] = strings.TrimRight(lines[index], " \t")
+	}
+	return strings.Join(lines, "\n")
+}
+
+func TestEnglishApplyResultPreservesBackupAndUndoCommand(t *testing.T) {
+	options := apply.Options{
+		Package: "fixture.tar", Home: "/tmp/home", Targets: []string{"claude", "codex"},
+	}
+	model := deploymentModel(options, successfulDiffReport()).
+		WithMaintenance(true).
+		withLanguage(languageEnglish)
+	report := successfulDiffReport()
+	report.DryRun = false
+	report.Targets = []string{"claude", "codex"}
+	report.BackupID = "backup-123"
+	report.Summary = apply.Summary{Staged: 1, Written: 1}
+	model.applyResult = &report
+
+	view := model.View()
+	for _, want := range []string{
+		"Apply complete",
+		"Targets  claude, codex",
+		"Install restore point (backupId)  backup-123",
+		"Undo command  " + rollbackCommand(options, report.BackupID),
+		"Press h for install check",
+	} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("English result omits %q:\n%s", want, view)
+		}
+	}
+}
+
 func TestDeploymentFailureShowsCoreFindingsVerbatim(t *testing.T) {
 	t.Run("symlink target", func(t *testing.T) {
 		pkg := buildTUIFixturePackage(t, "workspace-valid")
