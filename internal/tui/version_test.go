@@ -11,7 +11,7 @@ import (
 	"github.com/dff652/ai-asset-hub/internal/version"
 )
 
-const testUpgradeCommand = "curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.3/scripts/install.sh | sh"
+const testUpgradeCommand = "curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.3/scripts/install.sh | AIAH_VERSION=0.1.3 sh"
 
 func TestVersionScreenIsLocalUntilCheckRequested(t *testing.T) {
 	model := NewModel(inventoryOptions(t.TempDir())).WithMaintenance(true)
@@ -68,7 +68,8 @@ func TestVersionViewShowsBuildDeploymentAndUpdateResult(t *testing.T) {
 		"aiah · 关于与更新", "0.1.2", "1234567890ab", "2026-07-29T00:00:00Z",
 		"assets", "2026.07.1", "0.1.3", "有可用更新",
 		"curl -fsSL \\", "'https://raw.githubusercontent.com/dff652/'\\",
-		"'ai-asset-hub/v0.1.3/scripts/install.sh' | sh",
+		"'ai-asset-hub/v0.1.3/scripts/install.sh' |",
+		"AIAH_VERSION=0.1.3 sh",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("version view omits %q:\n%s", want, view)
@@ -78,7 +79,7 @@ func TestVersionViewShowsBuildDeploymentAndUpdateResult(t *testing.T) {
 
 func TestDisplayUpgradeCommandIsCopyableAtNarrowWidth(t *testing.T) {
 	lines := displayUpgradeCommand(testUpgradeCommand)
-	if len(lines) != 3 {
+	if len(lines) != 4 {
 		t.Fatalf("lines = %#v", lines)
 	}
 	for _, line := range lines {
@@ -88,7 +89,8 @@ func TestDisplayUpgradeCommandIsCopyableAtNarrowWidth(t *testing.T) {
 	}
 	if got := strings.Join(lines, "\n"); got != "curl -fsSL \\\n"+
 		"  'https://raw.githubusercontent.com/dff652/'\\\n"+
-		"  'ai-asset-hub/v0.1.3/scripts/install.sh' | sh" {
+		"  'ai-asset-hub/v0.1.3/scripts/install.sh' |\n"+
+		"  AIAH_VERSION=0.1.3 sh" {
 		t.Fatalf("copyable command = %q", got)
 	}
 }

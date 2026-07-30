@@ -618,7 +618,7 @@ func TestRunUpdateCheckUsesReadOnlyCore(t *testing.T) {
 			LatestVersion:   "0.1.3",
 			Status:          updater.StatusUpdateAvailable,
 			UpdateAvailable: true,
-			UpgradeCommand:  "curl -fsSL https://example.invalid/v0.1.3/install.sh | sh",
+			UpgradeCommand:  "curl -fsSL https://example.invalid/v0.1.3/install.sh | AIAH_VERSION=0.1.3 sh",
 		}, nil
 	}
 
@@ -636,7 +636,8 @@ func TestRunUpdateCheckUsesReadOnlyCore(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !report.Ok || !report.UpdateAvailable ||
-		report.UpgradeCommand != "curl -fsSL https://example.invalid/v0.1.3/install.sh | sh" {
+		report.UpgradeCommand !=
+			"curl -fsSL https://example.invalid/v0.1.3/install.sh | AIAH_VERSION=0.1.3 sh" {
 		t.Fatalf("report = %#v", report)
 	}
 }

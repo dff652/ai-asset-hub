@@ -1,7 +1,7 @@
 # TUI 产品体验与导航方案 V2
 
-- 状态：**Accepted，Phase E1/E2 与 E3.1 已实现；dev 候选 dogfood 通过，
-  待正式 Release 安装验收**
+- 状态：**Accepted，Phase E1/E2 与 E3.1 已随 `v0.1.5` 发布并完成正式安装包
+  dogfood；推荐升级命令的已知问题不改变 TUI 功能验收结论**
 - 日期：2026-07-29
 - 关联：[TUI 技术方案](tui-technical-design.md)、
   [ADR-0006](../decisions/0006-tui-as-first-interactive-surface.md)、
