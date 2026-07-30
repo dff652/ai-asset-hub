@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">AI Asset Hub 资产生命周期</title>
+  <desc id="desc">Claude、Codex 和 Grok 的本机资产进入版本化资产库，经过预览和明确确认后应用到本机，或通过不可变资产包迁移到其他设备。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#58A6FF"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="620" rx="24" fill="#0D1117"/>
+
+  <text x="60" y="54" fill="#58A6FF" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18" font-weight="700" letter-spacing="2">AI ASSET LIFECYCLE</text>
+  <text x="60" y="104" fill="#E6EDF3" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="42" font-weight="700">一份资产库，连接多个 AI 工具与设备</text>
+  <text x="60" y="137" fill="#8B949E" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="20">纯文本是事实源 · 写入前可审阅 · 写入后可回滚</text>
+
+  <text x="60" y="188" fill="#8B949E" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="700" letter-spacing="1.5">发现本机资产</text>
+  <rect x="60" y="208" width="250" height="66" rx="14" fill="#E6EDF3" fill-opacity=".035" stroke="#8B949E" stroke-opacity=".65"/>
+  <text x="86" y="249" fill="#E6EDF3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="24" font-weight="700">&gt; Claude</text>
+  <rect x="60" y="290" width="250" height="66" rx="14" fill="#E6EDF3" fill-opacity=".035" stroke="#8B949E" stroke-opacity=".65"/>
+  <text x="86" y="331" fill="#E6EDF3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="24" font-weight="700">&gt; Codex</text>
+  <rect x="60" y="372" width="250" height="66" rx="14" fill="#E6EDF3" fill-opacity=".035" stroke="#8B949E" stroke-opacity=".65"/>
+  <text x="86" y="413" fill="#E6EDF3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="24" font-weight="700">&gt; Grok</text>
+
+  <path d="M 310 323 C 335 323, 340 323, 368 323" fill="none" stroke="#58A6FF" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <rect x="385" y="184" width="405" height="270" rx="20" fill="#58A6FF" fill-opacity=".06" stroke="#58A6FF" stroke-width="2"/>
+  <text x="417" y="220" fill="#58A6FF" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18" font-weight="700" letter-spacing="1.5">版本化资产库</text>
+  <text x="417" y="265" fill="#E6EDF3" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="30" font-weight="700">整理、纳管、更新</text>
+  <rect x="417" y="291" width="341" height="66" rx="12" fill="#0D1117" stroke="#8B949E" stroke-opacity=".55"/>
+  <text x="440" y="320" fill="#E6EDF3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="21">assets/</text>
+  <text x="440" y="345" fill="#8B949E" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18">manifest.yaml</text>
+  <rect x="417" y="382" width="98" height="38" rx="19" fill="#3FB950" fill-opacity=".13" stroke="#3FB950"/>
+  <text x="466" y="408" text-anchor="middle" fill="#3FB950" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="700">已纳管</text>
+  <rect x="529" y="382" width="106" height="38" rx="19" fill="#58A6FF" fill-opacity=".12" stroke="#58A6FF"/>
+  <text x="582" y="408" text-anchor="middle" fill="#58A6FF" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="700">待更新</text>
+  <rect x="649" y="382" width="109" height="38" rx="19" fill="#E6EDF3" fill-opacity=".035" stroke="#8B949E"/>
+  <text x="703" y="408" text-anchor="middle" fill="#8B949E" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="700">仅库内</text>
+
+  <path d="M 790 252 C 815 252, 820 252, 848 252" fill="none" stroke="#58A6FF" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M 790 386 C 815 386, 820 386, 848 386" fill="none" stroke="#58A6FF" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <rect x="865" y="184" width="275" height="116" rx="18" fill="#E6EDF3" fill-opacity=".035" stroke="#3FB950" stroke-width="2"/>
+  <text x="895" y="220" fill="#3FB950" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18" font-weight="700">应用到本机</text>
+  <text x="895" y="255" fill="#E6EDF3" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="24" font-weight="700">预览差异 → 确认写入</text>
+  <text x="895" y="281" fill="#8B949E" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18">Claude · Codex · Grok</text>
+
+  <rect x="865" y="338" width="275" height="116" rx="18" fill="#E6EDF3" fill-opacity=".035" stroke="#58A6FF" stroke-width="2"/>
+  <text x="895" y="374" fill="#58A6FF" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18" font-weight="700">迁移到其他设备</text>
+  <text x="895" y="409" fill="#E6EDF3" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="24" font-weight="700">不可变包 → 版本对齐</text>
+  <text x="895" y="435" fill="#8B949E" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18">通道只传输，不保存密钥</text>
+
+  <rect x="60" y="502" width="1080" height="72" rx="16" fill="#E6EDF3" fill-opacity=".035" stroke="#8B949E" stroke-opacity=".45"/>
+  <text x="94" y="546" fill="#8B949E" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18">validate</text>
+  <text x="191" y="546" fill="#58A6FF" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="20">→</text>
+  <text x="225" y="546" fill="#E6EDF3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18">build</text>
+  <text x="296" y="546" fill="#58A6FF" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="20">→</text>
+  <text x="330" y="546" fill="#E6EDF3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18">diff</text>
+  <text x="391" y="546" fill="#58A6FF" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="20">→</text>
+  <text x="425" y="546" fill="#E6EDF3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18">typed apply</text>
+  <text x="562" y="546" fill="#58A6FF" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="20">→</text>
+  <text x="596" y="546" fill="#E6EDF3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18">doctor / rollback</text>
+  <text x="1106" y="546" text-anchor="end" fill="#3FB950" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="700">密钥只在目标设备解析</text>
+</svg>

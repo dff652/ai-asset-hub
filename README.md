@@ -1,54 +1,36 @@
-# AI Asset Hub
+<p align="center">
+  <img src="assets/readme/hero.svg" width="100%" alt="AI Asset Hub：在 Claude、Codex、Grok 与版本化资产库之间安全管理 AI 编程资产">
+</p>
 
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+<p align="center">
+  <a href="https://github.com/dff652/ai-asset-hub/releases"><img alt="Release v0.1.4" src="https://img.shields.io/badge/release-v0.1.4-238636"></a>
+  <img alt="Status Technical Preview" src="https://img.shields.io/badge/status-technical_preview-D29922">
+  <img alt="Platform Linux amd64" src="https://img.shields.io/badge/platform-Linux_amd64-58A6FF">
+  <a href="LICENSE"><img alt="License Apache 2.0" src="https://img.shields.io/badge/license-Apache--2.0-8B949E"></a>
+</p>
 
-面向个人与小团队的 AI 编程资产管理、打包和跨设备部署工具。
+AI Asset Hub（`aiah`）是面向个人与小团队的 **AI 编程资产管理器**。它把分散在
+Claude、Codex、Grok 中的 Skills、Rules、Memory、Agents、Hooks 与 MCP 模板整理成
+一份可版本管理的资产库，并提供写入前预览、安装检查、撤销和跨设备迁移。
 
-> **状态：Technical Preview。** 核心 CLI、只读 MCP、跨设备分发与 TUI 引导式
-> 本地闭环已可用；当前安装和 Release 支持范围为 **Linux amd64**。
+> **当前边界：Technical Preview。** 最新公开版是 `v0.1.4`，安装与端到端验收范围
+> 为 **Linux amd64**。仓库当前 `dev` 候选还包含尚未发布的任务首页、统一资产状态、
+> 更新/移出向导和只读迁移状态页；下方证明板会明确标注这一区别。
 
-AI Asset Hub 解决 Skills、Rules、Memory、Agents、Hooks 与 MCP 模板散落在
-Claude Code、Codex、Grok 等工具目录，难以审计、迁移和回滚的问题。
-
-## 它怎么工作
-
-```text
-资产工作区（Git 中的唯一事实源）
-        │
-        ├── validate：只读校验
-        ├── build：构建不可变资产包
-        ▼
-分发通道（普通目录，由 Git / NAS / U 盘等搬运）
-        │
-        ├── pull / bootstrap
-        ├── diff：写入前审阅
-        ▼
-Claude Code / Codex / Grok 目标目录
-        └── apply → doctor → rollback
-```
-
-核心保证：
-
-- 纯文本资产是事实源，索引和目标目录都是可重建的派生物。
-- 包不可变；同版本不同内容会被拒绝，不提供 `--force`。
-- 密钥只在目标设备 apply 时解析，不进入包、报告、journal 或 backup metadata。
-- 写入前能 diff，写入后返回 `backupId` 并支持回滚。
-- aiah 不实现用户资产的网络传输、服务端或后台 daemon；版本检查仅在用户显式触发时
-  读取 GitHub Release 元数据。
-
-架构与格式详见[总体架构](docs/architecture.md)和[资产模型](docs/asset-model.md)。
-
-## 安装
+## 立即开始
 
 Linux amd64 一行安装：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh | sh
+aiah ui
 ```
 
-安装器默认固定 `v0.1.4`，下载 Release 的 `SHA256SUMS` 和 Linux amd64 二进制，校验后
-在目标目录原子替换；默认安装到 `~/.local/bin`，不用 sudo，也不修改 profile。
-已安装同版本时零下载、零写入。可以显式选择版本和目录：
+`v0.1.4` 使用 `aiah ui` 进入交互界面；当前 dev 候选已支持直接运行 `aiah`，正式
+Release 前不把它写成已发布行为。
+
+安装器默认固定 `v0.1.4`，校验 Release SHA256 后原子替换到 `~/.local/bin`，不用
+sudo，也不修改 shell profile。同版本复装零下载、零写入。也可以固定版本和目录：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh |
@@ -75,53 +57,75 @@ Linux amd64 已完成端到端行为验证。`v0.1.1` 中现存的 macOS、Windo
 文件是历史交叉编译产物，未做对应平台原生验收，不属于当前支持范围；后续 Release
 只发布 Linux amd64，其他平台通过原生验收后再恢复分发。
 
-## 五分钟上手
+## 从“散落配置”到“可恢复资产”
 
-先记住三个目录：
+<p align="center">
+  <img src="assets/readme/asset-lifecycle.svg" width="100%" alt="AI 资产从 Claude、Codex、Grok 进入版本化资产库，再经过预览应用或不可变分发迁移到其他设备">
+</p>
 
-| 目录 | 角色 |
+只需要分清三个角色：
+
+| 位置 | 角色 |
 |---|---|
-| `~/ai-assets/` | 可进入 Git 的工作区，也是唯一事实源 |
-| `*.tar` | `aiah build` 生成的不可变资产包 |
-| `~/.claude` / `~/.codex` / `~/.grok` | adapter 生成的目标文件，不是源头 |
+| `~/ai-assets/` | 可进入 Git 的资产库，也是唯一事实源 |
+| `*.tar` | 从资产库生成的确定性、不可变安装包 |
+| `~/.claude` / `~/.codex` / `~/.grok` | 目标工具目录，是可重建的安装结果 |
 
-日常使用可以只启动一个 TUI：
+日常流程是：
 
-```bash
-aiah ui --home "$HOME"
+```text
+发现本机资产 → 加入资产库 → 检查并准备安装包 → 预览变化 → 输入 apply → 安装检查
 ```
 
-进入后按 `w` 明确输入工作区路径，空格勾选资产，再按 `w` 写出；按 `b` 选择
-profile 后会自动校验、构建并进入只读 diff。只有按 `a` 后完整输入 `apply` 才会写
-目标目录。部署后按 `h` 运行只读 doctor；doctor 通过且存在当前部署时，可按 `x`
-并完整输入 `rollback` 恢复。按 `v` 查看 aiah 与当前资产部署版本；只有再按 `c`
-才会联网检查 Release。
+跨设备时，私有 Git/NAS 负责**资产库备份**，Git、NAS、U 盘等负责搬运不可变包；
+`publish/pull` 不是双向同步，`.aiah/backups` 也只是本机**安装恢复点**。
 
-自动化、跨设备和假 HOME 演练仍使用 CLI。完整教程、manifest 属性与安全边界见
-[上手指南](docs/getting-started.md)。
+## TUI：先看状态，再做操作
 
-## 主要入口
+<p align="center">
+  <img src="assets/readme/tui-proof-board.svg" width="100%" alt="AI Asset Hub dev 候选 TUI 的任务首页、统一资产状态、应用结果和跨设备只读状态">
+</p>
+
+> 上图来自当前 **dev candidate**，不是 `v0.1.4` 正式安装包验收截图。公开版已具备
+> TUI 本地闭环；任务首页、统一状态、更新/移出和迁移状态页将在正式 Release
+> dogfood 后进入发布版。
+
+当前 dev 候选把常用操作放在一个任务首页：
+
+- **整理本机资产**：查看未纳管、已纳管、待更新、仅库内和不可纳管状态；
+- **预览并应用资产库**：自动检查资产、准备安装包并展示变化，最终仍需输入
+  `apply`；
+- **安装检查与撤销**：显示包版本、目标工具、漂移和恢复点；
+- **迁移到其他设备**：只读比较资产库、当前安装和用户选择的分发通道；
+- **关于与更新**：默认离线，只有明确触发才检查 GitHub Release。
+
+完整图解和首次操作见[上手指南](docs/getting-started.md)，TUI 产品用语与状态边界见
+[产品体验方案](docs/designs/tui-product-experience-v2.md)。
+
+## 人和 AI 都能使用
 
 | 入口 | 用途 |
 |---|---|
-| `aiah scan` / `aiah ui` | 只读盘点，或在 TUI 完成本地组装、构建与部署 |
-| `aiah validate` / `aiah build` | 校验工作区并构建确定性资产包 |
-| `aiah diff` / `apply` / `rollback` | 审阅、部署和恢复 |
+| TUI：`aiah ui` | 公开版的人工交互入口；当前 dev 候选也支持裸 `aiah` |
+| `aiah scan` | 自动化或 JSON 方式盘点本机资产 |
+| `aiah validate` / `aiah build` | 校验资产库并构建确定性资产包 |
+| `aiah diff` / `apply` / `rollback` | 预览、应用和撤销 |
 | `aiah publish` / `pull` / `versions` | 通过普通目录分发不可变资产包 |
 | `aiah bootstrap` | pull 后进入强制交互 diff 与 typed `apply` |
 | `aiah doctor` | 只读检查 journal、backup、deployment drift 与 MCP 前置状态 |
 | `aiah update --check` | 用户触发的只读 Release 版本检查 |
-| `aiah mcp` | 面向 AI 工具的只读 MCP server |
+| MCP：`aiah mcp` | 供 AI 工具调用的只读 `scan/validate/diff/doctor/version` |
 
-完整参数与行为见[命令参考](docs/cli-reference.md)，跨设备操作见
-[迁移 runbook](docs/runbooks/cross-device-transfer.md)。
+MCP 当前不开放写操作，也尚未覆盖 dev 候选新增的统一资产状态和迁移状态；这两项已
+进入[后续计划](docs/roadmap.md)。完整参数见[命令参考](docs/cli-reference.md)，
+跨设备操作见[迁移 runbook](docs/runbooks/cross-device-transfer.md)。
 
 ## 安全边界
 
-- TUI 初始只读；只有显式传入 `--workspace`，或按 `w` 输入并确认路径，才会创建或写工作区。
-- 部署入口只来自显式 `--package`，或当前会话成功构建出的包。
-- TUI 部署必须完整输入 `apply`；`bootstrap` 没有 `--yes` 或非交互旁路。
-- TUI rollback 只针对 doctor 识别到的当前部署，且必须完整输入 `rollback`；选择
+- TUI 首页和本机资产页初始只读；只有明确选择并确认资产库后，才会创建或写资产库。
+- 应用入口只来自显式 `--package`，或当前会话成功构建出的包。
+- TUI 应用必须完整输入 `apply`；`bootstrap` 没有 `--yes` 或非交互旁路。
+- TUI 撤销只针对安装检查识别到的当前安装，且必须完整输入 `rollback`；选择
   历史 backup 仍使用 CLI。
 - MCP server 只暴露 `scan`、`validate`、`diff`、`doctor`、`version`，不暴露
   `build`、`apply` 或 `rollback`。
