@@ -161,6 +161,9 @@ aiah ui --package <tar|dir> --home "$HOME"     # 高级：直接审阅并应用�
 - TUI 内按 `m` 随时返回任务首页。
 - stdin/stdout 不是 TTY，或 `TERM` 为空/`dumb` 时直接失败。
 
+普通用户启动时只需记住 `aiah`。`ui` 子命令没有删除，因为脚本和旧文档需要兼容，
+且 `--package` / `--workspace` / `--home` 等高级直达参数仍挂在该子命令下。
+
 交互键与设计边界见 [TUI 技术方案](designs/tui-technical-design.md)。
 
 ## `mcp`
