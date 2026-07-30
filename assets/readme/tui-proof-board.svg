@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1000" viewBox="0 0 1200 1000" role="img" aria-labelledby="title desc">
   <title id="title">AI Asset Hub 真实 TTY 状态证明板</title>
-  <desc id="desc">v0.1.5 正式安装包在隔离 TTY 中验证过的三段状态：统一资产状态、安全应用结果和跨设备迁移只读检查。</desc>
+  <desc id="desc">v0.1.6 正式安装包在隔离 TTY 中验证过的三段状态：统一资产状态、安全应用结果和跨设备迁移只读检查。</desc>
 
   <rect width="1200" height="1000" rx="24" fill="#0D1117"/>
-  <text x="60" y="54" fill="#58A6FF" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18" font-weight="700" letter-spacing="2">REAL TTY PROOF · v0.1.5</text>
+  <text x="60" y="54" fill="#58A6FF" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18" font-weight="700" letter-spacing="2">REAL TTY PROOF · v0.1.6</text>
   <text x="60" y="104" fill="#E6EDF3" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="42" font-weight="700">从整理资产到迁移检查，一条可审阅的主流程</text>
-  <text x="60" y="135" fill="#8B949E" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="19">v0.1.5 正式安装包的隔离 TTY 状态摘录 · E1 / E2 / E3.1</text>
+  <text x="60" y="135" fill="#8B949E" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="19">v0.1.6 正式安装包的隔离 TTY 状态摘录 · E1 / E2 / E3.1</text>
 
   <rect x="60" y="170" width="1080" height="230" rx="18" fill="#E6EDF3" fill-opacity=".035" stroke="#8B949E" stroke-opacity=".65"/>
   <circle cx="88" cy="198" r="6" fill="#8B949E"/>

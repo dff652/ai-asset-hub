@@ -12,7 +12,7 @@
 |---|---|---|
 | 做什么 | 把资产包装进 `~/.claude` / `~/.codex` / `~/.grok` | 把 `aiah` 二进制交付给用户 |
 | 链路 | `build → diff/dry-run → apply → rollback` | tag → 多平台二进制 → 校验和 → Release |
-| 状态 | **已固化，且 2026-07-25 真机验证** | public `v0.1.5` 已发布；产物、显式版本升级与 TUI 验收通过，推荐升级命令有已知问题，见 §5 |
+| 状态 | **已固化，且 2026-07-25 真机验证** | public `v0.1.6` 已发布；线上产物、bridge 升级、正式 TUI 与幂等复装通过，旧版推荐命令边界已公开，见 §5 |
 | SOP | [真机 dry-run runbook](runbooks/real-home-dry-run.md)、[假 HOME 闭环](runbooks/fake-home-loop.md) | [发版 runbook](runbooks/release.md)、[安装/升级 dogfood](runbooks/install-upgrade-dogfood.md) |
 
 ## 1. 开发
@@ -112,8 +112,8 @@ VERSION/COMMIT/DATE——两份戳规则正是本地构建与发布构建开始�
 2026-07-28 从单提交干净历史发布并完成匿名验收。
 
 ```bash
-VERSION=0.1.5 ./scripts/release-build.sh   # 本地预演：Linux amd64 + 许可材料 + 校验和 + 自检
-git tag -a v0.1.5 -m "aiah v0.1.5" && git push origin v0.1.5   # 触发 Release
+VERSION=0.1.6 ./scripts/release-build.sh   # 本地预演：Linux amd64 + 许可材料 + 校验和 + 自检
+git tag -a v0.1.6 -m "aiah v0.1.6" && git push origin v0.1.6   # 触发 Release
 ```
 
 `.github/workflows/release.yml` 监听 `v*` tag，跑测试与 gofmt 门禁后调用同一个
@@ -163,18 +163,34 @@ public `v0.1.5` 于 2026-07-30 从 `main@8ca70f0cde4b` 发布：
 本次验收同时发现 P1：`v0.1.4` / `v0.1.5` 的 `aiah update --check` 生成命令没有
 显式传入 `AIAH_VERSION`，而 `v0.1.5` tag 内安装器默认 pin 仍为 `v0.1.4`；执行
 推荐命令会停留在旧版。Release 说明已公开 workaround，tag 与产物不重写。下一版本
-必须把“执行程序实际输出的升级命令”加入发布门禁。后续本地 N2.1 分支已经：
+必须把“执行程序实际输出的升级命令”加入发布门禁。后续 N2.1 已通过
+[PR #20](https://github.com/dff652/ai-asset-hub/pull/20) 合入 `dev@e7d813ec00e3`：
 
 - 让 `upgradeCommand` 同时绑定 tag URL 和 `AIAH_VERSION`；
 - 增加精确字符串测试并完成删除防线会变红的变异验证；
 - 同步 TUI 窄屏可复制命令的四行展示；
-- 把 `main` installer 默认 pin 更新为已验收的 `v0.1.5`；
+- 把 dev/候选 installer 默认 pin 更新为已验收的 `v0.1.5`；
 - 把 README SVG 静态规范检查纳入 `check-local.sh`。
 
-这些是**当前源码候选**，不是已经发布的新二进制；仍需 PR/CI 和下一 Release 的
-旧版 → 新版真实升级验收。由于 `v0.1.5` 自身不能追溯修复，下一版是一次性 bridge
-release，仍需显式版本 workaround；从首个修复版升级到再下一版时，才能首次证明
-推荐命令端到端闭环。完整历史证据见
+PR 的两组检查和合并后的
+[dev CI 30518125897](https://github.com/dff652/ai-asset-hub/actions/runs/30518125897)
+均全绿。该 tree 随 PR #21 进入 `main@46e6efccc9ba`；合并后
+[main CI 30521118041](https://github.com/dff652/ai-asset-hub/actions/runs/30521118041)
+的 9 个 job 全绿。annotated tag `v0.1.6` 精确指向该 commit，
+[Release workflow 30521763546](https://github.com/dff652/ai-asset-hub/actions/runs/30521763546)
+完成测试、vet、gofmt、构建和发布。
+
+线上六项资产的 SHA256 全部通过；Linux amd64 二进制为 stripped 静态 ELF，
+报告 `aiah 0.1.6, commit 46e6efccc9ba`，SHA256 为
+`2535ed343e6e398f88456f9280a1f51717b3f2a7adb1ff6f3e23f789456aef70`。隔离
+`v0.1.5 → v0.1.6` bridge 验收确认：legacy 命令为无残留 no-op，显式
+`AIAH_VERSION=0.1.6` 升级成功，同版本复装幂等；正式安装包的裸 `aiah`、Doctor、
+版本检查、typed rollback 与 CLI 对账均通过。Release 说明已公开 workaround。
+
+由于 `v0.1.5` 自身不能追溯修复，`v0.1.6` 仍是一次性 bridge release；从
+`v0.1.6` 升级到再下一版时，才能首次证明推荐命令端到端闭环。当前源码安装器默认
+pin 已在发布后收口到验收完成的 `v0.1.6`。候选与历史证据见
+[v0.1.6 bridge 检查点](reviews/2026-07-30-v0.1.6-bridge-candidate-readiness.md)和
 [v0.1.5 检查点 §5](reviews/2026-07-30-v0.1.5-candidate-readiness.md#5-发布结果与已知问题)。
 
 首次发布时 GitHub 把 `actions/checkout@v4`、`actions/setup-go@v5` 与

@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/dff652/ai-asset-hub/releases"><img alt="Release v0.1.5" src="https://img.shields.io/badge/release-v0.1.5-238636"></a>
+  <a href="https://github.com/dff652/ai-asset-hub/releases"><img alt="Release v0.1.6" src="https://img.shields.io/badge/release-v0.1.6-238636"></a>
   <img alt="Status Technical Preview" src="https://img.shields.io/badge/status-technical_preview-D29922">
   <img alt="Platform Linux amd64" src="https://img.shields.io/badge/platform-Linux_amd64-58A6FF">
   <a href="LICENSE"><img alt="License Apache 2.0" src="https://img.shields.io/badge/license-Apache--2.0-8B949E"></a>
@@ -13,7 +13,7 @@ AI Asset Hub（`aiah`）是面向个人与小团队的 **AI 编程资产管理�
 Claude、Codex、Grok 中的 Skills、Rules、Memory、Agents、Hooks 与 MCP 模板整理成
 一份可版本管理的资产库，并提供写入前预览、安装检查、撤销和跨设备迁移。
 
-> **当前边界：Technical Preview。** 最新公开版是 `v0.1.5`，安装与端到端验收范围
+> **当前边界：Technical Preview。** 最新公开版是 `v0.1.6`，安装与端到端验收范围
 > 为 **Linux amd64**。任务首页、统一资产状态、更新/移出向导、连续应用和只读迁移
 > 状态已经完成正式 Release 安装包验收。
 
@@ -29,11 +29,11 @@ aiah
 日常启动只需 `aiah`。`aiah ui` 仅作为兼容入口和高级参数入口保留，不需要新用户
 记忆。安装器校验 Release SHA256 后原子替换到
 `~/.local/bin`，不用 sudo，也不修改 shell profile；同版本复装零下载、零写入。
-当前 `main` 安装器默认固定为已验收的 `v0.1.5`。也可以固定版本和安装目录：
+当前源码中的安装器默认固定为已验收的 `v0.1.6`。也可以固定版本和安装目录：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.5/scripts/install.sh |
-  AIAH_VERSION=0.1.5 AIAH_INSTALL_DIR="$HOME/.local/bin" sh
+curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.6/scripts/install.sh |
+  AIAH_VERSION=0.1.6 AIAH_INSTALL_DIR="$HOME/.local/bin" sh
 ```
 
 aiah 不在后台升级。固定 tag 的安装器保留 tag 创建时的默认 pin，因此使用固定 tag
@@ -46,11 +46,11 @@ aiah update --check
 ```
 
 它不会下载或替换二进制。已知问题：`v0.1.4` / `v0.1.5` 输出的推荐命令缺少
-`AIAH_VERSION`，直接复制可能仍安装旧 pin；请使用上方显式版本命令。该问题已在
-[`v0.1.5` Release](https://github.com/dff652/ai-asset-hub/releases/tag/v0.1.5)
-标注。当前源码已让未来构建生成带精确 `AIAH_VERSION` 的命令，并增加回归与发布
-门禁；已发布的旧二进制不会被追溯修改。`aiah --update` 和不带 `--check` 的
-`aiah update` 都不会执行升级。
+`AIAH_VERSION`；从这些版本升级到 `v0.1.6` 时请使用上方显式版本命令。bridge
+边界和真实升级证据已在
+[`v0.1.6` Release](https://github.com/dff652/ai-asset-hub/releases/tag/v0.1.6)
+公开。`v0.1.6` 已包含修复，今后生成的命令会同时绑定 tag 和目标版本；旧二进制
+不会被追溯修改。`aiah --update` 和不带 `--check` 的 `aiah update` 都不会执行升级。
 
 直接执行远程脚本前，推荐先下载、阅读再运行。Release 裸二进制的手动安装方法见
 [上手指南](docs/getting-started.md#安装)。
@@ -103,13 +103,13 @@ Linux amd64 已完成端到端行为验证。`v0.1.1` 中现存的 macOS、Windo
 ## TUI：先看状态，再做操作
 
 <p align="center">
-  <img src="assets/readme/tui-proof-board.svg" width="100%" alt="AI Asset Hub v0.1.5 TUI 的任务首页、统一资产状态、应用结果和跨设备只读状态">
+  <img src="assets/readme/tui-proof-board.svg" width="100%" alt="AI Asset Hub v0.1.6 TUI 的任务首页、统一资产状态、应用结果和跨设备只读状态">
 </p>
 
-> 上图所示任务首页、统一状态、更新/移出、连续应用和迁移状态页已用 `v0.1.5`
+> 上图所示任务首页、统一状态、更新/移出、连续应用和迁移状态页已用 `v0.1.6`
 > 正式 Release 安装包完成隔离 TTY dogfood。
 
-`v0.1.5` 把常用操作放在一个任务首页：
+在 `v0.1.6` 中，常用操作集中在一个任务首页：
 
 - **整理本机资产**：查看未纳管、已纳管、待更新、仅库内和不可纳管状态；
 - **预览并应用资产库**：自动检查资产、准备安装包并展示变化，最终仍需输入

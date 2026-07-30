@@ -62,7 +62,7 @@ print(collections.Counter(f['code'] for f in r['findings']).most_common())"
 ```
 
 ```bash
-RELEASE_VERSION=0.1.5
+RELEASE_VERSION=0.1.6
 VERSION="$RELEASE_VERSION" ./scripts/release-build.sh
 ./scripts/check-release-checksums.sh
 file "dist/release/aiah_${RELEASE_VERSION}_linux_amd64"
@@ -88,7 +88,7 @@ CI 的跨平台目标只证明**可构建**，不代表在那些平台上验证�
 ```bash
 gh run list --branch main --limit 1
 gh run watch <run-id> --exit-status
-RELEASE_TAG=v0.1.5
+RELEASE_TAG=v0.1.6
 git tag -a "$RELEASE_TAG" -m "aiah $RELEASE_TAG"
 git rev-parse "${RELEASE_TAG}^{}"    # 必须等于刚通过 CI 的 main commit
 git push origin "$RELEASE_TAG"       # 这一步触发 Release
@@ -97,7 +97,7 @@ git push origin "$RELEASE_TAG"       # 这一步触发 Release
 ## 4. 发布后验收
 
 ```bash
-RELEASE_TAG=v0.1.5
+RELEASE_TAG=v0.1.6
 RELEASE_VERSION="${RELEASE_TAG#v}"
 gh release view "$RELEASE_TAG"
 # 下载并校验（换成实际平台）
@@ -120,7 +120,7 @@ workflow 的 `VERSION` 处理坏了，**先撤下 Release 再排查**。
 
 ```bash
 OLD_AIAH=/path/to/previous/aiah
-RELEASE_TAG=v0.1.5
+RELEASE_TAG=v0.1.6
 RELEASE_VERSION="${RELEASE_TAG#v}"
 UPGRADE_JSON="$("$OLD_AIAH" update --check --output json)"
 UPGRADE_COMMAND="$(printf '%s' "$UPGRADE_JSON" |
@@ -167,10 +167,12 @@ curl -fsSL \
 
 `v0.1.5` 是已知例外：产物、显式版本升级和 TUI 已通过，但上述命令相等性门禁失败；
 Release 说明已公开显式 `AIAH_VERSION=0.1.5` 的 workaround。不要重写 tag 或产物，
-当前源码已修复命令生成并把 `main` 默认 pin 收口到 v0.1.5；这些改动仍须通过
-PR/CI，并在下一版本用旧公开二进制重新执行本节门禁。不要把本地测试通过写成
-`v0.1.5` 已发布二进制被追溯修复。下一版本是一次性 bridge release；再下一版本
-才是修复后推荐命令的首次完整 Release → Release 证明。
+修复已经通过 PR #20 进入 `v0.1.6`。该 bridge Release 已通过 main/Release CI、
+线上产物复验、legacy no-op、显式版本升级、正式 TUI 和幂等复装；Release 说明也已
+公开边界。不要把结果写成 `v0.1.5` 已发布二进制被追溯修复。`v0.1.6` 仍是一次性
+bridge release；再下一版本才是修复后推荐命令的首次完整 Release → Release 证明。
+完整证据见
+[v0.1.6 bridge 检查点](../reviews/2026-07-30-v0.1.6-bridge-candidate-readiness.md)。
 
 ## 5. 出问题怎么退
 

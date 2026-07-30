@@ -156,7 +156,7 @@ def main() -> int:
 
         proof = (ASSET_DIR / "tui-proof-board.svg").read_text(encoding="utf-8")
         require("DEV CANDIDATE" not in proof, "proof board still claims dev candidate")
-        require("v0.1.5" in proof, "proof board does not identify its accepted release")
+        require("v0.1.6" in proof, "proof board does not identify its accepted release")
     except CheckError as error:
         print(f"readme assets: ERROR: {error}", file=sys.stderr)
         return 1
