@@ -3,7 +3,7 @@
 - 状态：Accepted
 - 实施：`internal/channel` + `aiah publish` / `aiah pull` / `aiah versions`，2026-07-28
 - 日期：2026-07-28
-- 关联：[architecture.md §4](../architecture.md)（包与同步）、
+- 关联：[architecture.md §4](../architecture.md)（包与跨设备分发）、
   [roadmap 第 9 项](../roadmap.md)、
   [产品形态与分发边界评估 §2.3 / §3](../research/product-form-and-distribution-assessment.md)、
   [ADR-0006](0006-tui-as-first-interactive-surface.md)（Phase C 被本项挡住）

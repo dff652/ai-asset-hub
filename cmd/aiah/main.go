@@ -21,6 +21,7 @@ import (
 )
 
 const usage = `usage:
+  aiah
   aiah scan [--home PATH] [--project PATH] [--output json]
   aiah validate --manifest PATH [--root PATH] [--output json]
   aiah build --manifest PATH --profile NAME --out DIR [--root PATH] [--output json]
@@ -41,6 +42,8 @@ const usage = `usage:
 // stdin is indirected so the stdio-driven subcommands stay testable.
 var stdin io.Reader = os.Stdin
 var updateCheck = updater.Check
+var interactiveUI = tui.IsInteractive
+var launchUI = tui.Run
 
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
@@ -48,6 +51,9 @@ func main() {
 
 func run(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
+		if interactiveUI(stdin, stdout) {
+			return runUI(nil, stdout, stderr)
+		}
 		_, _ = io.WriteString(stderr, usage)
 		return 2
 	}
@@ -157,13 +163,13 @@ func runUI(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 
-	err = tui.Run(tui.Options{
+	err = launchUI(tui.Options{
 		Home:      *home,
 		Project:   *project,
 		Workspace: *workspace,
 		Package:   *pkg,
 		Targets:   splitCSV(*targets),
-		Input:     os.Stdin,
+		Input:     stdin,
 		Output:    stdout,
 	})
 	if errors.Is(err, tui.ErrNotTTY) {

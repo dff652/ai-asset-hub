@@ -34,7 +34,7 @@ func applyCommand(options apply.Options) tea.Cmd {
 
 func (m Model) startDiff() (tea.Model, tea.Cmd) {
 	if m.deployOptions.Package == "" {
-		m.notice = "未指定部署包；用 aiah ui --package PATH 启动才能审阅 diff"
+		m.notice = "未指定安装包；用 aiah ui --package PATH 启动才能预览变化"
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -95,12 +95,12 @@ func (m Model) updateDeploymentKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m Model) startApplyConfirmation() (tea.Model, tea.Cmd) {
 	if m.diffStatus != statusReady || !m.diffReport.Ok {
-		m.notice = "diff 未通过，不能执行 apply；请先查看原始 findings"
+		m.notice = "变更预览未通过，不能确认应用；请先查看风险与问题"
 		m.noticeIsWarn = true
 		return m, nil
 	}
 	if m.applyResult != nil {
-		m.notice = "本次执行已经完成；按 d 重新计算 diff"
+		m.notice = "本次应用已经完成；按 d 重新计算变更预览"
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -117,7 +117,7 @@ func (m Model) updateConfirmation(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.confirming = false
 		m.confirmInput.SetValue("")
 		m.confirmInput.Blur()
-		m.notice = "已取消 apply"
+		m.notice = "已取消应用"
 		m.noticeIsWarn = false
 		return m, nil
 	}

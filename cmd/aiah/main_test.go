@@ -3,12 +3,14 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/dff652/ai-asset-hub/internal/inventory"
+	"github.com/dff652/ai-asset-hub/internal/tui"
 	updater "github.com/dff652/ai-asset-hub/internal/update"
 	"github.com/dff652/ai-asset-hub/internal/version"
 )
@@ -42,6 +44,56 @@ func TestRunHelpExitsZero(t *testing.T) {
 				t.Fatal("help output is empty")
 			}
 		})
+	}
+}
+
+func TestRunWithoutArgsLaunchesTUIOnlyWhenInteractive(t *testing.T) {
+	previousInteractive := interactiveUI
+	previousLaunch := launchUI
+	defer func() {
+		interactiveUI = previousInteractive
+		launchUI = previousLaunch
+	}()
+
+	interactiveUI = func(_ io.Reader, _ io.Writer) bool { return true }
+	called := false
+	launchUI = func(options tui.Options) error {
+		called = true
+		if options.Home == "" || options.Input != stdin {
+			t.Fatalf("default TUI options = %#v", options)
+		}
+		return nil
+	}
+
+	var stdout, stderr bytes.Buffer
+	if code := run(nil, &stdout, &stderr); code != 0 {
+		t.Fatalf("exit code = %d, stderr = %q", code, stderr.String())
+	}
+	if !called {
+		t.Fatal("interactive no-argument invocation did not launch TUI")
+	}
+}
+
+func TestRunWithoutArgsDoesNotLaunchTUIInPipes(t *testing.T) {
+	previousInteractive := interactiveUI
+	previousLaunch := launchUI
+	defer func() {
+		interactiveUI = previousInteractive
+		launchUI = previousLaunch
+	}()
+
+	interactiveUI = func(_ io.Reader, _ io.Writer) bool { return false }
+	launchUI = func(tui.Options) error {
+		t.Fatal("non-interactive no-argument invocation launched TUI")
+		return nil
+	}
+
+	var stdout, stderr bytes.Buffer
+	if code := run(nil, &stdout, &stderr); code != 2 {
+		t.Fatalf("exit code = %d, want 2", code)
+	}
+	if stdout.Len() != 0 || !strings.Contains(stderr.String(), "usage:") {
+		t.Fatalf("stdout=%q stderr=%q", stdout.String(), stderr.String())
 	}
 }
 

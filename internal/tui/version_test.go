@@ -65,8 +65,8 @@ func TestVersionViewShowsBuildDeploymentAndUpdateResult(t *testing.T) {
 
 	view := model.View()
 	for _, want := range []string{
-		"aiah · version", "0.1.2", "1234567890ab", "2026-07-29T00:00:00Z",
-		"assets", "2026.07.1", "0.1.3", "update available",
+		"aiah · 关于与更新", "0.1.2", "1234567890ab", "2026-07-29T00:00:00Z",
+		"assets", "2026.07.1", "0.1.3", "有可用更新",
 		"curl -fsSL \\", "'https://raw.githubusercontent.com/dff652/'\\",
 		"'ai-asset-hub/v0.1.3/scripts/install.sh' | sh",
 	} {
