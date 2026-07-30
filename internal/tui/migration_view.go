@@ -13,87 +13,106 @@ func (m Model) migrationView(style styles) string {
 		return m.preflightView(style)
 	}
 	header := joinEdges(
-		style.header.Render("aiah · 迁移到其他设备"),
-		"版本对齐",
+		style.header.Render(m.text(msgMigrationTitle)),
+		m.text(msgMigrationAlignmentTitle),
 		max(20, m.width),
 	)
 	if m.migrationFlow.publishing {
-		return header + "\n\n" + style.warning.Render("正在发布不可变版本…请等待操作完成")
+		return header + "\n\n" + style.warning.Render(m.text(msgMigrationPublishing))
 	}
 	if m.migrationFlow.pulling {
-		return header + "\n\n" + style.warning.Render("正在取回并校验版本…请等待操作完成")
+		return header + "\n\n" + style.warning.Render(m.text(msgMigrationPulling))
 	}
 	switch m.migrationFlow.status {
 	case statusLoading:
-		return header + "\n\n正在读取资产库、当前安装与分发通道…"
+		return header + "\n\n" + m.text(msgMigrationLoading)
 	case statusFailed:
-		message := "迁移状态读取失败"
+		message := m.text(msgMigrationFailed)
 		if m.migrationFlow.err != nil {
-			message += "：" + m.migrationFlow.err.Error()
+			message += ": " + m.migrationFlow.err.Error()
 		}
 		return header + "\n\n" + style.error.Render(message) +
-			"\n\n按 c 重新选择通道 · r 重试 · m 返回首页"
+			"\n\n" + m.text(msgMigrationFailedFooter)
 	}
 
 	report := m.migrationFlow.report
 	lines := []string{
 		header,
-		style.muted.Render("状态读取保持只读；只有明确选择“发布”或“取回”才写通道/输出目录。"),
+		style.muted.Render(m.text(msgMigrationReadOnlyIntro)),
 		"",
-		style.header.Render("资产库"),
-		"  路径      " + report.Library.Root,
-		"  名称/版本 " + valueOrDash(report.Library.Name) + " / " + valueOrDash(report.Library.Version),
-		fmt.Sprintf("  资产/组合 %d / %d（%s）",
+		style.header.Render(m.text(msgMigrationLibraryTitle)),
+		m.text(msgMigrationLibraryPath, report.Library.Root),
+		m.text(
+			msgMigrationLibraryNameVersion,
+			valueOrDash(report.Library.Name),
+			valueOrDash(report.Library.Version),
+		),
+		m.text(
+			msgMigrationLibraryAssetsProfiles,
 			report.Library.AssetCount,
 			len(report.Library.Profiles),
-			valueOrDash(strings.Join(report.Library.Profiles, "、")),
+			valueOrDash(strings.Join(report.Library.Profiles, m.text(msgCommonListSeparator))),
 		),
-		"  状态      " + okLabel(report.Library.Ok),
+		m.text(msgMigrationStatus, m.okLabel(report.Library.Ok)),
 		"",
-		style.header.Render("当前安装"),
+		style.header.Render(m.text(msgMigrationInstallationTitle)),
 	}
 	if !report.Installation.Present {
-		lines = append(lines, "  尚无受管安装")
+		lines = append(lines, m.text(msgMigrationInstallationNone))
 	} else {
 		lines = append(lines,
-			"  名称/版本 "+report.Installation.Package+" / "+report.Installation.Version,
-			"  资产组合  "+valueOrDash(report.Installation.Profile),
-			"  目标工具  "+valueOrDash(strings.Join(report.Installation.Targets, "、")),
-			"  状态      "+okLabel(report.Installation.Ok),
+			m.text(
+				msgMigrationInstallationNameVersion,
+				report.Installation.Package,
+				report.Installation.Version,
+			),
+			m.text(msgMigrationInstallationProfile, valueOrDash(report.Installation.Profile)),
+			m.text(
+				msgMigrationInstallationTargets,
+				valueOrDash(strings.Join(
+					report.Installation.Targets,
+					m.text(msgCommonListSeparator),
+				)),
+			),
+			m.text(msgMigrationStatus, m.okLabel(report.Installation.Ok)),
 		)
 	}
-	lines = append(lines, "", style.header.Render("分发通道"))
+	lines = append(lines, "", style.header.Render(m.text(msgMigrationChannelTitle)))
 	if !report.Channel.Selected {
-		lines = append(lines, "  未选择；按 c 输入已有的 Git/NAS/U 盘通道目录")
+		lines = append(lines, m.text(msgMigrationChannelNone))
 	} else {
 		lines = append(lines,
-			"  路径      "+report.Channel.Path,
-			fmt.Sprintf("  相关版本  %d", report.Channel.ReleaseCount),
+			m.text(msgMigrationChannelPath, report.Channel.Path),
+			m.text(msgMigrationChannelReleases, report.Channel.ReleaseCount),
 		)
 		if report.Channel.Latest == nil {
-			lines = append(lines, "  最近发布  —")
+			lines = append(lines, m.text(msgMigrationChannelLatestNone))
 		} else {
 			lines = append(lines,
-				fmt.Sprintf("  最近发布  %s / %s",
+				m.text(
+					msgMigrationChannelLatest,
 					report.Channel.Latest.Version,
 					report.Channel.Latest.Profile,
 				),
-				"  SHA256    "+report.Channel.Latest.SHA256,
+				m.text(msgMigrationChannelSHA, report.Channel.Latest.SHA256),
 			)
 		}
 	}
 	lines = append(lines,
 		"",
-		style.header.Render("版本对齐"),
-		"  当前安装  "+alignmentLabel(report.Alignment.Installation),
-		"  分发通道  "+alignmentLabel(report.Alignment.Channel),
+		style.header.Render(m.text(msgMigrationAlignmentTitle)),
+		m.text(
+			msgMigrationAlignmentInstallation,
+			m.alignmentLabel(report.Alignment.Installation),
+		),
+		m.text(msgMigrationAlignmentChannel, m.alignmentLabel(report.Alignment.Channel)),
 	)
 	if len(report.Findings) > 0 {
-		lines = append(lines, fmt.Sprintf("  风险与问题 %d（先处理后再迁移）", len(report.Findings)))
+		lines = append(lines, m.text(msgMigrationFindings, len(report.Findings)))
 	}
 	lines = append(lines,
 		"",
-		style.muted.Render("e 换机检查 · p 发布当前版本 · v 查看/取回版本 · c 选择通道 · r 刷新 · m 首页 · ? 帮助"),
+		style.muted.Render(m.text(msgMigrationFooter)),
 	)
 	if m.notice != "" {
 		noticeStyle := style.muted
@@ -119,101 +138,105 @@ func (m Model) preflightRows() []preflightRow {
 	rows := make([]preflightRow, 0,
 		len(report.Targets)+len(report.Secrets)+len(report.DevicePrivate)+len(report.Findings))
 	for _, target := range report.Targets {
-		status := "正常"
+		status := m.text(msgPreflightStatusNormal)
 		switch {
 		case !target.Supported:
-			status = "不支持"
+			status = m.text(msgPreflightStatusUnsupported)
 		case len(target.Dropped) > 0:
-			status = "有阻止项"
+			status = m.text(msgPreflightStatusBlocked)
 		case len(target.Degraded) > 0:
-			status = "有降级"
+			status = m.text(msgPreflightStatusDegraded)
 		}
 		details := []string{
-			"检查类型    目标工具适配",
-			"目标工具    " + target.Target,
-			"支持状态    " + status,
-			fmt.Sprintf("将生成文件  %d", target.Emitted),
-			fmt.Sprintf("阻止/降级   %d / %d", len(target.Dropped), len(target.Degraded)),
+			m.text(msgPreflightCheckTarget),
+			m.text(msgPreflightTarget, target.Target),
+			m.text(msgPreflightSupport, status),
+			m.text(msgPreflightEmitted, target.Emitted),
+			m.text(msgPreflightDroppedDegraded, len(target.Dropped), len(target.Degraded)),
 		}
 		for _, item := range target.Dropped {
-			details = append(details, "  阻止："+item)
+			details = append(details, m.text(msgPreflightDroppedItem, item))
 		}
 		for _, item := range target.Degraded {
-			details = append(details, "  降级："+item)
+			details = append(details, m.text(msgPreflightDegradedItem, item))
 		}
 		rows = append(rows, preflightRow{
-			label: "目标工具 · " + target.Target, status: status, details: details,
+			label: m.text(msgPreflightTargetRow, target.Target), status: status, details: details,
 		})
 	}
 	for _, secret := range report.Secrets {
-		status := "可用"
+		status := m.text(msgPreflightStatusAvailable)
 		if !secret.Available {
-			status = "缺失"
+			status = m.text(msgPreflightStatusMissing)
 		}
 		rows = append(rows, preflightRow{
 			label:  fmt.Sprintf("secret · %s:%s", secret.Provider, secret.Name),
 			status: status,
 			details: []string{
-				"检查类型    secret 引用",
-				fmt.Sprintf("引用        %s:%s", secret.Provider, secret.Name),
-				"本机状态    " + status,
-				"影响目标    " + valueOrDash(strings.Join(secret.Targets, "、")),
+				m.text(msgPreflightCheckSecret),
+				m.text(msgPreflightReference, secret.Provider, secret.Name),
+				m.text(msgPreflightLocalStatus, status),
+				m.text(
+					msgPreflightAffectedTargets,
+					valueOrDash(strings.Join(secret.Targets, m.text(msgCommonListSeparator))),
+				),
 				"",
-				"只检查可用性；不会把 secret 值写入报告或安装包。",
+				m.text(msgPreflightSecretSafety),
 			},
 		})
 	}
 	for _, item := range report.DevicePrivate {
 		rows = append(rows, preflightRow{
-			label:  "本机不迁移 · " + item.LogicalPath,
-			status: "按设计排除",
+			label:  m.text(msgPreflightDeviceRow, item.LogicalPath),
+			status: m.text(msgPreflightStatusExcluded),
 			details: []string{
-				"检查类型    本机私有项",
-				"路径        " + item.LogicalPath,
-				"来源工具    " + item.Source,
-				"类型        " + item.Type,
-				"状态        " + item.Status,
+				m.text(msgPreflightCheckDevice),
+				m.text(msgPreflightPath, item.LogicalPath),
+				m.text(msgPreflightSource, item.Source),
+				m.text(msgPreflightType, item.Type),
+				m.text(msgPreflightItemStatus, item.Status),
 				"",
-				"登录态、会话、缓存和设备状态不会进入迁移包。",
+				m.text(msgPreflightDeviceSafety),
 			},
 		})
 	}
 	for _, finding := range report.Findings {
 		details := []string{
-			"检查类型    风险与问题",
-			"代码        " + finding.Code,
-			"级别        " + finding.Severity,
-			"说明        " + finding.Message,
+			m.text(msgPreflightCheckFinding),
+			m.text(msgPreflightCode, finding.Code),
+			m.text(msgPreflightSeverity, finding.Severity),
+			m.text(msgPreflightDescription, finding.Message),
 		}
 		for _, path := range finding.Paths {
 			details = append(details, "  "+path)
 		}
 		rows = append(rows, preflightRow{
-			label: "问题 · " + finding.Code, status: finding.Severity, details: details,
+			label:  m.text(msgPreflightFindingRow, finding.Code),
+			status: finding.Severity, details: details,
 		})
 	}
 	return rows
 }
 
 func (m Model) preflightView(style styles) string {
-	title := "aiah · 换机前置检查"
+	title := m.text(msgPreflightTitle)
 	context := valueOrDash(m.migrationFlow.preflightProfile)
-	intro := "检查阶段零写入；本页不会生成安装包、发布版本或应用资产。"
-	loading := "正在只读检查本机排除项、secret 和目标工具适配…"
-	failed := "换机前置检查失败"
-	footer := "↑↓/jk 查看全部项 · r 重查 · p 发布 · v 查看/取回版本 · Esc 返回 · m 首页 · ? 帮助"
-	emptyFooter := "r 重查 · p 发布 · v 查看/取回版本 · Esc 返回 · m 首页 · ? 帮助"
-	failedFooter := "按 r 重试 · Esc 返回版本对齐 · m 首页"
+	intro := m.text(msgPreflightIntro)
+	loading := m.text(msgPreflightLoading)
+	failed := m.text(msgPreflightFailed)
+	footer := m.text(msgPreflightFooter)
+	emptyFooter := m.text(msgPreflightEmptyFooter)
+	failedFooter := m.text(msgPreflightFailedFooter)
 	if m.hasPackagePreflight() {
-		title = "aiah · 取回版本检查"
+		title = m.text(msgPackagePreflightTitle)
 		release := m.migrationFlow.pulledReport
 		context = valueOrDash(release.Name + " " + release.Version + " / " + release.Profile)
-		intro = "已绑定所选版本、资产组合与 SHA256；检查阶段零写入，尚未安装。"
-		loading = "正在校验取回包，并检查本机 secret、排除项和目标工具适配…"
-		failed = "取回版本检查失败"
-		footer = "↑↓/jk 查看全部项 · Enter 进入变更预览 · r 重查 · Esc 返回版本列表 · m 首页 · ? 帮助"
-		emptyFooter = "Enter 进入变更预览 · r 重查 · Esc 返回版本列表 · m 首页 · ? 帮助"
-		failedFooter = "按 r 重试 · Esc 返回版本列表 · m 首页"
+		intro = m.text(msgPackagePreflightIntro)
+		loading = m.text(msgPackagePreflightLoading)
+		failed = m.text(msgPackagePreflightFailed)
+		footer = m.text(msgPackagePreflightFooter)
+		emptyFooter = m.text(msgPackagePreflightEmptyFooter)
+		failedFooter = m.text(msgPackagePreflightFailFooter)
 	}
 	header := joinEdges(
 		style.header.Render(title),
@@ -226,28 +249,28 @@ func (m Model) preflightView(style styles) string {
 	case statusFailed:
 		message := failed
 		if m.migrationFlow.preflightErr != nil {
-			message += "：" + m.migrationFlow.preflightErr.Error()
+			message += ": " + m.migrationFlow.preflightErr.Error()
 		}
 		return header + "\n\n" + style.error.Render(message) +
 			"\n\n" + failedFooter
 	}
 
 	report := m.migrationFlow.preflightReport
-	result := "可继续：未发现阻止项"
+	result := m.text(msgPreflightResultOK)
 	resultStyle := style.header
 	if !report.Ok {
-		result = "需处理：存在阻止项"
+		result = m.text(msgPreflightResultBlocked)
 		resultStyle = style.error
 		if m.hasPackagePreflight() {
-			footer = "↑↓/jk 查看全部项 · r 处理后重查 · Esc 返回版本列表 · m 首页 · ? 帮助"
-			emptyFooter = "r 处理后重查 · Esc 返回版本列表 · m 首页 · ? 帮助"
+			footer = m.text(msgPackagePreflightBlockFooter)
+			emptyFooter = m.text(msgPackagePreflightBlockEmpty)
 		}
 	} else if report.Summary.DegradedItems > 0 {
-		result = "可继续：存在需确认的降级项"
+		result = m.text(msgPreflightResultDegraded)
 		resultStyle = style.warning
 	}
-	summary := fmt.Sprintf(
-		"目标 %d · 不支持 %d · 丢弃 %d · 降级 %d · secret 缺失 %d/%d · 本机不迁移 %d",
+	summary := m.text(
+		msgPreflightSummary,
 		report.Summary.TargetCount,
 		report.Summary.UnsupportedTargets,
 		report.Summary.DroppedItems,
@@ -265,7 +288,7 @@ func (m Model) preflightView(style styles) string {
 			resultStyle.Render(result),
 			summary,
 			"",
-			"没有需要展示的检查项。",
+			m.text(msgPreflightEmpty),
 			"",
 			style.muted.Render(emptyFooter),
 		}, "\n")
@@ -336,63 +359,63 @@ func (m Model) preflightView(style styles) string {
 
 func (m Model) channelInputView(style styles) string {
 	lines := []string{
-		style.header.Render("aiah · 选择分发通道"),
+		style.header.Render(m.text(msgChannelInputTitle)),
 		"",
-		"分发通道是一个已有的普通目录，可位于 Git checkout、NAS 挂载点或 U 盘。",
-		"路径确认本身只读取 channel.json，不创建目录、不联网。",
+		m.text(msgChannelInputDefinition),
+		m.text(msgChannelInputReadOnly),
 		"",
 		m.migrationFlow.channelInput.View(),
 		"",
-		"Enter 读取 · Esc 取消 · Ctrl+C 退出",
+		m.text(msgChannelInputFooter),
 	}
 	return strings.Join(appendInputNotice(lines, m.notice, m.noticeIsWarn, style), "\n")
 }
 
 func (m Model) publishConfirmationView(style styles) string {
 	lines := []string{
-		style.header.Render("aiah · 发布不可变版本"),
+		style.header.Render(m.text(msgPublishConfirmTitle)),
 		"",
-		"安装包    " + m.migrationFlow.publishPackage,
-		"分发通道  " + m.migrationFlow.channel,
+		m.text(msgPublishConfirmPackage, m.migrationFlow.publishPackage),
+		m.text(msgPublishConfirmChannel, m.migrationFlow.channel),
 		"",
-		style.warning.Render("发布会写入通道；同名/版本/组合一旦发布，不允许覆盖不同内容。"),
-		"若通道目录为空，成功发布会在其中初始化索引和不可变包布局。",
-		"请完整输入 publish 后按 Enter：",
+		style.warning.Render(m.text(msgPublishConfirmWarning)),
+		m.text(msgPublishConfirmInit),
+		m.text(msgPublishConfirmPrompt),
 		m.migrationFlow.publishInput.View(),
 		"",
-		"Esc 取消；取消时安装包仍保留在资产库 dist 目录。",
+		m.text(msgPublishConfirmFooter),
 	}
 	return strings.Join(appendInputNotice(lines, m.notice, m.noticeIsWarn, style), "\n")
 }
 
 func (m Model) versionsView(style styles) string {
 	header := joinEdges(
-		style.header.Render("aiah · 查看与取回版本"),
+		style.header.Render(m.text(msgVersionsTitle)),
 		filepathBaseOrDash(m.migrationFlow.channel),
 		max(20, m.width),
 	)
 	switch m.migrationFlow.versionsStatus {
 	case statusLoading:
-		return header + "\n\n正在读取分发通道版本…"
+		return header + "\n\n" + m.text(msgVersionsLoading)
 	case statusFailed:
-		message := "读取版本失败"
+		message := m.text(msgVersionsFailed)
 		if m.migrationFlow.versionsErr != nil {
-			message += "：" + m.migrationFlow.versionsErr.Error()
+			message += ": " + m.migrationFlow.versionsErr.Error()
 		}
 		return header + "\n\n" + style.error.Render(message) +
-			"\n\n按 r 重试 · Esc 返回版本对齐 · c 更换通道"
+			"\n\n" + m.text(msgVersionsFailedFooter)
 	}
 
 	lines := []string{
 		header,
-		style.muted.Render("按发布顺序显示；不会比较版本号大小，也不会自动选择“最新版”。"),
+		style.muted.Render(m.text(msgVersionsOrdering)),
 		"",
 	}
 	if len(m.migrationFlow.versionsReport.Releases) == 0 {
 		lines = append(lines,
-			"该资产库尚未发布版本。",
+			m.text(msgVersionsEmpty),
 			"",
-			style.muted.Render("Esc 返回版本对齐，再按 p 发布 · r 刷新 · m 首页"),
+			style.muted.Render(m.text(msgVersionsEmptyFooter)),
 		)
 		return strings.Join(lines, "\n")
 	}
@@ -416,10 +439,10 @@ func (m Model) versionsView(style styles) string {
 	selected := m.migrationFlow.versionsReport.Releases[m.migrationFlow.versionsCursor]
 	lines = append(lines,
 		"",
-		"当前选择  "+selected.Name+" / "+selected.Version+" / "+selected.Profile,
-		"SHA256    "+selected.SHA256,
+		m.text(msgVersionsSelected, selected.Name, selected.Version, selected.Profile),
+		m.text(msgVersionsSHA, selected.SHA256),
 		"",
-		style.muted.Render("↑↓/jk 选择 · Enter 取回此版本 · r 刷新 · Esc 返回 · m 首页 · ? 帮助"),
+		style.muted.Render(m.text(msgVersionsFooter)),
 	)
 	if m.notice != "" {
 		noticeStyle := style.muted
@@ -437,41 +460,41 @@ func (m Model) versionsView(style styles) string {
 func (m Model) pullOutputView(style styles) string {
 	release := m.migrationFlow.selectedRelease
 	lines := []string{
-		style.header.Render("aiah · 取回版本"),
+		style.header.Render(m.text(msgPullOutputTitle)),
 		"",
-		"版本      " + release.Name + " / " + release.Version + " / " + release.Profile,
-		"分发通道  " + m.migrationFlow.channel,
+		m.text(msgPullOutputRelease, release.Name, release.Version, release.Profile),
+		m.text(msgPullOutputChannel, m.migrationFlow.channel),
 		"",
-		"输入一个已有的输出目录；取回只写该目录，不写 .claude/.codex/.grok。",
-		"同名产物残缺、内容不同或不是普通文件时会拒绝，不会覆盖。",
+		m.text(msgPullOutputBoundary),
+		m.text(msgPullOutputConflict),
 		"",
 		m.migrationFlow.pullOutInput.View(),
 		"",
-		"Enter 取回并进入变更预览 · Esc 取消",
+		m.text(msgPullOutputFooter),
 	}
 	return strings.Join(appendInputNotice(lines, m.notice, m.noticeIsWarn, style), "\n")
 }
 
 func (m Model) migrationHelpView(style styles) string {
 	return strings.Join([]string{
-		style.header.Render("aiah · 迁移到其他设备 · 帮助"),
+		style.header.Render(m.text(msgMigrationHelpTitle)),
 		"",
-		"本页比较资产库版本、当前受管安装和分发通道最近发布版本。",
-		"“版本不同”只表示不能证明相同，不会猜测哪个版本更新。",
+		m.text(msgMigrationHelpIntro),
+		m.text(msgMigrationHelpVersions),
 		"",
-		"e             选择资产组合并运行零写入换机前置检查",
-		"p             选择资产组合、生成安装包，输入 publish 后发布",
-		"v             查看该资产库的全部通道版本；明确选择后才能取回",
-		"c             选择或更换已有分发通道目录",
-		"r             重新读取全部状态",
-		"m / Esc       返回任务首页",
-		"?             关闭帮助",
-		"q / Ctrl+C    退出",
+		m.text(msgMigrationHelpPreflight),
+		m.text(msgMigrationHelpPublish),
+		m.text(msgMigrationHelpPull),
+		m.text(msgMigrationHelpChannel),
+		m.text(msgMigrationHelpReload),
+		m.text(msgMigrationHelpHome),
+		m.text(msgMigrationHelpClose),
+		m.text(msgMigrationHelpQuit),
 		"",
-		"换机检查显示本机不迁移项、secret 可用性、不支持目标与 adapter 降级。",
-		"取回后复用现有变更预览；仍须完整输入 apply 才写目标工具目录。",
-		"发布与取回直接调用同一 Core，不执行 shell，也不接管 Git/rsync/U 盘传输。",
-		"通道只负责不可变版本分发，不是后台双向同步。",
+		m.text(msgMigrationHelpChecks),
+		m.text(msgMigrationHelpApply),
+		m.text(msgMigrationHelpCore),
+		m.text(msgMigrationHelpBoundary),
 	}, "\n")
 }
 
@@ -512,27 +535,27 @@ func valueOrDash(value string) string {
 	return value
 }
 
-func okLabel(ok bool) string {
+func (m Model) okLabel(ok bool) string {
 	if ok {
-		return "正常"
+		return m.text(msgMigrationStatusOK)
 	}
-	return "有风险与问题"
+	return m.text(msgMigrationStatusRisks)
 }
 
-func alignmentLabel(value string) string {
+func (m Model) alignmentLabel(value string) string {
 	switch value {
 	case "same-version":
-		return "与资产库版本一致"
+		return m.text(msgMigrationAlignmentSame)
 	case "different-version":
-		return "与资产库版本不同（不判断新旧）"
+		return m.text(msgMigrationAlignmentDifferent)
 	case "different-package":
-		return "当前安装来自另一资产库"
+		return m.text(msgMigrationAlignmentOtherLibrary)
 	case "not-installed":
-		return "尚未安装"
+		return m.text(msgMigrationAlignmentNotInstalled)
 	case "not-published":
-		return "资产库尚未发布到该通道"
+		return m.text(msgMigrationAlignmentNotPublished)
 	case "channel-not-selected":
-		return "未选择通道"
+		return m.text(msgMigrationAlignmentNoChannel)
 	default:
 		return valueOrDash(value)
 	}

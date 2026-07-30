@@ -1,0 +1,14 @@
+aiah · Device move preflight                                                                          personal
+This check is zero-write; it does not build, publish, or apply assets.
+Ready: no blockers found
+Targets 1 · Unsupported 0 · Dropped 0 · Degraded 0 · Missing secrets 0/0 · Local only 1
+> Target tool · claude [Healthy]                     │ Check type    Target adapter
+  Local only · home/.codex/auth.json [Excluded by d… │ Target tool   claude
+                                                     │ Support       Healthy
+                                                     │ Files emitted 3
+                                                     │ Blocked/degraded 0 / 0
+                                                     │
+                                                     │
+                                                     │
+                                                     │
+↑↓/jk View all · r Recheck · p Publish · v View/retrieve · Esc Back · m Home · ? Help

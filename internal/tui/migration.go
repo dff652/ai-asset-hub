@@ -125,12 +125,12 @@ func (m Model) startMigration() (tea.Model, tea.Cmd) {
 
 func (m Model) startMigrationPreflight() (tea.Model, tea.Cmd) {
 	if m.migrationFlow.status != statusReady {
-		m.notice = "迁移状态尚未可用；先按 r 刷新"
+		m.notice = m.text(msgMigrationStatusUnavailableRefresh)
 		m.noticeIsWarn = true
 		return m, nil
 	}
 	m.migrationFlow.pulledReport = channel.PullReport{}
-	m.notice = "选择要迁移的资产组合"
+	m.notice = m.text(msgMigrationPreflightSelectProfile)
 	m.noticeIsWarn = false
 	return m.startProfileInputFor(profileForPreflight)
 }
@@ -195,7 +195,7 @@ func (m Model) updateChannelInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.options.Home,
 		)
 		if candidate == "" {
-			m.notice = "必须输入已有的分发通道目录；本页不会创建目录"
+			m.notice = m.text(msgMigrationChannelRequired)
 			m.noticeIsWarn = true
 			return m, nil
 		}

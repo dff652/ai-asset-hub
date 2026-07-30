@@ -454,6 +454,191 @@ func TestMigrationHomeKeyWorksInEveryMode(t *testing.T) {
 	}
 }
 
+func TestMigrationViewGoldenByLanguage(t *testing.T) {
+	type goldenCase struct {
+		name   string
+		golden string
+		setup  func(Model) Model
+	}
+	cases := []goldenCase{
+		{
+			name: "status", golden: "migration.status",
+			setup: func(model Model) Model {
+				return model
+			},
+		},
+		{
+			name: "preflight", golden: "migration.preflight",
+			setup: func(model Model) Model {
+				model.migrationFlow.mode = migrationModePreflight
+				model.migrationFlow.preflightStatus = statusReady
+				model.migrationFlow.preflightProfile = "personal"
+				model.migrationFlow.preflightReport = migration.PreflightReport{
+					Ok: true,
+					Summary: migration.PreflightSummary{
+						TargetCount: 1, DevicePrivateItems: 1,
+					},
+					Targets: []migration.TargetPreflight{{
+						Target: "claude", Supported: true, Emitted: 3,
+					}},
+					DevicePrivate: []migration.DevicePrivateItem{{
+						LogicalPath: "home/.codex/auth.json",
+						Source:      "codex",
+						Type:        "config",
+						Status:      "device-private",
+					}},
+				}
+				return model
+			},
+		},
+		{
+			name: "publish confirm", golden: "migration.publish-confirm",
+			setup: func(model Model) Model {
+				model.migrationFlow.publishConfirming = true
+				model.migrationFlow.publishPackage =
+					"/srv/ai-assets/dist/personal-1.2.3-personal.tar"
+				return model
+			},
+		},
+		{
+			name: "versions", golden: "migration.versions",
+			setup: func(model Model) Model {
+				model.migrationFlow.mode = migrationModeVersions
+				model.migrationFlow.versionsStatus = statusReady
+				model.migrationFlow.versionsCursor = 1
+				model.migrationFlow.versionsReport = channel.ListReport{
+					Ok: true,
+					Releases: []channel.Release{
+						{
+							Name: "personal", Version: "1.2.2", Profile: "personal",
+							SHA256: strings.Repeat("a", 64),
+						},
+						{
+							Name: "personal", Version: "1.2.3", Profile: "personal",
+							SHA256: strings.Repeat("b", 64),
+						},
+					},
+				}
+				return model
+			},
+		},
+	}
+	languages := []struct {
+		value  language
+		suffix string
+	}{
+		{value: languageZhCN, suffix: "zh-CN"},
+		{value: languageEnglish, suffix: "en"},
+	}
+	for _, languageCase := range languages {
+		for _, test := range cases {
+			t.Run(test.name+" "+languageCase.suffix, func(t *testing.T) {
+				model := test.setup(
+					migrationGoldenModel().withLanguage(languageCase.value),
+				)
+				got := model.View()
+				path := filepath.Join(
+					"testdata",
+					test.golden+"."+languageCase.suffix+".golden",
+				)
+				want, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatalf("read golden: %v\n--- got ---\n%s", err, got)
+				}
+				if normalizeTerminalGolden(got) !=
+					normalizeTerminalGolden(string(want)) {
+					t.Fatalf(
+						"view differs from %s:\n--- got ---\n%s\n--- want ---\n%s",
+						path,
+						got,
+						want,
+					)
+				}
+			})
+		}
+	}
+}
+
+func TestEnglishMigrationActionsAndPullBoundary(t *testing.T) {
+	model := migrationGoldenModel().withLanguage(languageEnglish)
+
+	updated, command := model.handlePublishMessage(publishMsg{})
+	next := updated.(Model)
+	if command != nil || !next.noticeIsWarn ||
+		!strings.Contains(next.notice, "Core did not return a successful result") {
+		t.Fatalf(
+			"English publish failure = warning %v notice %q command nil=%v",
+			next.noticeIsWarn,
+			next.notice,
+			command == nil,
+		)
+	}
+
+	next = migrationGoldenModel().withLanguage(languageEnglish)
+	next.migrationFlow.publishConfirming = true
+	for _, character := range "yes" {
+		updated, _ = next.Update(keyPress(string(character)))
+		next = updated.(Model)
+	}
+	updated, command = next.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	next = updated.(Model)
+	if command != nil || !next.migrationFlow.publishConfirming ||
+		!next.noticeIsWarn ||
+		!strings.Contains(next.notice, "full publish token") {
+		t.Fatalf(
+			"English wrong publish confirmation = confirming %v notice %q command nil=%v",
+			next.migrationFlow.publishConfirming,
+			next.notice,
+			command == nil,
+		)
+	}
+
+	next = migrationGoldenModel().withLanguage(languageEnglish)
+	next.migrationFlow.choosingPullOut = true
+	next.migrationFlow.selectedRelease = channel.Release{
+		Name: "personal", Version: "1.2.3", Profile: "personal",
+	}
+	view := next.View()
+	for _, want := range []string{
+		"existing output directory",
+		"never .claude/.codex/.grok",
+		"never overwritten",
+	} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("English pull boundary omits %q:\n%s", want, view)
+		}
+	}
+
+	next = migrationGoldenModel().withLanguage(languageEnglish)
+	next.migrationFlow.mode = migrationModePreflight
+	next.migrationFlow.pulledReport = channel.PullReport{
+		Name: "personal", Version: "1.2.3", Profile: "personal",
+		Package: "/tmp/personal-1.2.3-personal.tar",
+		SHA256:  strings.Repeat("b", 64),
+	}
+	next.migrationFlow.preflightStatus = statusReady
+	next.migrationFlow.preflightReport = migration.PreflightReport{
+		Ok: false,
+		Summary: migration.PreflightSummary{
+			UnsupportedTargets: 1,
+		},
+	}
+	view = next.View()
+	for _, want := range []string{
+		"Retrieved release check",
+		"selected release, profile, and SHA256 are bound",
+		"Action required: blockers found",
+		"Recheck after fixes",
+	} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("English package blocker view omits %q:\n%s", want, view)
+		}
+	}
+	if strings.Contains(view, "Enter Preview changes") {
+		t.Fatalf("blocked English package view offered continuation:\n%s", view)
+	}
+}
+
 func TestChannelPromptDoesNotCreateTheTypedDirectory(t *testing.T) {
 	root := t.TempDir()
 	missing := filepath.Join(root, "not-created")
@@ -484,6 +669,41 @@ func TestChannelPromptDoesNotCreateTheTypedDirectory(t *testing.T) {
 		t.Fatalf("missing channel did not surface as a read failure: %#v",
 			next.migrationFlow.report)
 	}
+}
+
+func migrationGoldenModel() Model {
+	model := readyTestModel().
+		WithWorkspace("/srv/ai-assets").
+		WithHome(true).
+		WithMaintenance(true)
+	model.screen = screenMigration
+	model.plain = true
+	model.width = 110
+	model.height = 18
+	model.migrationFlow.channel = "/mnt/team-channel"
+	model.migrationFlow.status = statusReady
+	model.migrationFlow.report = migration.Report{
+		Ok: true,
+		Library: migration.LibraryStatus{
+			Root: "/srv/ai-assets", Name: "personal", Version: "1.2.3",
+			AssetCount: 4, Profiles: []string{"personal"}, Ok: true,
+		},
+		Installation: migration.InstallationStatus{
+			Present: true, Ok: true, Package: "personal", Version: "1.2.3",
+			Profile: "personal", Targets: []string{"claude", "codex"},
+		},
+		Channel: migration.ChannelStatus{
+			Selected: true, Path: "/mnt/team-channel", ReleaseCount: 2,
+			Latest: &channel.Release{
+				Name: "personal", Version: "1.2.3", Profile: "personal",
+				SHA256: strings.Repeat("b", 64),
+			},
+		},
+		Alignment: migration.Alignment{
+			Installation: "same-version", Channel: "same-version",
+		},
+	}
+	return model
 }
 
 func migrationTestModel(t *testing.T, workspaceRoot, home, channelRoot string) Model {
