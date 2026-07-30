@@ -120,7 +120,7 @@ Linux amd64 已完成端到端行为验证。`v0.1.1` 中现存的 macOS、Windo
 
 `v0.1.6` 的迁移页仍是上图所示只读状态。当前 `dev` 已加入 E3.2/E3.3：按 `p`
 选择资产组合并 typed `publish`，按 `v` 明确选择版本/profile 和已有输出目录，
-按 `e` 检查当前资产库/profile。E3.4 候选在取回后先检查所选发布包与目标设备，
+按 `e` 检查当前资产库/profile。当前 `dev` 的 E3.4 在取回后先检查所选发布包与目标设备，
 通过后才允许进入同一 diff，并且必须 typed `apply` 才写目标工具目录。aiah 不创建
 通道目录、不自动取回“最新版”，也不接管 Git/NAS/rsync/U 盘传输；首次发布可在
 用户明确选择的空目录中初始化通道索引和不可变包布局。
@@ -146,11 +146,13 @@ name/version/profile/SHA256；任一不匹配都阻止进入 diff。`v0.1.6` 公
 | `aiah bootstrap` | pull 后进入强制交互 diff 与 typed `apply` |
 | `aiah doctor` | 只读检查 journal、backup、deployment drift 与 MCP 前置状态 |
 | `aiah update --check` | 用户触发的只读 Release 版本检查 |
-| MCP：`aiah mcp` | 供 AI 工具调用的只读 `scan/validate/diff/doctor/version` |
+| MCP：`aiah mcp` | 供 AI 工具调用的只读盘点、统一资产状态、迁移状态、diff 与安装检查 |
 
-MCP 当前不开放写操作，也尚未覆盖 TUI 已有的统一资产状态和迁移状态；这两项已进入
-[后续计划](docs/roadmap.md)。完整参数见[命令参考](docs/cli-reference.md)，
-跨设备操作见[迁移 runbook](docs/runbooks/cross-device-transfer.md)。
+公开版 `v0.1.6` 的 MCP 提供 5 个基础工具；本 N6 候选（目标分支 `dev`）新增
+`aiah_asset_status` 与 `aiah_migration_status`，共 7 个只读工具。MCP 不开放任何
+写操作。完整参数见[命令参考](docs/cli-reference.md)，客户端接入与验收见
+[MCP runbook](docs/runbooks/mcp-client-acceptance.md)，跨设备人工操作见
+[迁移 runbook](docs/runbooks/cross-device-transfer.md)。
 
 ## 安全边界
 
@@ -161,8 +163,8 @@ MCP 当前不开放写操作，也尚未覆盖 TUI 已有的统一资产状态�
   历史 backup 仍使用 CLI。
 - TUI 发布必须完整输入 `publish`；取回必须明确选择版本/profile 和已有输出目录，
   不覆盖不同或残缺的同名产物，取回成功也不会跳过 diff/typed `apply`。
-- MCP server 只暴露 `scan`、`validate`、`diff`、`doctor`、`version`，不暴露
-  `build`、`apply` 或 `rollback`。
+- MCP server 只暴露 7 个只读查询工具，不暴露 `build`、资产库写操作、
+  `publish/pull`、`apply` 或 `rollback`。
 - MCP 原生配置采用 create-only 所有权；冲突时整单 fail-closed。
 - 项目 `CLAUDE.md` / `AGENTS.md` 由项目 Git 管理；aiah 只盘点和报告，不自动对齐。
 

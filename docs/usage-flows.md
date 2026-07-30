@@ -11,7 +11,7 @@
 | 第一次整理并应用 | 发现 → 整理 → 准备 → 预览 → 人工确认 | `aiah` | TUI 已覆盖；前四步不写目标工具目录 |
 | 日常维护资产 | 查看统一状态 → 更新/移出 → 预览 → 应用 | `aiah` | `update/remove/apply` 都是显式操作，不做后台同步 |
 | 检查或撤销安装 | 安装检查 → 判断漂移 → typed `rollback` | `aiah` 或 CLI | 恢复点只在本机使用，不等于资产库备份 |
-| 迁移到其他设备 | 换机检查 → build/publish → 外部搬运 → versions/pull → 取回版本检查 → diff/apply | TUI（开发候选）/ CLI | E3.2/E3.3 已合入 `dev`，E3.4 候选绑定所选发布包；`v0.1.6` 仍为 E3.1；网络传输不归 aiah |
+| 迁移到其他设备 | 换机检查 → build/publish → 外部搬运 → versions/pull → 取回版本检查 → diff/apply | TUI（当前 `dev`）/ CLI | E3.2–E3.4 已合入 `dev`；`v0.1.6` 仍为 E3.1；网络传输不归 aiah |
 | AI 或自动化接入 | MCP 只读查询，或 CLI JSON 编排 | `aiah mcp` / CLI | MCP 不开放 build/apply/rollback |
 | 安装或升级 aiah | 检查版本 → 显式安装指定 Release → 复核版本 | installer / `update --check` | 不后台自更新；这不是用户资产生命周期 |
 
@@ -104,7 +104,7 @@ E3.3 在同一页增加第三条只读路径：
 - 检查只针对当前设备和当前资产库/profile，不创建 `dist/`，也不替用户发布、
   取回或应用。
 
-E3.4 候选把取回后的连续路径补成：
+E3.4 已在当前 `dev` 把取回后的连续路径补成：
 
 ```text
 pull → 绑定 name/version/profile/SHA256 → 目标设备检查
@@ -126,11 +126,17 @@ pull → 绑定 name/version/profile/SHA256 → 目标设备检查
 
 ### 5.1 AI 工具通过 MCP 读取状态
 
-`aiah mcp` 暴露 `scan`、`validate`、`diff`、`doctor`、`version` 五个只读工具。
-AI 可以盘点、校验和解释差异，但不能通过 MCP build、apply 或 rollback。
+公开版 `v0.1.6` 的 `aiah mcp` 暴露 5 个基础只读工具；本 N6 候选（目标分支
+`dev`）增加
+`aiah_asset_status` 与 `aiah_migration_status`。AI 可以盘点、校验、解释源端与
+资产库状态、查看跨设备版本对齐，但不能通过 MCP build、修改资产库、publish/pull、
+apply 或 rollback。
 
 这是有意的权限边界：写操作必须继续由人或显式 CLI 自动化负责，并保留路径、diff、
 确认和恢复证据。
+
+客户端配置和真实握手验收见
+[MCP 客户端接入 runbook](runbooks/mcp-client-acceptance.md)。
 
 ### 5.2 脚本与 CI
 

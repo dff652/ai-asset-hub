@@ -1,7 +1,8 @@
 # ADR-0005：MCP server 只读边界
 
 - 状态：Accepted
-- 实施：`internal/mcp` + `aiah mcp`，2026-07-28 落地并完成变异验证
+- 实施：`internal/mcp` + `aiah mcp`；2026-07-28 首版 5 工具落地，2026-07-30
+  N6 扩展为 7 个只读工具
 - 日期：2026-07-28
 - 关联：[ADR-0003](0003-cli-first-go-core-and-product-surfaces.md)（CLI 是 Agent
   接口）、[ADR-0004](0004-native-mcp-config-ownership.md)（**不同主题**：那份讲
@@ -25,17 +26,26 @@ stdout。
 
 ### 1. 提供 `aiah mcp`，只暴露只读子集
 
-首版注册 5 个工具：
+当前注册 7 个工具：
 
 | 工具 | 对应命令 | 写盘 |
 |---|---|---|
 | `aiah_scan` | `scan` | 无 |
+| `aiah_asset_status` | `inventory.Scan` + `workspace.Catalog` | 无 |
 | `aiah_validate` | `validate` | 无 |
 | `aiah_diff` | `diff` | 无 |
 | `aiah_doctor` | `doctor` | 无 |
+| `aiah_migration_status` | `migration.Inspect` | 无 |
 | `aiah_version` | `version` | 无 |
 
 不变式：**经此 server 可达的任何工具都不写任何文件。**
+
+两个状态工具要求调用方明确给出资产库路径：
+
+- `aiah_asset_status` 返回“未纳管 / 已纳管 / 源端有更新 / 仅库内 / 阻止”统一状态，
+  MCP 层不重新实现分类；
+- `aiah_migration_status` 比较资产库、当前受管安装和可选普通目录通道，不构建、
+  发布、取回或应用，也不把“版本不同”解释为某一方较新。
 
 ### 2. `apply` 与 `rollback` 永不进入该 surface
 
@@ -56,8 +66,8 @@ stdout。
 ### 4. 边界锚在行为上，不锚在名单上
 
 一张"允许的工具名"清单挡不住「有人加了写工具，顺手也改了名单」。因此主防线是
-`TestToolCallsWriteNothing`：对**注册表里的每个工具**在真实 home / project 上执行，
-前后两棵树必须逐字节（含 mode）一致。
+`TestToolCallsWriteNothing`：对**注册表里的每个工具**执行后比较其可达的 HOME、
+project、资产库、通道和包目录，所有树必须逐字节（含 mode）一致。
 
 变异验证已证明：即使同时把写工具加进注册表**并**更新期望名单，该测试仍然变红。
 新增工具若没有写入安全覆盖，测试同样直接失败。
@@ -69,8 +79,11 @@ stdout。
   JSON-RPC 视为通知、不回包；
 - `initialize` 的 `instructions` 字段**在带内声明只读边界**，让会把它转给模型的
   客户端也能说明这台 server 做不到什么；
+- `tools/list` 为每个工具统一声明 `readOnlyHint=true`、
+  `destructiveHint=false`、`idempotentHint=true`、`openWorldHint=false`；
 - 工具参数用 `DisallowUnknownFields` 解码：拼错的参数必须显式失败，静默忽略会在
   用户不知情的情况下改变工具读取的路径；
+- `inputSchema.additionalProperties=false` 与实际解码行为保持一致；
 - 未知工具返回 `isError` 的工具级失败而非 JSON-RPC 错误，让模型能看见并改用别的
   工具；协议层错误保留给协议层问题；
 - 单行请求上限 1 MiB。超限后流位置不再可信，因此**停止**而不是尝试重新同步。
@@ -109,6 +122,8 @@ MCP 的确认发生在 agent 与用户之间，不在协议里；server 无法�
 
 - ADR-0003 §1 的 Agent 接口承诺兑现；
 - AI 工具可以回答「这台机器有哪些资产」「这个包会改什么」「我的部署健康吗」；
+- AI 工具可以进一步回答「哪些源端资产尚未纳管或已经变化」「资产库、当前安装与
+  分发通道是否同版本」；
 - 零依赖增量，二进制体积基本不变；
 - 只读不变式有行为级测试兜底，不依赖 review 自律。
 

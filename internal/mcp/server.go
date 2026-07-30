@@ -167,8 +167,9 @@ func dispatch(req request, registry map[string]Tool) (any, *responseError) {
 			},
 			// Stated in-band as well as in the docs: a client that surfaces
 			// instructions to a model should say what this server cannot do.
-			"instructions": "Read-only access to aiah. This server can inspect assets and " +
-				"deployments but cannot apply packages, roll back, or write any file.",
+			"instructions": "Read-only access to aiah. This server can inspect discovered " +
+				"assets, asset-library state, package diffs, deployment health and migration " +
+				"alignment. It cannot apply packages, roll back, build, publish, pull, or write any file.",
 		}, nil
 	case "ping":
 		return map[string]any{}, nil
@@ -231,6 +232,12 @@ func toolDescriptors() []any {
 			"name":        tool.Name,
 			"description": tool.Description,
 			"inputSchema": tool.InputSchema,
+			"annotations": map[string]any{
+				"readOnlyHint":    true,
+				"destructiveHint": false,
+				"idempotentHint":  true,
+				"openWorldHint":   false,
+			},
 		})
 	}
 	return out

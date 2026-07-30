@@ -146,7 +146,7 @@ aiah ui --package <tar|dir> --home "$HOME"     # 高级：直接审阅并应用�
 - “迁移到其他设备”先只读比较资产库、当前安装和通道；当前 `dev` 可按 `p`
   选择资产组合并 typed `publish`，按 `v` 查看全部发布坐标并明确选择版本/profile
   与已有输出目录；按 `e` 选择资产组合并零写入检查本机排除项、secret 和 adapter
-  兼容性。E3.4 候选在取回后先按 name/version/profile/SHA256 检查确切发布包和
+  兼容性。当前 `dev` 的 E3.4 在取回后先按 name/version/profile/SHA256 检查确切发布包和
   目标设备，通过后由用户按 Enter 进入同一 diff/typed `apply`；不会直接写目标
   工具目录。`v0.1.6` 公开版仍只包含 E3.1 只读状态页。
 - 用户界面把 workspace 称为“资产库”：它是跨工具资产的可编辑事实源。CLI flag、
@@ -176,14 +176,23 @@ aiah ui --package <tar|dir> --home "$HOME"     # 高级：直接审阅并应用�
 
 `aiah mcp` 在 stdio 上提供只读 MCP server，暴露：
 
+- `aiah_asset_status`
 - `aiah_scan`
 - `aiah_validate`
 - `aiah_diff`
 - `aiah_doctor`
+- `aiah_migration_status`
 - `aiah_version`
 
-不暴露 `build`、`apply` 或 `rollback`，因此“经 MCP server 零写入”是可测试的绝对
-不变式。该子命令不接受 flag 或 operand。
+`aiah_asset_status` 必须传 `workspace`，可选 `manifest`、`home`、`project`；
+它比较源端与资产库，返回 `unmanaged`、`managed`、`source-changed`、
+`library-only`、`blocked`。
+
+`aiah_migration_status` 必须传 `workspace`，可选 `manifest`、`channel`、`home`、
+`project`；它返回资产库、当前安装、普通目录通道和版本对齐状态。
+
+不暴露 `build`、资产库纳入/更新/移出、`publish/pull`、`apply` 或 `rollback`，
+因此“经 MCP server 零写入”是可测试的绝对不变式。该子命令不接受 flag 或 operand。
 
 Claude Code 接入：
 
@@ -191,7 +200,9 @@ Claude Code 接入：
 claude mcp add aiah -- aiah mcp
 ```
 
-Codex 与其它客户端配置 `command: "aiah"`、`args: ["mcp"]`。
+Codex、Grok 与其它客户端配置 `command: "aiah"`、`args: ["mcp"]`。可复制配置、
+隔离 fake HOME 和三客户端验收步骤见
+[MCP 客户端接入 runbook](runbooks/mcp-client-acceptance.md)。
 
 ## `update`
 
