@@ -1,0 +1,10 @@
+aiah · 安装检查                                                                                 正常
+
+即将撤销当前安装
+备份 ID (backupId)  backup-123
+
+撤销会恢复被更新的文件，并删除本次应用创建的文件。
+为防止误操作，请完整输入 rollback 后按 Enter：
+> rollback
+
+Esc 取消；打开本页不会写入。

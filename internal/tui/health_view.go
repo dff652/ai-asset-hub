@@ -16,12 +16,12 @@ type healthRow struct {
 }
 
 func (m Model) healthView(style styles) string {
-	state := "正常"
+	state := m.text(msgHealthStateHealthy)
 	if !m.doctorReport.Ok || m.doctorErr != nil {
-		state = fmt.Sprintf("风险与问题 %d", len(m.doctorReport.Findings))
+		state = m.text(msgHealthStateRisks, len(m.doctorReport.Findings))
 	}
 	header := joinEdges(
-		style.header.Render("aiah · 安装检查"),
+		style.header.Render(m.text(msgHealthTitle)),
 		state,
 		max(20, m.width),
 	)
@@ -30,27 +30,27 @@ func (m Model) healthView(style styles) string {
 	case m.rollbackConfirming:
 		return header + "\n" + m.rollbackConfirmationView(style)
 	case m.rollbacking:
-		return header + "\n\n" + style.warning.Render("正在撤销上次安装…请等待事务完成")
+		return header + "\n\n" + style.warning.Render(m.text(msgHealthRollbacking))
 	case m.doctorStatus == statusLoading:
-		lines := []string{"", "正在检查当前安装…（可按 q 退出）"}
+		lines := []string{"", m.text(msgHealthChecking)}
 		if m.rollbackResult != nil && m.rollbackResult.Ok {
 			lines = append([]string{"", m.rollbackResultBanner(style)}, lines...)
 		}
 		return header + "\n" + strings.Join(lines, "\n")
 	case m.doctorStatus == statusFailed:
-		message := "安装检查失败"
+		message := m.text(msgHealthFailed)
 		if m.doctorErr != nil {
 			message += ": " + m.doctorErr.Error()
 		}
-		return header + "\n\n" + style.error.Render(message) + "\n按 h 重试，m 返回首页"
+		return header + "\n\n" + style.error.Render(message) + "\n" + m.text(msgHealthRetry)
 	}
 
 	summary := m.doctorSummary(style)
 	body := m.healthBody(style)
-	footerText := "↑↓/jk 导航 · h 重新检查 · v 版本 · m 首页 · ? 帮助 · q 退出"
+	footerText := m.text(msgHealthFooter)
 	if m.doctorReport.Ok && m.doctorReport.Deployment != nil &&
 		m.doctorReport.Deployment.BackupID != "" {
-		footerText = "↑↓/jk 导航 · h 重新检查 · x 撤销上次安装 · v 版本 · m 首页 · ? 帮助 · q 退出"
+		footerText = m.text(msgHealthFooterRollback)
 	}
 	footer := style.muted.Render(footerText)
 	if m.notice != "" {
@@ -69,12 +69,12 @@ func (m Model) healthView(style styles) string {
 
 func (m Model) doctorSummary(style styles) string {
 	summary := m.doctorReport.Summary
-	deployment := "否"
+	deployment := m.text(msgHealthNo)
 	if summary.Deployment {
-		deployment = "是"
+		deployment = m.text(msgHealthYes)
 	}
-	line := fmt.Sprintf(
-		"当前安装 %s · 备份 %d · 未变化 %d · 已修改 %d · 缺失 %d · 风险与问题 %d",
+	line := m.text(
+		msgHealthSummary,
 		deployment,
 		summary.Backups,
 		summary.Unchanged,
@@ -94,10 +94,10 @@ func (m Model) rollbackResultBanner(style styles) string {
 		return ""
 	}
 	if !report.Ok || m.rollbackErr != nil {
-		return style.error.Render("撤销失败；以下为 Core 原始风险与问题")
+		return style.error.Render(m.text(msgHealthRollbackFailed))
 	}
-	return style.header.Render(fmt.Sprintf(
-		"撤销完成 · 备份 ID %s · 恢复 %d · 移除 %d",
+	return style.header.Render(m.text(
+		msgHealthRollbackSucceeded,
 		report.BackupID,
 		len(report.Restored),
 		len(report.Removed),
@@ -112,14 +112,14 @@ func (m Model) rollbackConfirmationView(style styles) string {
 	}
 	lines := []string{
 		"",
-		style.error.Render("即将撤销当前安装"),
-		"备份 ID (backupId)  " + backupID,
+		style.error.Render(m.text(msgHealthConfirmWarning)),
+		m.text(msgHealthConfirmBackup, backupID),
 		"",
-		"撤销会恢复被更新的文件，并删除本次应用创建的文件。",
-		"为防止误操作，请完整输入 rollback 后按 Enter：",
+		m.text(msgHealthConfirmAction),
+		m.text(msgHealthConfirmPrompt),
 		m.rollbackInput.View(),
 		"",
-		"Esc 取消；打开本页不会写入。",
+		m.text(msgHealthConfirmFooter),
 	}
 	if m.notice != "" {
 		lines = append(lines, "", style.warning.Render(m.notice))
@@ -130,7 +130,7 @@ func (m Model) rollbackConfirmationView(style styles) string {
 func (m Model) healthBody(style styles) string {
 	rows := m.healthRows()
 	if len(rows) == 0 {
-		return "\n未发现当前安装、文件漂移或风险与问题"
+		return m.text(msgHealthEmpty)
 	}
 	bodyHeight := max(4, m.height-6)
 	start, end := visibleRange(len(rows), m.healthCursor, bodyHeight)
@@ -169,7 +169,7 @@ func (m Model) healthRows() []healthRow {
 		len(m.doctorReport.Findings))
 	if deployment := m.doctorReport.Deployment; deployment != nil {
 		rows = append(rows, healthRow{
-			label:      "当前安装 · " + deployment.BackupID,
+			label:      m.text(msgHealthRowCurrent, deployment.BackupID),
 			deployment: deployment,
 		})
 	}
@@ -184,7 +184,11 @@ func (m Model) healthRows() []healthRow {
 		for index := range m.rollbackResult.Findings {
 			finding := &m.rollbackResult.Findings[index]
 			rows = append(rows, healthRow{
-				label:   "撤销 · " + finding.Code + " · " + string(finding.Severity),
+				label: m.text(
+					msgHealthRowRollbackFinding,
+					finding.Code,
+					finding.Severity,
+				),
 				finding: finding,
 			})
 		}
@@ -206,26 +210,26 @@ func (m Model) healthDetailLines(rows []healthRow, style styles) []string {
 	row := rows[m.healthCursor]
 	if row.deployment != nil {
 		return []string{
-			style.header.Render("当前安装"),
-			"备份 ID     " + row.deployment.BackupID,
-			"资产包      " + row.deployment.Package,
-			"版本        " + row.deployment.Version,
-			"资产组合    " + row.deployment.Profile,
-			"生成工具    " + row.deployment.ProducedBy,
-			"应用时间    " + row.deployment.AppliedAt,
+			style.header.Render(m.text(msgHealthDetailCurrent)),
+			m.text(msgHealthDetailBackup, row.deployment.BackupID),
+			m.text(msgHealthDetailPackage, row.deployment.Package),
+			m.text(msgHealthDetailVersion, row.deployment.Version),
+			m.text(msgHealthDetailProfile, row.deployment.Profile),
+			m.text(msgHealthDetailProducedBy, row.deployment.ProducedBy),
+			m.text(msgHealthDetailAppliedAt, row.deployment.AppliedAt),
 		}
 	}
 	if row.drift != nil {
 		return []string{
 			style.header.Render(row.drift.Path),
-			"状态        " + row.drift.Status,
+			m.text(msgHealthDetailStatus, row.drift.Status),
 		}
 	}
 	if row.finding != nil {
 		lines := []string{
 			style.header.Render(row.finding.Code),
-			"级别        " + string(row.finding.Severity),
-			"说明        " + row.finding.Message,
+			m.text(msgHealthDetailSeverity, row.finding.Severity),
+			m.text(msgHealthDetailDescription, row.finding.Message),
 		}
 		for _, path := range row.finding.Paths {
 			lines = append(lines, "  "+path)

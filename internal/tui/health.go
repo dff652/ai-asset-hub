@@ -37,7 +37,7 @@ func (m Model) doctorOptions() apply.DoctorOptions {
 
 func (m Model) startDoctor() (tea.Model, tea.Cmd) {
 	if !m.maintenance {
-		m.notice = "当前交互只提供部署审阅；请用 aiah 启动完整操作台"
+		m.notice = m.text(msgHealthUnavailable)
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -90,16 +90,16 @@ func (m Model) updateHealthKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m Model) startRollbackConfirmation() (tea.Model, tea.Cmd) {
 	switch {
 	case m.doctorStatus != statusReady || m.doctorErr != nil:
-		m.notice = "安装检查尚未完成，不能撤销"
+		m.notice = m.text(msgHealthRollbackNotReady)
 		m.noticeIsWarn = true
 		return m, nil
 	case !m.doctorReport.Ok:
-		m.notice = "安装检查未通过，不能撤销；请先处理错误"
+		m.notice = m.text(msgHealthRollbackBlocked)
 		m.noticeIsWarn = true
 		return m, nil
 	case m.doctorReport.Deployment == nil ||
 		m.doctorReport.Deployment.BackupID == "":
-		m.notice = "没有当前安装可供撤销；历史备份请使用 CLI 显式指定"
+		m.notice = m.text(msgHealthRollbackNoCurrent)
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -116,13 +116,13 @@ func (m Model) updateRollbackConfirmation(message tea.KeyMsg) (tea.Model, tea.Cm
 		m.rollbackConfirming = false
 		m.rollbackInput.SetValue("")
 		m.rollbackInput.Blur()
-		m.notice = "已取消撤销"
+		m.notice = m.text(msgHealthRollbackCancelled)
 		m.noticeIsWarn = false
 		return m, nil
 	}
 	if message.Type == tea.KeyEnter {
 		if m.rollbackInput.Value() != "rollback" {
-			m.notice = "确认文本不匹配；必须完整输入 rollback"
+			m.notice = m.text(msgHealthRollbackMismatch)
 			m.noticeIsWarn = true
 			m.rollbackInput.SetValue("")
 			return m, nil

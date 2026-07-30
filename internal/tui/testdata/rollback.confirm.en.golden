@@ -1,0 +1,10 @@
+aiah · Install check                                                                         Healthy
+
+The current install is about to be undone
+Backup ID (backupId)  backup-123
+
+Undo restores updated files and removes files created by this apply.
+To prevent mistakes, type the full rollback token and press Enter:
+> rollback
+
+Esc Cancel; opening this page does not write.
