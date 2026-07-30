@@ -174,7 +174,30 @@ bridge release；再下一版本才是修复后推荐命令的首次完整 Relea
 完整证据见
 [v0.1.6 bridge 检查点](../reviews/2026-07-30-v0.1.6-bridge-candidate-readiness.md)。
 
-## 5. 出问题怎么退
+## 5. 发布后把文件树同步回 `dev`
+
+本仓库的 Release PR 会 squash 到 `main`，而 `dev` 也受线性历史保护：GitHub
+不允许 merge-commit PR，分支保护也拒绝直接推送 merge commit。因此发布后的
+`main` 不能通过普通 merge 变成 `dev` 的祖先；同步目标是**文件树相同**，不是伪造
+祖先关系。
+
+安全流程：
+
+1. `git fetch --prune origin`，记录 `origin/dev`、`origin/main` 和 ahead/behind；
+2. 从 `origin/dev` 建专用同步分支，并保留本地
+   `backup/dev-before-<version>-sync-<date>`；
+3. 只把已验收 `origin/main` 的文件树带入同步提交；冲突必须按文件清单审阅；
+4. 提交前用 `git diff --quiet origin/main <sync-head>` 证明最终文件树完全一致，
+   再运行 `./scripts/check-local.sh` 和 `git diff --check`；
+5. 建 PR 到 `dev`，等待 push 与 pull_request 两轮 CI；
+6. 按仓库允许的 squash 方式合入；再次 fetch，确认
+   `git diff --quiet origin/dev origin/main`。
+
+`v0.1.6` 的实例是 PR #23：尝试普通 merge 和非强制快进均被仓库策略明确拒绝，
+远端未发生部分写入；最终 `dev@3b48566` 与 `main@307041e` 文件树完全一致。后续
+报告必须如实写“tree 已同步但 main 不是 dev 祖先”，不能把 squash 说成历史合并。
+
+## 6. 出问题怎么退
 
 | 情况 | 处理 |
 |---|---|
@@ -182,7 +205,7 @@ bridge release；再下一版本才是修复后推荐命令的首次完整 Relea
 | 已经有人下载 | **不要复用版本号**。发 `vX.Y.Z+1`，并在旧 Release 说明里标注问题 |
 | 只是发布说明写错 | 直接编辑 Release 说明，不动产物 |
 
-## 6. 已知缺口
+## 7. 已知缺口
 
 - **无签名**。目前只有 SHA256 校验和，能防传输损坏，不能防仓库被攻破。
   用户量起来后再评估 cosign / minisign。

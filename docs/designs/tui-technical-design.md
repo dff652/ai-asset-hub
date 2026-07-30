@@ -176,8 +176,8 @@ diff → 输入 `apply` → 展示 backup / rollback → 退出。
 明确输入工作区路径后才创建/打开目录。完成 compose 后按 `b` 选择 manifest profile，
 TUI 调 `build.Build` 写到 `<workspace>/dist/`，成功即把 archive 交给 Phase C。
 
-该阶段只做状态编排，不增加业务规则、私有设置或隐式工作区。publish/pull
-仍留在 CLI。工作区禁入受管工具目录；workspace compose 或重建
+该阶段只做状态编排，不增加业务规则、私有设置或隐式工作区。当时 publish/pull
+仍留在 CLI，后续由 Phase E3.2 在迁移页接入同一 Core。工作区禁入受管工具目录；workspace compose 或重建
 失败后会使当前会话生成的旧包失效，显式 `--package` 不受影响。6 项逐项变异验证和
 真实 PTY 的 workspace → compose → build → diff 链路均通过。
 
@@ -201,6 +201,21 @@ GitHub latest release。
 检查失败在页面可见，不静默吞掉；检查成功区分 current / update-available / ahead /
 development，并在可更新时展示精确 tag 安装命令。TUI 不自替换正在运行的二进制。
 
+### Phase E3.2：跨设备连续发布与取回
+
+**实现状态：当前开发候选（2026-07-30），尚未发布。** 在 E3.1 只读状态页上增加：
+
+- `p` → profile → `build.Build` → 显示包/通道 → typed `publish`
+  → `channel.Publish`；
+- `v` → `channel.List` 全部坐标 → 人工选择 version/profile → 输入已有输出目录
+  → `channel.Pull` → Phase C diff/typed `apply`。
+
+TUI 不 shell out、不自动选定或取回最后发布项、不创建通道目录、不接管传输层。
+用户可明确选择一个空目录；只有 typed publish 成功后才由 Core 初始化索引和包
+布局。pull 输出完整同内容普通文件四件套时幂等；残缺、不同内容或符号链接在写入前
+拒绝，exclusive create 防止并发覆盖。publish/pull 执行期间吞掉按键；pull 成功
+只进入 diff，不直接 apply。
+
 ## 5. 代码落位与状态模型
 
 ```text
@@ -214,6 +229,9 @@ internal/tui/
   diff_view.go          Phase C 视图
   health_view.go        Phase D2 Doctor / 当前部署回滚视图
   version_view.go       Phase D3 构建身份 / deployment / Release 检查
+  migration.go          Phase E3.1 状态与通道路径编排
+  migration_actions.go  Phase E3.2 typed publish、版本列表、取回与 Phase C 交接
+  migration_view.go     Phase E3 状态、确认、版本选择与输出路径视图
   styles.go             lipgloss 样式，语义色集中在此
 ```
 
@@ -255,6 +273,8 @@ report 本身**，这样重新扫描与过滤互不干扰。
 | `x` | 在 Doctor 页回滚当前部署（需 typed confirmation） |
 | `v` | 查看本地版本与当前资产 deployment |
 | `c` | 在版本页显式检查 GitHub Release |
+| `p`（迁移页） | 选择资产组合并进入 typed publish |
+| `v`（迁移页） | 查看全部通道版本，明确选择后取回 |
 | `?` | 键位帮助 |
 | `q` `Ctrl+C` | 退出 |
 

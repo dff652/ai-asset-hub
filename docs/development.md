@@ -193,6 +193,20 @@ pin 已在发布后收口到验收完成的 `v0.1.6`。候选与历史证据见
 [v0.1.6 bridge 检查点](reviews/2026-07-30-v0.1.6-bridge-candidate-readiness.md)和
 [v0.1.5 检查点 §5](reviews/2026-07-30-v0.1.5-candidate-readiness.md#5-发布结果与已知问题)。
 
+发布后 [PR #22](https://github.com/dff652/ai-asset-hub/pull/22) 已把安装器默认 pin、
+README 与发布证据收口到 `main@307041ec7c33`，最终提交的 push / pull_request
+两轮 CI 共 18 个 job 全绿。随后 [PR #23](https://github.com/dff652/ai-asset-hub/pull/23)
+把该文件树同步回 `dev@3b4856629cb5`；两端 `git diff --quiet` 为 0。仓库策略禁止
+merge commit，普通 PR merge 和直接非强制快进均被服务器拒绝且没有远端部分写入，
+所以 PR #23 按 squash 合入：**tree 相同，但 main 不是 dev 的祖先**。可重复流程见
+[发版 runbook §5](runbooks/release.md#5-发布后把文件树同步回-dev)。
+
+E3.2 当前开发候选在此基线上实现 TUI typed publish、显式 versions/pull 和
+pull→现有 diff/typed apply 连续向导；同时修复 pull 覆盖输出目录同名产物的安全
+缺口。相关单测、完整 `check-local`、两项变异验证、隔离 TTY
+publish→pull→diff→typed apply→Doctor→typed rollback 闭环与严格 review 已通过；
+PR/CI 仍待候选检查点收口，因此当前不属于 `v0.1.6` Release 能力。
+
 首次发布时 GitHub 把 `actions/checkout@v4`、`actions/setup-go@v5` 与
 `softprops/action-gh-release@v2` 的 Node.js 20 action 强制运行在 Node.js 24，
 并发出弃用告警。dev 已把它们升级为明确声明 `node24` 的 v7 / v7 / v3。

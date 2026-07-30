@@ -1,7 +1,7 @@
 # TUI 产品体验与导航方案 V2
 
-- 状态：**Accepted，Phase E1/E2 与 E3.1 已随 `v0.1.5` 发布并完成正式安装包
-  dogfood；推荐升级命令的已知问题不改变 TUI 功能验收结论**
+- 状态：**Accepted；Phase E1/E2/E3.1 已随 `v0.1.6` 正式验收，E3.2 已在当前
+  开发分支实现并进入候选验证，尚未发布**
 - 日期：2026-07-29
 - 关联：[TUI 技术方案](tui-technical-design.md)、
   [ADR-0006](../decisions/0006-tui-as-first-interactive-surface.md)、
@@ -328,8 +328,14 @@ ADR-0006 的绝对措辞并增加安全测试。
 - [x] E3.1 只读展示资产库、当前安装和通道最近发布版本；
 - [x] 通道路径由用户明确输入，只读且不创建目录；
 - [x] 对比资产库、通道和当前安装版本；
-- [ ] publish / versions / pull；
-- [ ] bootstrap 复用现有强制交互审阅；
+- [x] E3.2 `publish`：选择资产组合、复用 build Core、显示目标通道和包路径，
+  完整输入 `publish` 后才写入不可变通道；
+- [x] E3.2 `versions` / `pull`：显示同一资产库的全部发布坐标，不比较版本号大小，
+  用户必须明确选择版本/profile 和已有输出目录；
+- [x] E3.2 连续取回：pull 只写显式输出目录，成功后直接复用现有 diff 与 typed
+  `apply`；不新增 `--yes` 或 TUI 私有部署逻辑；
+- [x] pull 输出冲突 fail-closed：完整同内容四件套幂等，残缺或不同内容拒绝且
+  不覆盖；
 - [ ] 显示 device-private、secret 与 adapter 兼容性检查；
 - [ ] 不接管 Git、rsync、U 盘等传输层。
 
