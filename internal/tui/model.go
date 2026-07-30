@@ -59,6 +59,7 @@ type Model struct {
 	generation         int
 	keys               keyMap
 	plain              bool
+	language           language
 	homeEnabled        bool
 	homeCursor         int
 	afterWorkspace     homeAction
@@ -164,6 +165,7 @@ func NewModel(options inventory.Options) Model {
 		height:        30,
 		generation:    1,
 		keys:          defaultKeys(),
+		language:      languageZhCN,
 	}
 }
 

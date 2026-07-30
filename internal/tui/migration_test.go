@@ -535,7 +535,7 @@ func copyMigrationFixture(t *testing.T, name string) string {
 
 func homeActionIndex(t *testing.T, action homeAction) int {
 	t.Helper()
-	for index, item := range homeItems() {
+	for index, item := range NewModel(inventory.Options{}).homeItems() {
 		if item.action == action {
 			return index
 		}

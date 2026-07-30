@@ -1,0 +1,15 @@
+AI Coding Asset Manager                                                                         aiah
+Manage Claude, Codex, and Grok assets in one library and move them safely to new tools or devices
+
+Asset library   Not selected (choose it when organizing or applying)
+Asset status    Assets discovered 3 · Risks and issues 1
+Current install Checking…
+
+What would you like to do?
+> Organize local assets        Discover assets and add them to one library
+  Preview and apply library    Check assets, prepare a package, and preview changes
+  Check or undo install        Inspect drift and undo the last install if needed
+  Move to another device       Compare versions and publish or retrieve immutable packages
+  About and updates            View the version and manually check Releases
+
+↑↓/jk Select · Enter Open · ? Help · q Quit
