@@ -1,0 +1,24 @@
+aiah · About and updates                                                                       0.1.2
+
+Current program
+Version      0.1.2
+Commit       1234567890ab
+Build date   2026-07-29T00:00:00Z
+
+Current asset install
+Package      personal
+Version      2026.07.1
+Profile      personal
+Backup ID    backup-123
+
+Release update
+Status       Update available
+Latest       0.1.3
+Release page https://github.example/releases/tag/v0.1.3
+Upgrade command
+curl -fsSL \
+  'https://raw.githubusercontent.com/dff652/'\
+  'ai-asset-hub/v0.1.3/scripts/install.sh' |
+  AIAH_VERSION=0.1.3 sh
+
+c Check for updates (network only after keypress) · h Install check · m Home · ? Help · q Quit

@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 
 	updater "github.com/dff652/ai-asset-hub/internal/update"
@@ -10,28 +9,28 @@ import (
 
 func (m Model) versionView(style styles) string {
 	header := joinEdges(
-		style.header.Render("aiah · 关于与更新"),
+		style.header.Render(m.text(msgVersionTitle)),
 		version.Version,
 		max(20, m.width),
 	)
 	lines := []string{
 		"",
-		style.header.Render("当前程序"),
-		"版本        " + displayValue(version.Version),
-		"提交        " + displayValue(shortBuildCommit(version.Commit)),
-		"构建时间    " + displayValue(version.Date),
+		style.header.Render(m.text(msgVersionCurrentProgram)),
+		m.text(msgVersionProgramVersion, displayValue(version.Version)),
+		m.text(msgVersionCommit, displayValue(shortBuildCommit(version.Commit))),
+		m.text(msgVersionBuildDate, displayValue(version.Date)),
 		"",
-		style.header.Render("当前资产安装"),
+		style.header.Render(m.text(msgVersionCurrentInstall)),
 	}
 	lines = append(lines, m.deploymentVersionLines()...)
 	lines = append(lines,
 		"",
-		style.header.Render("版本更新"),
+		style.header.Render(m.text(msgVersionUpdateTitle)),
 	)
 	lines = append(lines, m.releaseCheckLines(style)...)
 	lines = append(lines,
 		"",
-		style.muted.Render("c 检查更新（仅按键后联网） · h 安装检查 · m 首页 · ? 帮助 · q 退出"),
+		style.muted.Render(m.text(msgVersionFooter)),
 	)
 	return header + "\n" + strings.Join(lines, "\n")
 }
@@ -39,18 +38,18 @@ func (m Model) versionView(style styles) string {
 func (m Model) deploymentVersionLines() []string {
 	switch {
 	case m.doctorStatus == statusLoading:
-		return []string{"状态        正在检查本机安装…"}
+		return []string{m.text(msgVersionInstallChecking)}
 	case m.doctorStatus == statusFailed:
-		return []string{"状态        无法读取"}
+		return []string{m.text(msgVersionInstallUnreadable)}
 	case m.doctorReport.Deployment == nil:
-		return []string{"状态        尚无当前安装"}
+		return []string{m.text(msgVersionInstallNone)}
 	default:
 		deployment := m.doctorReport.Deployment
 		return []string{
-			"资产包      " + displayValue(deployment.Package),
-			"版本        " + displayValue(deployment.Version),
-			"资产组合    " + displayValue(deployment.Profile),
-			"备份 ID     " + displayValue(deployment.BackupID),
+			m.text(msgVersionPackage, displayValue(deployment.Package)),
+			m.text(msgVersionAssetVersion, displayValue(deployment.Version)),
+			m.text(msgVersionProfile, displayValue(deployment.Profile)),
+			m.text(msgVersionBackup, displayValue(deployment.BackupID)),
 		}
 	}
 }
@@ -58,25 +57,27 @@ func (m Model) deploymentVersionLines() []string {
 func (m Model) releaseCheckLines(style styles) []string {
 	switch {
 	case m.updateChecking:
-		return []string{"状态        正在检查 GitHub Releases…"}
+		return []string{m.text(msgVersionReleaseChecking)}
 	case m.updateChecked && m.updateErr != nil:
-		return []string{style.error.Render("状态        检查失败: " + m.updateErr.Error())}
+		return []string{
+			style.error.Render(m.text(msgVersionReleaseFailed, m.updateErr.Error())),
+		}
 	case !m.updateChecked:
 		return []string{
-			"状态        尚未检查",
-			"提示        按 c 手动检查；打开 TUI 不会自动联网",
+			m.text(msgVersionReleaseUnchecked),
+			m.text(msgVersionReleaseHint),
 		}
 	}
 
 	report := m.updateReport
 	lines := []string{
-		"状态        " + updateStatusLabel(report.Status),
-		"最新版本    " + displayValue(report.LatestVersion),
-		"发布页      " + displayValue(report.ReleaseURL),
+		m.text(msgVersionReleaseStatus, m.updateStatusLabel(report.Status)),
+		m.text(msgVersionLatest, displayValue(report.LatestVersion)),
+		m.text(msgVersionReleasePage, displayValue(report.ReleaseURL)),
 	}
 	if report.UpdateAvailable {
 		lines = append(lines,
-			style.warning.Render("升级命令"),
+			style.warning.Render(m.text(msgVersionUpgradeCommand)),
 		)
 		lines = append(lines, displayUpgradeCommand(report.UpgradeCommand)...)
 	}
@@ -109,18 +110,18 @@ func displayUpgradeCommand(command string) []string {
 	}
 }
 
-func updateStatusLabel(status string) string {
+func (m Model) updateStatusLabel(status string) string {
 	switch status {
 	case updater.StatusCurrent:
-		return "已是最新"
+		return m.text(msgVersionStatusCurrent)
 	case updater.StatusUpdateAvailable:
-		return "有可用更新"
+		return m.text(msgVersionStatusAvailable)
 	case updater.StatusAhead:
-		return "当前版本高于最新 Release"
+		return m.text(msgVersionStatusAhead)
 	case updater.StatusDevelopment:
-		return "开发构建，无法比较"
+		return m.text(msgVersionStatusDevelopment)
 	default:
-		return fmt.Sprintf("未知状态 (%s)", status)
+		return m.text(msgVersionStatusUnknown, status)
 	}
 }
 

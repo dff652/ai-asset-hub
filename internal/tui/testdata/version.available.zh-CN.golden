@@ -1,0 +1,24 @@
+aiah · 关于与更新                                                                              0.1.2
+
+当前程序
+版本        0.1.2
+提交        1234567890ab
+构建时间    2026-07-29T00:00:00Z
+
+当前资产安装
+资产包      personal
+版本        2026.07.1
+资产组合    personal
+备份 ID     backup-123
+
+版本更新
+状态        有可用更新
+最新版本    0.1.3
+发布页      https://github.example/releases/tag/v0.1.3
+升级命令
+curl -fsSL \
+  'https://raw.githubusercontent.com/dff652/'\
+  'ai-asset-hub/v0.1.3/scripts/install.sh' |
+  AIAH_VERSION=0.1.3 sh
+
+c 检查更新（仅按键后联网） · h 安装检查 · m 首页 · ? 帮助 · q 退出
