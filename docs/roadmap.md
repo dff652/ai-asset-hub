@@ -424,7 +424,7 @@ E4 设置/i18n。
 | N4 | P1 | ✅ **E3.3 换机前置检查** | PR #25 已合入 `dev@e3fa372`；device-private、secret、目标与 adapter 完整只读报告、零写入门禁、变异验证、TTY 和合并后 CI 已通过 |
 | N5 | P1 | ✅ **E3.4 发布包绑定、双设备与失败恢复验收** | PR #26 已合入 `dev@0a7171b`；选定 name/version/profile/SHA 包级检查和连续引导、同版本幂等、不同内容拒绝、显式旧版本恢复、发布中断恢复、索引越界和目录软链均已验收；合并后主线 CI 9/9 全绿 |
 | N6 | P1 | ✅ **MCP 只读状态补齐与客户端验收** | PR #27 已 squash 合入 `dev@9eedd7b`；最终候选 push/pull_request CI 18/18、合并后 CI 9/9 全绿；7 工具零写入、Core 复用、annotations、直接协议及 Codex/Grok 模型调用通过，Claude 模型请求被组织策略 403 阻止并如实保留为外部补测 |
-| N7 | P2 | 🚧 **E4 设置与 i18n** | N7.0 决策已收口；N7.1 已完成 457 个 typed 消息、全 production TUI 双语目录与核心页面 golden，catalog 外中文 literal 为 0；下一步 N7.2 实现安全偏好 Core，当前仍保持中文默认且不创建偏好文件 |
+| N7 | P2 | 🚧 **E4 设置与 i18n** | N7.0 决策与 N7.1 完整双语目录已完成；N7.2 严格偏好 Core 已完成 load/validate/atomic save、locale/override 解析和安全变异验证；下一步 N7.3 接入设置页与显式保存，当前仍保持中文默认且普通启动不读写偏好文件 |
 | N8 | P2 | **规模化资产管理增强评估** | 由真实使用量触发；评估备份就绪/恢复验证、搜索/标签/来源追踪，不提前引入服务端或数据库事实源 |
 
 `v0.1.6` 已从 `main@46e6efccc9ba` 发布：main 与 Release CI、线上
@@ -450,7 +450,10 @@ D8、仓库身份、历史公开边界、发布收口、安装脚本和 TUI D1/D
 PR #26 合入 `dev`，N6 MCP 状态工具也已通过 PR #27 合入 `dev@9eedd7b`；
 两次合并后主线 CI 均 9/9 全绿。E4 设置/i18n 已完成 N7.0 决策收口，以及
 N7.1 首页、inventory/资产库管理、diff/apply、doctor/rollback、migration 和
-version 完整双语目录；设置页和偏好文件尚未实现。
+version 完整双语目录。N7.2 已实现独立 `internal/preferences` Core：配置路径、
+locale 和当前偏好可注入，读取损坏文件安全回退，保存使用 `0700` / `0600` 与
+同目录原子替换，首选资产库复用现有 workspace 安全边界。该 Core 尚未接入 TUI，
+所以设置页、显式保存和用户可操作的语言切换仍未实现。
 完整发布收口清单见
 [2026-07-27 Public readiness 评估](reviews/2026-07-27-public-readiness-assessment.md)。
 
@@ -465,7 +468,7 @@ TUI D3 版本/只读更新检查 ✅ → 安装升级 dogfood ✅ → `v0.1.6` b
 N7.1 typed 双语首页与 inventory/资产库管理目录及 golden ✅ →
 diff/apply 与二次确认目录及 golden ✅ → doctor/rollback 目录及 golden ✅ →
 migration 全流程目录及 golden ✅ → version 与 N7.1 完整目录出口 ✅ →
-N7.2 偏好 Core 待实施。
+N7.2 偏好 Core、原子保存与安全变异验证 ✅ → N7.3 设置页与显式保存待实施。
 **首次真机 dogfood 已完成，工具已从「工程演示」变为「自用工具」**（2026-07-25）；
 private `v0.1.0` 已完成流水线验收（2026-07-26）；public `v0.1.1`–`v0.1.6`
 已发布（2026-07-28 至 2026-07-30），其中 v0.1.5 的推荐升级命令限制已通过
