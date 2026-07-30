@@ -10,28 +10,28 @@ import (
 
 func (m Model) versionView(style styles) string {
 	header := joinEdges(
-		style.header.Render("aiah · version"),
+		style.header.Render("aiah · 关于与更新"),
 		version.Version,
 		max(20, m.width),
 	)
 	lines := []string{
 		"",
-		style.header.Render("aiah binary"),
-		"version     " + displayValue(version.Version),
-		"commit      " + displayValue(shortBuildCommit(version.Commit)),
-		"built       " + displayValue(version.Date),
+		style.header.Render("当前程序"),
+		"版本        " + displayValue(version.Version),
+		"提交        " + displayValue(shortBuildCommit(version.Commit)),
+		"构建时间    " + displayValue(version.Date),
 		"",
-		style.header.Render("current asset deployment"),
+		style.header.Render("当前资产安装"),
 	}
 	lines = append(lines, m.deploymentVersionLines()...)
 	lines = append(lines,
 		"",
-		style.header.Render("release check"),
+		style.header.Render("版本更新"),
 	)
 	lines = append(lines, m.releaseCheckLines(style)...)
 	lines = append(lines,
 		"",
-		style.muted.Render("c 检查更新（仅按键后联网） · h doctor · Esc inventory · ? 帮助 · q 退出"),
+		style.muted.Render("c 检查更新（仅按键后联网） · h 安装检查 · m 首页 · ? 帮助 · q 退出"),
 	)
 	return header + "\n" + strings.Join(lines, "\n")
 }
@@ -39,18 +39,18 @@ func (m Model) versionView(style styles) string {
 func (m Model) deploymentVersionLines() []string {
 	switch {
 	case m.doctorStatus == statusLoading:
-		return []string{"status      checking local deployment…"}
+		return []string{"状态        正在检查本机安装…"}
 	case m.doctorStatus == statusFailed:
-		return []string{"status      unavailable"}
+		return []string{"状态        无法读取"}
 	case m.doctorReport.Deployment == nil:
-		return []string{"status      no current deployment"}
+		return []string{"状态        尚无当前安装"}
 	default:
 		deployment := m.doctorReport.Deployment
 		return []string{
-			"package     " + displayValue(deployment.Package),
-			"version     " + displayValue(deployment.Version),
-			"profile     " + displayValue(deployment.Profile),
-			"backupId    " + displayValue(deployment.BackupID),
+			"资产包      " + displayValue(deployment.Package),
+			"版本        " + displayValue(deployment.Version),
+			"资产组合    " + displayValue(deployment.Profile),
+			"备份 ID     " + displayValue(deployment.BackupID),
 		}
 	}
 }
@@ -58,25 +58,25 @@ func (m Model) deploymentVersionLines() []string {
 func (m Model) releaseCheckLines(style styles) []string {
 	switch {
 	case m.updateChecking:
-		return []string{"status      checking GitHub Releases…"}
+		return []string{"状态        正在检查 GitHub Releases…"}
 	case m.updateChecked && m.updateErr != nil:
-		return []string{style.error.Render("status      failed: " + m.updateErr.Error())}
+		return []string{style.error.Render("状态        检查失败: " + m.updateErr.Error())}
 	case !m.updateChecked:
 		return []string{
-			"status      not checked",
-			"hint        press c to check; opening TUI never checks automatically",
+			"状态        尚未检查",
+			"提示        按 c 手动检查；打开 TUI 不会自动联网",
 		}
 	}
 
 	report := m.updateReport
 	lines := []string{
-		"status      " + updateStatusLabel(report.Status),
-		"latest      " + displayValue(report.LatestVersion),
-		"release     " + displayValue(report.ReleaseURL),
+		"状态        " + updateStatusLabel(report.Status),
+		"最新版本    " + displayValue(report.LatestVersion),
+		"发布页      " + displayValue(report.ReleaseURL),
 	}
 	if report.UpdateAvailable {
 		lines = append(lines,
-			style.warning.Render("upgrade"),
+			style.warning.Render("升级命令"),
 		)
 		lines = append(lines, displayUpgradeCommand(report.UpgradeCommand)...)
 	}
@@ -105,15 +105,15 @@ func displayUpgradeCommand(command string) []string {
 func updateStatusLabel(status string) string {
 	switch status {
 	case updater.StatusCurrent:
-		return "current"
+		return "已是最新"
 	case updater.StatusUpdateAvailable:
-		return "update available"
+		return "有可用更新"
 	case updater.StatusAhead:
-		return "ahead of latest release"
+		return "当前版本高于最新 Release"
 	case updater.StatusDevelopment:
-		return "development build; comparison unavailable"
+		return "开发构建，无法比较"
 	default:
-		return fmt.Sprintf("unknown (%s)", status)
+		return fmt.Sprintf("未知状态 (%s)", status)
 	}
 }
 

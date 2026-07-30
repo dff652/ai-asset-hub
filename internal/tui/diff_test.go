@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -161,9 +162,13 @@ func TestApplySuccessShowsBackupAndRollbackCommand(t *testing.T) {
 
 	view := model.View()
 	for _, want := range []string{
-		"backupId  " + message.report.BackupID,
+		"backupId)  " + message.report.BackupID,
 		rollbackCommand(options, message.report.BackupID),
 		"应用完成",
+		"目标工具  claude",
+		"写入 " + fmt.Sprint(message.report.Summary.Written),
+		"下一步",
+		"安装检查",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("success view omits %q:\n%s", want, view)
@@ -176,11 +181,12 @@ func TestNoOpApplyResultSaysNoRollbackIsNeeded(t *testing.T) {
 	model := deploymentModel(options, successfulDiffReport())
 	report := successfulDiffReport()
 	report.DryRun = false
+	report.Targets = []string{"codex"}
 	report.Summary = apply.Summary{Staged: 1, Unchanged: 1}
 	report.Changes[0].Action = "unchanged"
 	updated, _ := model.Update(applyMsg{report: report})
 	view := updated.(Model).View()
-	for _, want := range []string{"backupId —", "无需回滚"} {
+	for _, want := range []string{"backupId)  —", "无需撤销", "目标工具  codex", "下一步"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("no-op result omits %q:\n%s", want, view)
 		}

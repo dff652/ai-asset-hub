@@ -57,7 +57,7 @@ func TestBuildWaitsForComposeToFinish(t *testing.T) {
 	updated, command := model.Update(keyPress("b"))
 	next := updated.(Model)
 	if command != nil || next.choosingProfile || !next.noticeIsWarn ||
-		!strings.Contains(next.notice, "写出") {
+		!strings.Contains(next.notice, "加入资产库") {
 		t.Fatalf("build raced compose: choosing=%v notice=%q command nil=%v",
 			next.choosingProfile, next.notice, command == nil)
 	}
@@ -80,12 +80,9 @@ func TestGuidedComposeBuildEntersDeploymentDiff(t *testing.T) {
 	if model.noticeIsWarn {
 		t.Fatalf("compose failed: %s", model.notice)
 	}
-
-	updated, focus := model.Update(keyPress("b"))
-	model = updated.(Model)
-	if focus == nil || !model.choosingProfile || model.profileInput.Value() != "personal" {
+	if !model.choosingProfile || model.profileInput.Value() != "personal" {
 		t.Fatalf("profile prompt = choosing %v value %q command nil=%v",
-			model.choosingProfile, model.profileInput.Value(), focus == nil)
+			model.choosingProfile, model.profileInput.Value(), false)
 	}
 	updated, build := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	model = updated.(Model)
@@ -136,7 +133,7 @@ func TestBuildFailureStaysInInventory(t *testing.T) {
 			next.deployOptions.Package, next.packageFromBuild)
 	}
 	updated, command := next.Update(keyPress("d"))
-	if command != nil || !strings.Contains(updated.(Model).notice, "未指定部署包") {
+	if command != nil || !strings.Contains(updated.(Model).notice, "未指定安装包") {
 		t.Fatal("failed rebuild still allowed the old generated package to enter diff")
 	}
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/dff652/ai-asset-hub/internal/workspace"
 )
 
-// composeMsg carries the result of writing the workspace back to the model.
+// composeMsg carries the result of adding selected assets to the library.
 type composeMsg struct {
 	result workspace.ComposeResult
 	err    error
@@ -23,8 +23,16 @@ type composeMsg struct {
 // Without a workspace nothing is selectable, so the read-only UI shows no
 // checkboxes at all rather than offering a control that cannot be honoured.
 func (m Model) selectableAsset(row treeRow) bool {
-	return m.workspace != "" && row.kind == rowAsset && row.asset != nil &&
-		row.asset.Status == inventory.AssetCandidate
+	if m.workspace == "" || row.library == nil {
+		return false
+	}
+	switch row.library.State {
+	case workspace.LibraryUnmanaged, workspace.LibraryManaged,
+		workspace.LibrarySourceChanged, workspace.LibraryOnly:
+		return row.kind == rowAsset || row.kind == rowLibraryAsset
+	default:
+		return false
+	}
 }
 
 // selectedAssets returns the ticked assets in report order, so a compose run is
@@ -37,6 +45,48 @@ func (m Model) selectedAssets() []inventory.Asset {
 		}
 	}
 	return assets
+}
+
+func (m Model) selectedAddAssets() []inventory.Asset {
+	state := make(map[string]workspace.LibraryState, len(m.catalog.Items))
+	for _, item := range m.catalog.Items {
+		state[item.LogicalPath] = item.State
+	}
+	assets := make([]inventory.Asset, 0, len(m.selected))
+	for _, asset := range m.report.Assets {
+		if m.selected[asset.LogicalPath] && state[asset.LogicalPath] == workspace.LibraryUnmanaged {
+			assets = append(assets, asset)
+		}
+	}
+	return assets
+}
+
+// startCompose refuses rather than guesses: no workspace means the UI stays
+// read-only, and an empty selection is not an invitation to write nothing.
+func (m Model) startCompose() (tea.Model, tea.Cmd) {
+	if m.composing {
+		return m, nil
+	}
+	if m.workspace == "" {
+		m.notice = "未指定资产库；按 w 选择资产库后才能加入"
+		m.noticeIsWarn = true
+		return m, nil
+	}
+	assets := m.selectedAddAssets()
+	if len(assets) == 0 {
+		m.notice = "先用空格勾选状态为“未纳管”的项目"
+		m.noticeIsWarn = true
+		return m, nil
+	}
+	m.composing = true
+	m.notice = "正在加入资产库…"
+	m.noticeIsWarn = false
+	return m, composeCommand(workspace.ComposeOptions{
+		WorkspaceRoot: m.workspace,
+		Home:          m.options.Home,
+		Project:       m.options.Project,
+		Assets:        assets,
+	})
 }
 
 // composeCommand writes the selection into the workspace.
@@ -74,7 +124,7 @@ func firstErrorMessage(report validate.Report) string {
 // composeNotice turns a compose result into the one line shown in the footer.
 func composeNotice(message composeMsg) (string, bool) {
 	if message.err != nil {
-		return "写出失败：" + message.err.Error() + "（工作区已回滚，未留半成品）", true
+		return "加入资产库失败：" + message.err.Error() + "（资产库已回滚，未留半成品）", true
 	}
 	result := message.result
 	if len(result.Registered) == 0 {
@@ -84,7 +134,7 @@ func composeNotice(message composeMsg) (string, bool) {
 		}
 		return "没有勾选可登记的资产", true
 	}
-	notice := fmt.Sprintf("已写出 %s：登记 %d 项，新建 %d 个文件",
+	notice := fmt.Sprintf("已加入资产库 %s：登记 %d 项，新建 %d 个文件",
 		result.ManifestPath, len(result.Registered), len(result.Created))
 	if skipped := len(result.Skipped); skipped > 0 {
 		notice += fmt.Sprintf("，跳过 %d 项（按 ? 看原因）", skipped)

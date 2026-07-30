@@ -90,16 +90,16 @@ func (m Model) updateHealthKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m Model) startRollbackConfirmation() (tea.Model, tea.Cmd) {
 	switch {
 	case m.doctorStatus != statusReady || m.doctorErr != nil:
-		m.notice = "doctor 尚未完成，不能 rollback"
+		m.notice = "安装检查尚未完成，不能撤销"
 		m.noticeIsWarn = true
 		return m, nil
 	case !m.doctorReport.Ok:
-		m.notice = "doctor 未通过，不能 rollback；请先处理错误 findings"
+		m.notice = "安装检查未通过，不能撤销；请先处理错误"
 		m.noticeIsWarn = true
 		return m, nil
 	case m.doctorReport.Deployment == nil ||
 		m.doctorReport.Deployment.BackupID == "":
-		m.notice = "没有当前部署可供 rollback；历史 backup 请使用 CLI 显式指定"
+		m.notice = "没有当前安装可供撤销；历史备份请使用 CLI 显式指定"
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -116,7 +116,7 @@ func (m Model) updateRollbackConfirmation(message tea.KeyMsg) (tea.Model, tea.Cm
 		m.rollbackConfirming = false
 		m.rollbackInput.SetValue("")
 		m.rollbackInput.Blur()
-		m.notice = "已取消 rollback"
+		m.notice = "已取消撤销"
 		m.noticeIsWarn = false
 		return m, nil
 	}

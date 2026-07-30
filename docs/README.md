@@ -2,7 +2,8 @@
 
 ## 用户指南
 
-- [上手指南](getting-started.md)（盘点 → 工作区 → build → 假 HOME → 真机部署）
+- [上手指南](getting-started.md)
+  （发现资产 → 整理资产库 → 检查并准备 → 预览变化 → 人工确认）
 - [CLI 命令参考](cli-reference.md)
 - [跨设备迁移 runbook](runbooks/cross-device-transfer.md)（发布 → 搬运 → 取回 → 安装）
 - [真机 dry-run runbook](runbooks/real-home-dry-run.md)
@@ -19,7 +20,7 @@
 - [工程流程：开发 / 测试 / 构建 / 部署 / 发布](development.md)
 - [开发环境搭建 SOP](runbooks/development-environment.md)
 - [发版 runbook](runbooks/release.md)
-- [MVP 路线图](roadmap.md)
+- [MVP 路线图](roadmap.md)（当前能力矩阵、发布边界与后续任务 N0–N8）
 - [假 HOME 闭环 runbook](runbooks/fake-home-loop.md)
 - [Public 发布 runbook](runbooks/public-launch.md)
 - [漏洞报告政策](../SECURITY.md)
@@ -41,13 +42,22 @@
   （`publish` / `pull` / `versions`；通道是普通目录，网络传输交给 git / rsync / U 盘）
 - [0008：bootstrap 只编排取回与强制交互审阅](decisions/0008-interactive-bootstrap.md)
   （pull 前 TTY 预检；复用 TUI Phase C；无 `--yes`）
+- [0009：统一资产状态与受控资产库写操作](decisions/0009-controlled-asset-library-mutations.md)
+  （纳入/更新/移出、事务恢复、typed confirmation；不是双向同步）
 
 ## 设计方案
 
 - [TUI 技术方案](designs/tui-technical-design.md)（Phase A / B / C / D1 / D2 / D3 已实现）
+- [TUI 产品体验与导航方案 V2](designs/tui-product-experience-v2.md)
+  （任务首页、友好术语、默认启动、CLI/TUI 边界与设置/i18n 分期）
+- [跨设备迁移与受控版本对齐方案](designs/cross-device-migration-and-version-sync.md)
+  （换机迁移、不可变分发、E3 状态模型与未来同步准入条件）
 
 ## 评审
 
+- [2026-07-30 v0.1.5 候选就绪检查点](reviews/2026-07-30-v0.1.5-candidate-readiness.md)
+- [2026-07-30 E1 / E2 / E3.1 严格实现复审](reviews/2026-07-30-e1-e2-e3-1-strict-review.md)
+- [2026-07-29 TUI 产品体验方案 V2 评审](reviews/2026-07-29-tui-product-experience-v2-review.md)
 - [2026-07-24 设计与实现评审](reviews/2026-07-24-design-implementation-review.md)
 - [2026-07-25 MCP create-only 严格复审（ADR-0004 六条门槛）](reviews/2026-07-25-mcp-create-only-strict-review.md)
 - [2026-07-27 Public readiness、仓库身份与 TS 边界评估](reviews/2026-07-27-public-readiness-assessment.md)
@@ -60,6 +70,9 @@
 - [TUI 界面评估（参考 grok-build）](research/tui-surface-assessment.md)
 - [产品形态与分发边界评估](research/product-form-and-distribution-assessment.md)
   （服务端 docker / 内网多用户 / curl 安装 / MCP server 四问收口；结论未冻结为 ADR）
+- [beautify-github-readme 适用性评估](research/beautify-github-readme-assessment.md)
+  （asset-only 与 README mode 已进入 dev 候选；公开版/dev 候选边界保留，
+  默认分支首页待 main 合入）
 - [外部参考](references.md)
 
 ## 许可证

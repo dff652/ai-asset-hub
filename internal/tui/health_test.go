@@ -95,7 +95,7 @@ func TestRollbackRequiresHealthyCurrentDeploymentAndTypedConfirmation(t *testing
 	updated, command := blocked.Update(keyPress("x"))
 	blocked = updated.(Model)
 	if command != nil || blocked.rollbackConfirming || !blocked.noticeIsWarn ||
-		!strings.Contains(blocked.notice, "doctor") {
+		!strings.Contains(blocked.notice, "安装检查") {
 		t.Fatalf("failed doctor allowed rollback: %#v command=%v", blocked, command != nil)
 	}
 
