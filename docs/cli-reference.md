@@ -18,7 +18,7 @@ aiah pull --channel <dir> --name <name> [--version <v>] [--profile <p>] --out <d
 aiah versions --channel <dir> [--name <name>] --output json
 aiah bootstrap --channel <dir> --name <name> [--version <v>] [--profile <p>] --out <dir> [--home <path>] [--project <path>] [--targets claude,codex,grok]
 aiah doctor [--home <path>] [--project <path>] --output json
-aiah ui [--home <path>] [--project <path>] [--workspace <path>] [--package <tar|dir>] [--targets claude,codex,grok]
+aiah ui [--home <path>] [--project <path>] [--workspace <path>] [--package <tar|dir>] [--targets claude,codex,grok] [--language auto|zh-CN|en]
 aiah mcp
 aiah update --check [--output text|json]
 aiah version [--output text|json]
@@ -139,10 +139,17 @@ aiah                                            # 推荐：打开任务首页
 aiah ui --home "$HOME"                          # 兼容：同一任务首页
 aiah ui --home "$HOME" --workspace ~/ai-assets # 直接打开资产库
 aiah ui --package <tar|dir> --home "$HOME"     # 高级：直接审阅并应用安装包
+aiah ui --language en                           # 仅本次进程使用 English
 ```
 
 - 首页按用户任务组织为“整理本机资产”“预览并应用资产库”“安装检查与撤销”
-  “迁移到其他设备”和“关于与更新”，不要求先理解内部阶段。
+  “迁移到其他设备”“关于与更新”和“偏好设置”，不要求先理解内部阶段。
+- 当前 `dev` 的偏好设置支持 `auto` / `zh-CN` / `en`。启动时只读加载
+  `${XDG_CONFIG_HOME:-$HOME/.config}/aiah/preferences.json`；文件不存在不创建，
+  损坏或权限不安全时使用安全默认值并在首页/设置页告警。
+- 设置页选择语言只预览；`Esc` / `m` 放弃。只有明确选择“保存偏好”才以
+  `0700` 目录、`0600` 文件原子保存。`--language` 只覆盖本次进程，永不反写。
+- 显示密度和首选资产库预填尚未开放；public `v0.1.6` 不包含本项 `dev` 候选。
 - “迁移到其他设备”先只读比较资产库、当前安装和通道；当前 `dev` 可按 `p`
   选择资产组合并 typed `publish`，按 `v` 查看全部发布坐标并明确选择版本/profile
   与已有输出目录；按 `e` 选择资产组合并零写入检查本机排除项、secret 和 adapter
