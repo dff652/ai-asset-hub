@@ -11,17 +11,19 @@
 
 ```bash
 curl -fsSLo /tmp/aiah-install.sh \
-  https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.5/scripts/install.sh
+  https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh
 less /tmp/aiah-install.sh
-AIAH_VERSION=0.1.5 sh /tmp/aiah-install.sh
+sh /tmp/aiah-install.sh
 ```
 
-当前 `main` 和 `v0.1.5` tag 内安装器的默认 pin 仍为 `0.1.4`，所以安装
-`v0.1.5` 必须显式设置版本：
+当前 `main` 安装器的默认 pin 是已经完成线上产物和正式 TUI 验收的 `0.1.5`。
+要固定不可变 tag、安装目录或版本，显式设置：
 
 ```bash
+curl -fsSLo /tmp/aiah-install-v0.1.5.sh \
+  https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.5/scripts/install.sh
 AIAH_VERSION=0.1.5 AIAH_INSTALL_DIR="$HOME/.local/bin" \
-  sh /tmp/aiah-install.sh
+  sh /tmp/aiah-install-v0.1.5.sh
 ```
 
 从 [Release](https://github.com/dff652/ai-asset-hub/releases/tag/v0.1.5)
@@ -67,8 +69,9 @@ aiah update --check --output json
 检查只在命令执行时请求 GitHub latest release 元数据，不下载、不替换当前二进制。
 已知问题：`v0.1.4` / `v0.1.5` 生成的推荐命令虽然绑定精确 tag，却没有显式设置
 `AIAH_VERSION`；直接复制可能停留在旧 pin。升级到 `v0.1.5` 请使用本节上方的显式
-版本命令。Release 说明已标注，代码修复列为下一版本 P0。`aiah --update` 不存在；
-不带 `--check` 的 `aiah update` 也会拒绝执行。
+版本命令。Release 说明已标注；当前源码已修复未来构建的命令并增加精确字符串测试，
+但已经发布的旧二进制不会改变。`aiah --update` 不存在；不带 `--check` 的
+`aiah update` 也会拒绝执行。
 
 `v0.1.1` 中现存的 macOS、Windows 和 arm64 文件是发布范围收口前生成的历史
 交叉编译产物，未做对应平台原生验收。它们不是安装器或当前支持范围的一部分；
@@ -118,6 +121,8 @@ aiah
 ```
 
 真实交互终端会打开任务首页。`aiah ui` 与 `aiah` 等价，作为兼容入口保留。
+普通用户只需记住 `aiah`；带 `--package`、`--workspace`、`--home` 等高级直达参数
+时继续使用 `aiah ui ...`。
 
 首次使用选择 **整理本机资产**：
 

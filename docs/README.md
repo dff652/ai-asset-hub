@@ -10,6 +10,7 @@
 - [跨设备迁移 runbook](runbooks/cross-device-transfer.md)（发布 → 搬运 → 取回 → 安装）
 - [真机 dry-run runbook](runbooks/real-home-dry-run.md)
 - [工具安装、升级与 TUI dogfood](runbooks/install-upgrade-dogfood.md)
+- [README 与 SVG 视觉验收 SOP](runbooks/readme-visual-acceptance.md)
 - [全部 Runbook / SOP 及缺口](runbooks/README.md)
 - [AI 资产管理踩坑清单](troubleshooting/ai-asset-pitfalls.md)
 

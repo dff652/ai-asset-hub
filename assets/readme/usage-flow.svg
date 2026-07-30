@@ -1,35 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600" role="img" aria-labelledby="title desc">
   <title id="title">AI Asset Hub 五步安全使用流程</title>
   <desc id="desc">从发现资产、整理资产库、检查并准备、预览变化到人工确认。前四步不写目标工具目录，只有完整输入 apply 后才写入并创建恢复点。</desc>
 
   <rect width="1200" height="600" rx="24" fill="#0D1117"/>
 
   <g id="heading">
-    <text x="52" y="53" fill="#58A6FF"
+    <text x="48" y="53" fill="#58A6FF"
           font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
           font-size="18" font-weight="700" letter-spacing="2">NO TARGET WRITES UNTIL APPLY</text>
-    <text x="52" y="105" fill="#E6EDF3"
+    <text x="48" y="105" fill="#E6EDF3"
           font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
           font-size="42" font-weight="760">五步完成一次安全应用</text>
-    <text x="52" y="139" fill="#8B949E"
+    <text x="48" y="139" fill="#8B949E"
           font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
           font-size="20">整理成事实源 · 写入前看清变化 · 写入后可以撤销</text>
   </g>
 
   <g id="connectors" fill="none" stroke="#58A6FF" stroke-width="3" stroke-linecap="round">
-    <path d="M252 332H268"/>
-    <path d="M476 332H492"/>
-    <path d="M700 332H716"/>
-    <path d="M924 332H940"/>
+    <path d="M256 332H272"/>
+    <path d="M480 332H496"/>
+    <path d="M704 332H720"/>
+    <path d="M928 332H944"/>
   </g>
   <g fill="#58A6FF">
-    <path d="M268 332l-9-6v12z"/>
-    <path d="M492 332l-9-6v12z"/>
-    <path d="M716 332l-9-6v12z"/>
-    <path d="M940 332l-9-6v12z"/>
+    <path d="M272 332l-9-6v12z"/>
+    <path d="M496 332l-9-6v12z"/>
+    <path d="M720 332l-9-6v12z"/>
+    <path d="M944 332l-9-6v12z"/>
   </g>
 
-  <g id="discover" transform="translate(44 180)">
+  <g id="discover" transform="translate(48 180)">
     <rect width="208" height="320" rx="18" fill="#161B22" stroke="#30363D" stroke-width="2"/>
     <text x="22" y="39" fill="#58A6FF"
           font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
@@ -55,7 +55,7 @@
           font-size="16" font-weight="700">READ ONLY</text>
   </g>
 
-  <g id="organize" transform="translate(268 180)">
+  <g id="organize" transform="translate(272 180)">
     <rect width="208" height="320" rx="18" fill="#161B22" stroke="#30363D" stroke-width="2"/>
     <text x="22" y="39" fill="#58A6FF"
           font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
@@ -79,7 +79,7 @@
           font-size="16" font-weight="700">assets/ + yaml</text>
   </g>
 
-  <g id="prepare" transform="translate(492 180)">
+  <g id="prepare" transform="translate(496 180)">
     <rect width="208" height="320" rx="18" fill="#161B22" stroke="#30363D" stroke-width="2"/>
     <text x="22" y="39" fill="#58A6FF"
           font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
@@ -104,7 +104,7 @@
           font-size="16" font-weight="700">IMMUTABLE</text>
   </g>
 
-  <g id="review" transform="translate(716 180)">
+  <g id="review" transform="translate(720 180)">
     <rect width="208" height="320" rx="18" fill="#13233B" stroke="#58A6FF" stroke-width="2"/>
     <text x="22" y="39" fill="#79C0FF"
           font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
@@ -130,7 +130,7 @@
           font-size="16" font-weight="700">DIFF</text>
   </g>
 
-  <g id="human-confirmation" transform="translate(940 180)">
+  <g id="human-confirmation" transform="translate(944 180)">
     <rect width="208" height="320" rx="18" fill="#1C160B" stroke="#D29922" stroke-width="3" stroke-dasharray="9 7"/>
     <text x="22" y="39" fill="#D29922"
           font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
@@ -157,13 +157,13 @@
   </g>
 
   <g id="safety-boundary">
-    <path d="M58 541H920" stroke="#58A6FF" stroke-width="2" stroke-dasharray="7 7"/>
-    <circle cx="58" cy="541" r="5" fill="#58A6FF"/>
-    <circle cx="920" cy="541" r="5" fill="#58A6FF"/>
-    <text x="489" y="572" text-anchor="middle" fill="#8B949E"
+    <path d="M48 541H928" stroke="#58A6FF" stroke-width="2" stroke-dasharray="7 7"/>
+    <circle cx="48" cy="541" r="5" fill="#58A6FF"/>
+    <circle cx="928" cy="541" r="5" fill="#58A6FF"/>
+    <text x="488" y="572" text-anchor="middle" fill="#8B949E"
           font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
           font-size="18">前四步：目标工具目录零写入</text>
-    <text x="1044" y="550" text-anchor="middle" fill="#D29922"
+    <text x="1048" y="550" text-anchor="middle" fill="#D29922"
           font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif"
           font-size="18" font-weight="700">apply → 检查 / 撤销</text>
   </g>

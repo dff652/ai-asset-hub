@@ -210,7 +210,14 @@ curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.5/scripts/
 ```
 
 该命令已完成隔离升级验收。后续版本必须先修复命令生成和发布门禁，不能把“绑定
-tag”误当成“安装目标版本已绑定”。
+tag”误当成“安装目标版本已绑定”。当前源码已把生成格式修复为：
+
+```text
+.../v<version>/scripts/install.sh | AIAH_VERSION=<version> sh
+```
+
+并增加精确字符串与 TUI 窄屏可复制性回归；该修复要到后续 Release 才会进入用户
+二进制，不能追溯改变 `v0.1.4` / `v0.1.5`。
 
 ## `version`
 
