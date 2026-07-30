@@ -105,5 +105,12 @@ golangci-lint 和 fake HOME build/diff/apply/doctor/rollback 闭环。
 和 annotations、`asset-catalog`、`migration-status` 全部符合预期，fixture HOME
 与资产库前后不变。
 
-候选 PR 和远端 CI 证据将在交付 head 确定后补录。PR 合并和 Release 继续由项目
-所有者明确决定。
+[PR #27](https://github.com/dff652/ai-asset-hub/pull/27) 面向 `dev` 创建，初始
+交付 head `5ce80a86cbdf` 的 push CI
+[`30534934851`](https://github.com/dff652/ai-asset-hub/actions/runs/30534934851)
+和 pull_request CI
+[`30534951487`](https://github.com/dff652/ai-asset-hub/actions/runs/30534951487)
+各 9/9 job 全绿，共 18/18。
+
+本证据更新只修改项目文档；推送后仍以 PR 最终 head 的两组 GitHub checks 为合入
+门禁，不能用前一提交的绿灯替代。PR 合并和 Release 继续由项目所有者明确决定。

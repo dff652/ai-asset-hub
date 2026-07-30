@@ -421,7 +421,7 @@ Release 能力验收；E3.4 发布包绑定与双设备/失败恢复验收也已
 | N3 | P1 | ✅ **E3.2 跨设备连续向导** | PR #24 已合入 `dev@f8b3475`；build/typed publish/versions/explicit pull/Phase C、安全输出边界和合并后 CI 已完成，待后续 Release 验收 |
 | N4 | P1 | ✅ **E3.3 换机前置检查** | PR #25 已合入 `dev@e3fa372`；device-private、secret、目标与 adapter 完整只读报告、零写入门禁、变异验证、TTY 和合并后 CI 已通过 |
 | N5 | P1 | ✅ **E3.4 发布包绑定、双设备与失败恢复验收** | PR #26 已合入 `dev@0a7171b`；选定 name/version/profile/SHA 包级检查和连续引导、同版本幂等、不同内容拒绝、显式旧版本恢复、发布中断恢复、索引越界和目录软链均已验收；合并后主线 CI 9/9 全绿 |
-| N6 | P1 | 🚧 **MCP 只读状态补齐与客户端验收** | ADR-0005 已扩为 7 工具；统一资产状态/迁移状态复用 Core，扩展零写入树与机器可读 annotations；本地完整门禁与直接协议对账通过，Codex/Grok 模型调用通过，Claude 客户端 Connected、模型请求被组织策略 403 阻止；待 PR CI、所有者合并与后续 Claude 补测 |
+| N6 | P1 | 🚧 **MCP 只读状态补齐与客户端验收** | PR #27 初始交付 head 的 push/pull_request CI 共 18/18 全绿；ADR-0005 已扩为 7 工具，统一资产状态/迁移状态复用 Core，零写入树、annotations、本地门禁与直接协议对账通过；Codex/Grok 模型调用通过，Claude 客户端 Connected、模型请求被组织策略 403 阻止；待最终文档 head CI、所有者合并与后续 Claude 补测 |
 | N7 | P2 | **E4 设置与 i18n** | 字符串目录先行；简体中文/English golden tests；偏好文件 `0600`、原子写入、无 secret；显示密度不得隐藏路径、版本、目标工具、风险、变更、确认与恢复信息 |
 | N8 | P2 | **规模化资产管理增强评估** | 由真实使用量触发；评估备份就绪/恢复验证、搜索/标签/来源追踪，不提前引入服务端或数据库事实源 |
 
