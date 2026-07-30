@@ -26,7 +26,7 @@ type manageMsg struct {
 func (m Model) startAssetUpdate() (tea.Model, tea.Cmd) {
 	assets := m.selectedUpdateAssets()
 	if len(assets) == 0 {
-		m.notice = "先勾选状态为“源端有更新”的资产"
+		m.notice = m.text(msgManageSelectUpdate)
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -41,7 +41,7 @@ func (m Model) startAssetUpdate() (tea.Model, tea.Cmd) {
 func (m Model) startAssetRemove() (tea.Model, tea.Cmd) {
 	ids := m.selectedRemoveIDs()
 	if len(ids) == 0 {
-		m.notice = "先勾选已纳管、待更新或仅在资产库的资产"
+		m.notice = m.text(msgManageSelectRemove)
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -62,7 +62,7 @@ func (m Model) updateManageConfirmation(message tea.KeyMsg) (tea.Model, tea.Cmd)
 	}
 	if message.Type == tea.KeyEnter {
 		if strings.TrimSpace(m.manageInput.Value()) != m.manageAction {
-			m.notice = "确认词不匹配；请输入 " + m.manageAction
+			m.notice = m.text(msgManageConfirmMismatch, m.manageAction)
 			m.noticeIsWarn = true
 			return m, nil
 		}
@@ -71,19 +71,19 @@ func (m Model) updateManageConfirmation(message tea.KeyMsg) (tea.Model, tea.Cmd)
 		m.managing = true
 		m.noticeIsWarn = false
 		if m.manageAction == manageUpdate {
-			m.notice = "正在更新资产库…"
+			m.notice = m.text(msgManageUpdating)
 			return m, updateAssetsCommand(workspace.UpdateOptions{
 				WorkspaceRoot: m.workspace,
 				Home:          m.options.Home,
 				Project:       m.options.Project,
 				Assets:        m.selectedUpdateAssets(),
-			})
+			}, m.text(msgValidationFailed), m.text(msgValidationDetails))
 		}
-		m.notice = "正在从资产库移出…"
+		m.notice = m.text(msgManageRemoving)
 		return m, removeAssetsCommand(workspace.RemoveOptions{
 			WorkspaceRoot: m.workspace,
 			AssetIDs:      m.selectedRemoveIDs(),
-		})
+		}, m.text(msgValidationFailed), m.text(msgValidationDetails))
 	}
 	var command tea.Cmd
 	m.manageInput, command = m.manageInput.Update(message)
@@ -124,57 +124,81 @@ func (m Model) selectedRemoveIDs() []string {
 	return ids
 }
 
-func validateManagedManifest(manifestPath, root string) error {
+func validateManagedManifest(manifestPath, root, validationPrefix, validationFallback string) error {
 	report, err := validate.Validate(validate.Options{Manifest: manifestPath, Root: root})
 	if err != nil {
 		return err
 	}
 	if !report.Ok {
-		return fmt.Errorf("manifest validation failed: %s", firstErrorMessage(report))
+		return fmt.Errorf(
+			"%s: %s",
+			validationPrefix,
+			firstErrorMessage(report, validationFallback),
+		)
 	}
 	return nil
 }
 
-func updateAssetsCommand(options workspace.UpdateOptions) tea.Cmd {
+func updateAssetsCommand(
+	options workspace.UpdateOptions,
+	validationPrefix, validationFallback string,
+) tea.Cmd {
 	return func() tea.Msg {
-		result, err := workspace.UpdateAssets(options, validateManagedManifest)
+		result, err := workspace.UpdateAssets(options, func(manifestPath, root string) error {
+			return validateManagedManifest(
+				manifestPath,
+				root,
+				validationPrefix,
+				validationFallback,
+			)
+		})
 		return manageMsg{action: manageUpdate, ok: result.Ok, count: len(result.Updated), err: err}
 	}
 }
 
-func removeAssetsCommand(options workspace.RemoveOptions) tea.Cmd {
+func removeAssetsCommand(
+	options workspace.RemoveOptions,
+	validationPrefix, validationFallback string,
+) tea.Cmd {
 	return func() tea.Msg {
-		result, err := workspace.RemoveAssets(options, validateManagedManifest)
+		result, err := workspace.RemoveAssets(options, func(manifestPath, root string) error {
+			return validateManagedManifest(
+				manifestPath,
+				root,
+				validationPrefix,
+				validationFallback,
+			)
+		})
 		return manageMsg{action: manageRemove, ok: result.Ok, count: len(result.Removed), err: err}
 	}
 }
 
-func manageNotice(message manageMsg) (string, bool) {
+func (m Model) manageNotice(message manageMsg) (string, bool) {
 	if message.err != nil {
-		return "资产库操作失败：" + message.err.Error() + "（已恢复操作前状态）", true
+		return m.text(msgManageFailed, message.err), true
 	}
 	if message.action == manageUpdate {
-		return fmt.Sprintf("已更新 %d 项资产，继续选择资产组合并预览应用", message.count), false
+		return m.text(msgManageUpdated, message.count), false
 	}
-	return fmt.Sprintf("已移出 %d 项资产，继续选择资产组合并预览应用", message.count), false
+	return m.text(msgManageRemoved, message.count), false
 }
 
 func (m Model) manageConfirmationView(style styles) string {
-	action := "用源端内容替换资产库中的完整资产"
-	warning := "只修改资产库，不写 AI 工具目录；验证失败会恢复原内容。"
+	action := m.text(msgManageUpdateAction)
+	warning := m.text(msgManageUpdateWarning)
 	if m.manageAction == manageRemove {
-		action = "从 manifest.yaml 和资产库中移出所选资产"
-		warning = "源端文件不会删除；此操作不等于备份，请先用 Git/NAS 保护资产库。"
+		action = m.text(msgManageRemoveAction)
+		warning = m.text(msgManageRemoveWarning)
 	}
 	return strings.Join([]string{
-		style.header.Render("aiah · 确认资产库操作"),
+		style.header.Render(m.text(msgManageConfirmationTitle)),
 		"",
 		action,
 		warning,
 		"",
-		"输入 " + m.manageAction + " 后按 Enter：",
+		m.text(msgManageConfirmationPrompt, m.manageAction),
 		m.manageInput.View(),
 		"",
-		"Esc 取消 · Ctrl+C 退出",
+		m.text(msgManageConfirmationFooter),
 	}, "\n")
 }

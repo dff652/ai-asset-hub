@@ -50,6 +50,52 @@ func TestMessageCatalogsHaveParity(t *testing.T) {
 	}
 }
 
+func TestEveryDeclaredMessageIDHasCatalogEntries(t *testing.T) {
+	file, err := parser.ParseFile(token.NewFileSet(), "messages.go", nil, 0)
+	if err != nil {
+		t.Fatalf("parse messages.go: %v", err)
+	}
+	declared := make(map[messageID]bool)
+	ast.Inspect(file, func(node ast.Node) bool {
+		spec, ok := node.(*ast.ValueSpec)
+		if !ok || len(spec.Names) != 1 || !strings.HasPrefix(spec.Names[0].Name, "msg") ||
+			len(spec.Values) != 1 {
+			return true
+		}
+		literal, ok := spec.Values[0].(*ast.BasicLit)
+		if !ok || literal.Kind != token.STRING {
+			t.Errorf("message ID %s does not have a string literal value", spec.Names[0].Name)
+			return true
+		}
+		value, err := strconv.Unquote(literal.Value)
+		if err != nil {
+			t.Errorf("unquote message ID %s: %v", spec.Names[0].Name, err)
+			return true
+		}
+		declared[messageID(value)] = true
+		return true
+	})
+	if len(declared) == 0 {
+		t.Fatal("no message IDs found in messages.go")
+	}
+	for id := range declared {
+		if _, ok := messagesZhCN[id]; !ok {
+			t.Errorf("declared message %q is missing from zh-CN", id)
+		}
+		if _, ok := messagesEnglish[id]; !ok {
+			t.Errorf("declared message %q is missing from en", id)
+		}
+	}
+	if len(messagesZhCN) != len(declared) || len(messagesEnglish) != len(declared) {
+		t.Errorf(
+			"declared/catalog size differs: declared=%d zh-CN=%d en=%d",
+			len(declared),
+			len(messagesZhCN),
+			len(messagesEnglish),
+		)
+	}
+}
+
 func TestDefaultLanguageRemainsChinese(t *testing.T) {
 	model := NewModel(inventory.Options{})
 	if model.language != languageZhCN {
@@ -70,30 +116,49 @@ func TestUnknownLanguageFallsBackToEnglish(t *testing.T) {
 	}
 }
 
-func TestMigratedHomeViewHasNoHanStringLiterals(t *testing.T) {
-	file, err := parser.ParseFile(token.NewFileSet(), "home_view.go", nil, 0)
-	if err != nil {
-		t.Fatalf("parse home_view.go: %v", err)
+func TestLanguageUpdatesLocalizedInputPlaceholders(t *testing.T) {
+	model := NewModel(inventory.Options{}).withLanguage(languageEnglish)
+	if got := model.filterInput.Placeholder; got != "Filter by path, type, or risk" {
+		t.Fatalf("English filter placeholder = %q", got)
 	}
-	ast.Inspect(file, func(node ast.Node) bool {
-		literal, ok := node.(*ast.BasicLit)
-		if !ok || literal.Kind != token.STRING {
-			return true
-		}
-		value, err := strconv.Unquote(literal.Value)
+}
+
+func TestMigratedTUIFilesHaveNoHanStringLiterals(t *testing.T) {
+	files := []string{
+		"home_view.go",
+		"inventory_view.go",
+		"inventory_rows.go",
+		"compose.go",
+		"manage.go",
+		"workflow.go",
+		"model.go",
+	}
+	for _, path := range files {
+		file, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)
 		if err != nil {
-			t.Errorf("unquote %s: %v", literal.Value, err)
-			return true
+			t.Fatalf("parse %s: %v", path, err)
 		}
-		for _, character := range value {
-			if unicode.In(character, unicode.Han) {
-				t.Errorf(
-					"home_view.go contains migrated Han string literal %q; use a message ID",
-					value,
-				)
-				break
+		ast.Inspect(file, func(node ast.Node) bool {
+			literal, ok := node.(*ast.BasicLit)
+			if !ok || literal.Kind != token.STRING {
+				return true
 			}
-		}
-		return true
-	})
+			value, err := strconv.Unquote(literal.Value)
+			if err != nil {
+				t.Errorf("unquote %s in %s: %v", literal.Value, path, err)
+				return true
+			}
+			for _, character := range value {
+				if unicode.In(character, unicode.Han) {
+					t.Errorf(
+						"%s contains migrated Han string literal %q; use a message ID",
+						path,
+						value,
+					)
+					break
+				}
+			}
+			return true
+		})
+	}
 }

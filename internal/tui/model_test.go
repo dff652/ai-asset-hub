@@ -262,6 +262,24 @@ func TestInventoryViewGolden(t *testing.T) {
 	}
 }
 
+func TestInventoryViewEnglishGolden(t *testing.T) {
+	model := readyTestModel().withLanguage(languageEnglish)
+	model.width = 100
+	model.height = 16
+	model.cursor = 5
+	model.plain = true
+
+	got := model.View()
+	path := filepath.Join("testdata", "inventory.en.golden")
+	want, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read golden: %v\n--- got ---\n%s", err, got)
+	}
+	if got != strings.TrimSuffix(string(want), "\n") {
+		t.Fatalf("view differs from %s:\n--- got ---\n%s\n--- want ---\n%s", path, got, want)
+	}
+}
+
 func readyTestModel() Model {
 	model := NewModel(inventory.Options{Home: "/unused"})
 	model.plain = true

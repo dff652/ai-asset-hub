@@ -114,7 +114,6 @@ type Model struct {
 func NewModel(options inventory.Options) Model {
 	input := textinput.New()
 	input.Prompt = "/ "
-	input.Placeholder = "过滤路径、类型或风险"
 	input.CharLimit = 120
 	input.Width = 36
 	confirm := textinput.New()
@@ -141,7 +140,7 @@ func NewModel(options inventory.Options) Model {
 	manageInput.Prompt = "> "
 	manageInput.CharLimit = 6
 	manageInput.Width = 12
-	return Model{
+	model := Model{
 		options:        options,
 		filterInput:    input,
 		workspaceInput: workspaceInput,
@@ -167,6 +166,8 @@ func NewModel(options inventory.Options) Model {
 		keys:          defaultKeys(),
 		language:      languageZhCN,
 	}
+	model.syncLocalizedInputs()
+	return model
 }
 
 // WithWorkspace enables Phase B composition against the given workspace root.
@@ -271,7 +272,7 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case composeMsg:
 		m.composing = false
-		m.notice, m.noticeIsWarn = composeNotice(message)
+		m.notice, m.noticeIsWarn = m.composeNotice(message)
 		m.lastFindings = message.result.Findings
 		if message.err == nil && message.result.Ok {
 			if len(message.result.Registered) > 0 {
@@ -293,7 +294,7 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.managing = false
 		m.confirmManage = false
 		m.manageInput.Blur()
-		m.notice, m.noticeIsWarn = manageNotice(message)
+		m.notice, m.noticeIsWarn = m.manageNotice(message)
 		if message.err == nil && message.ok {
 			m.invalidateBuiltPackage()
 			for key := range m.selected {
@@ -306,7 +307,7 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case workspaceMsg:
 		m.preparingWorkspace = false
 		if message.err != nil {
-			m.notice = "资产库不可用：" + message.err.Error()
+			m.notice = m.text(msgWorkspaceUnavailable, message.err)
 			m.noticeIsWarn = true
 			return m, nil
 		}
@@ -314,9 +315,9 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.refreshCatalog()
 		m.workspaceInput.SetValue("")
 		if message.created {
-			m.notice = "已创建资产库：" + message.root
+			m.notice = m.text(msgWorkspaceCreated, message.root)
 		} else {
-			m.notice = "已打开资产库：" + message.root
+			m.notice = m.text(msgWorkspaceOpened, message.root)
 		}
 		m.noticeIsWarn = false
 		next := m.afterWorkspace
@@ -334,13 +335,13 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.building = false
 		if message.err != nil {
 			m.invalidateBuiltPackage()
-			m.notice = "准备安装包失败：" + message.err.Error()
+			m.notice = m.text(msgProfileBuildCommandFailed, message.err)
 			m.noticeIsWarn = true
 			return m, nil
 		}
 		if !message.report.Ok || message.report.Package == nil {
 			m.invalidateBuiltPackage()
-			m.notice = buildFailureNotice(message.report)
+			m.notice = m.buildFailureNotice(message.report)
 			m.noticeIsWarn = true
 			return m, nil
 		}
@@ -355,7 +356,7 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.deployErr = nil
 		m.applyResult = nil
 		m.diffCursor = 0
-		m.notice = "安装包已准备完成，已进入变更预览"
+		m.notice = m.text(msgProfileBuildReady)
 		m.noticeIsWarn = false
 		return m, diffCommand(m.deployOptions)
 	case diffMsg:
@@ -458,7 +459,7 @@ func (m *Model) refreshCatalog() {
 func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.applying || m.rollbacking || m.managing ||
 		m.migrationFlow.publishing || m.migrationFlow.pulling {
-		m.notice = "正在写入文件，请等待操作完成"
+		m.notice = m.text(msgCommonWriteInProgress)
 		m.noticeIsWarn = true
 		return m, nil
 	}

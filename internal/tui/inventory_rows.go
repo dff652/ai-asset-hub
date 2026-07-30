@@ -63,7 +63,7 @@ func (m *Model) toggleSelection(rows []treeRow) {
 	}
 	row := rows[m.cursor]
 	if !m.selectableAsset(row) {
-		m.notice = "只有可管理的资产可以勾选"
+		m.notice = m.text(msgInventoryNotSelectable)
 		m.noticeIsWarn = true
 		return
 	}
@@ -222,7 +222,7 @@ func (m Model) visibleRows() []treeRow {
 			expanded = true
 		}
 		rows = append(rows, treeRow{
-			kind: rowLibraryGroup, key: groupKey, label: "仅在资产库",
+			kind: rowLibraryGroup, key: groupKey, label: m.text(msgInventoryLibraryOnlyGroup),
 			expanded: expanded,
 		})
 		if expanded {
@@ -242,7 +242,7 @@ func (m Model) visibleRows() []treeRow {
 		expanded := m.expanded[unattachedFindingsGroupKey]
 		rows = append(rows, treeRow{
 			kind: rowFindingGroup, key: unattachedFindingsGroupKey,
-			label: "未关联的风险与问题", expanded: expanded, findings: len(unattached),
+			label: m.text(msgInventoryUnattachedGroup), expanded: expanded, findings: len(unattached),
 		})
 		if expanded {
 			for _, index := range unattached {

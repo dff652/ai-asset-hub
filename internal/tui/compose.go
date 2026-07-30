@@ -68,25 +68,25 @@ func (m Model) startCompose() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	if m.workspace == "" {
-		m.notice = "未指定资产库；按 w 选择资产库后才能加入"
+		m.notice = m.text(msgComposeWorkspaceRequired)
 		m.noticeIsWarn = true
 		return m, nil
 	}
 	assets := m.selectedAddAssets()
 	if len(assets) == 0 {
-		m.notice = "先用空格勾选状态为“未纳管”的项目"
+		m.notice = m.text(msgComposeSelectUnmanaged)
 		m.noticeIsWarn = true
 		return m, nil
 	}
 	m.composing = true
-	m.notice = "正在加入资产库…"
+	m.notice = m.text(msgComposeAdding)
 	m.noticeIsWarn = false
 	return m, composeCommand(workspace.ComposeOptions{
 		WorkspaceRoot: m.workspace,
 		Home:          m.options.Home,
 		Project:       m.options.Project,
 		Assets:        assets,
-	})
+	}, m.text(msgValidationFailed), m.text(msgValidationDetails))
 }
 
 // composeCommand writes the selection into the workspace.
@@ -94,7 +94,7 @@ func (m Model) startCompose() (tea.Model, tea.Cmd) {
 // The TUI holds no policy of its own: it hands the selection to
 // workspace.Compose and passes validate.Validate straight through as the gate
 // that decides whether the staged manifest is allowed to land.
-func composeCommand(options workspace.ComposeOptions) tea.Cmd {
+func composeCommand(options workspace.ComposeOptions, validationPrefix, validationFallback string) tea.Cmd {
 	return func() tea.Msg {
 		result, err := workspace.Compose(options, func(manifestPath, root string) error {
 			report, err := validate.Validate(validate.Options{Manifest: manifestPath, Root: root})
@@ -102,7 +102,11 @@ func composeCommand(options workspace.ComposeOptions) tea.Cmd {
 				return err
 			}
 			if !report.Ok {
-				return fmt.Errorf("manifest validation failed: %s", firstErrorMessage(report))
+				return fmt.Errorf(
+					"%s: %s",
+					validationPrefix,
+					firstErrorMessage(report, validationFallback),
+				)
 			}
 			return nil
 		})
@@ -112,32 +116,36 @@ func composeCommand(options workspace.ComposeOptions) tea.Cmd {
 
 // firstErrorMessage surfaces the actual validation error rather than a count,
 // so the user sees what to fix without switching to the CLI.
-func firstErrorMessage(report validate.Report) string {
+func firstErrorMessage(report validate.Report, fallback string) string {
 	for _, finding := range report.Findings {
 		if finding.Severity == workspace.SeverityError {
 			return string(finding.Code) + ": " + finding.Message
 		}
 	}
-	return "see aiah validate for details"
+	return fallback
 }
 
 // composeNotice turns a compose result into the one line shown in the footer.
-func composeNotice(message composeMsg) (string, bool) {
+func (m Model) composeNotice(message composeMsg) (string, bool) {
 	if message.err != nil {
-		return "加入资产库失败：" + message.err.Error() + "（资产库已回滚，未留半成品）", true
+		return m.text(msgComposeFailed, message.err), true
 	}
 	result := message.result
 	if len(result.Registered) == 0 {
 		if len(result.Findings) > 0 {
-			return fmt.Sprintf("没有资产被登记：%s（%s）",
-				result.Findings[0].Message, result.Findings[0].Code), true
+			return m.text(
+				msgComposeNoneFinding,
+				result.Findings[0].Message,
+				result.Findings[0].Code,
+			), true
 		}
-		return "没有勾选可登记的资产", true
+		return m.text(msgComposeNoneSelected), true
 	}
-	notice := fmt.Sprintf("已加入资产库 %s：登记 %d 项，新建 %d 个文件",
+	notice := m.text(
+		msgComposeSucceeded,
 		result.ManifestPath, len(result.Registered), len(result.Created))
 	if skipped := len(result.Skipped); skipped > 0 {
-		notice += fmt.Sprintf("，跳过 %d 项（按 ? 看原因）", skipped)
+		notice += m.text(msgComposeSkipped, skipped)
 	}
 	return notice, len(result.Skipped) > 0
 }
