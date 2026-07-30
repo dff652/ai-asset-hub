@@ -9,7 +9,9 @@
   Web UI → 本地 TUI）
 - 关联：[TUI 界面评估](../research/tui-surface-assessment.md)、
   [TUI 技术方案](../designs/tui-technical-design.md)、
-  [ADR-0005](0005-read-only-mcp-server-surface.md)（另一条 agent 面的只读边界）
+  [ADR-0005](0005-read-only-mcp-server-surface.md)（另一条 agent 面的只读边界）、
+  [N7 偏好设置与中英文支持方案](../designs/settings-and-i18n.md)（Proposed，
+  实施前须正式修订本 ADR）
 
 ## 背景
 
@@ -33,6 +35,10 @@ UI 提出的五项门槛是针对 Web UI 形态写的，需要按 TUI 形态重�
 - 界面**不得复制** apply / rollback / 编译逻辑，只调用 Core；
 - 定位是**工作流操作台，不是控制面板**：本工具的「配置」就是 manifest 文件本身，
   TUI 可以编辑那个文件，但**不得引入 TUI 私有的设置存储**。
+
+N7 Proposed 方案建议把最后一句收窄为“不得引入 TUI 私有的**业务**设置存储”，
+并只允许语言、首选资产库预填和显示密度三项 UI 偏好。该修订尚未实施；在 N7.0
+正式修改本决策并通过安全契约评审前，当前禁止设置存储的边界继续有效。
 
 ### 2. Phase B 的写入面 = 只有工作区
 

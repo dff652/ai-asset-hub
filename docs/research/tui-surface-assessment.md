@@ -3,6 +3,9 @@
 - 触发：参考 [xai-org/grok-build](https://github.com/xai-org/grok-build)
   的全屏 TUI 使用体验，评估本项目是否需要同类界面
 - 状态：**评估结论，未动手实现**
+- 后续修订（2026-07-30）：本评估“不做设置面板”继续约束业务配置和控制面板；
+  [N7 Proposed 方案](../designs/settings-and-i18n.md)仅评估语言、首选资产库预填和
+  显示密度三项设备本地 UI 偏好，尚未实现
 - 关联：[ADR-0003](../decisions/0003-cli-first-go-core-and-product-surfaces.md)
   （CLI-first、Phase 3.5 只读 Web UI）、2026-07-25 真机 dogfood
 

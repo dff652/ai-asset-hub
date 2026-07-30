@@ -132,7 +132,7 @@ diff -r --no-dereference \
 工具比较 HOME、project、资产库、通道和包目录的正文与 mode。验收完成后先确认
 `AIAH_MCP_TEST_ROOT` 确实位于 `/tmp/aiah-mcp-acceptance.*`，再用系统回收机制清理。
 
-## 7. 2026-07-30 N6 候选记录
+## 7. 2026-07-30 N6 `dev` 验收记录
 
 | 客户端 | 版本 | 握手 | 模型级工具调用 |
 |---|---|---|---|

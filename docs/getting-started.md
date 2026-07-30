@@ -224,7 +224,8 @@ name/version/profile/SHA256，逐项展示目标、secret、本机排除项与�
 ### 2.3 AI 工具只读接入
 
 安装后把 `aiah mcp` 配成 Claude Code、Codex 或 Grok 的本地 stdio server。公开版
-`v0.1.6` 提供基础 5 工具；本 N6 候选（目标分支 `dev`）增加：
+`v0.1.6` 提供基础 5 工具；当前 `dev` 已通过 N6 增加以下工具，尚未进入公开
+Release：
 
 - `aiah_asset_status`：比较源端与指定资产库；
 - `aiah_migration_status`：比较指定资产库、当前安装和可选分发通道。

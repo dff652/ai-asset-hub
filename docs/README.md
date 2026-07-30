@@ -55,6 +55,8 @@
 - [TUI 技术方案](designs/tui-technical-design.md)（Phase A / B / C / D1 / D2 / D3 已实现）
 - [TUI 产品体验与导航方案 V2](designs/tui-product-experience-v2.md)
   （任务首页、友好术语、默认启动、CLI/TUI 边界与设置/i18n 分期）
+- [N7：偏好设置与中英文支持方案](designs/settings-and-i18n.md)
+  （语言目录、首选资产库预填、显示密度、偏好文件安全与分阶段验收）
 - [跨设备迁移与受控版本对齐方案](designs/cross-device-migration-and-version-sync.md)
   （换机迁移、不可变分发、E3 状态模型与未来同步准入条件）
 
