@@ -118,12 +118,21 @@ aiah → 迁移到其他设备 → 选择复制后的通道 → 查看/选择 20
 
 CLI Doctor 对账为 `ok=true`、deployment `2026.07.1`；真实 HOME 未参与。
 
-## 5. 交付前剩余门禁
+## 5. 提交与远端证据
 
-本地实现、变异、完整门禁、严格 review 和隔离 TTY 已完成。远端交付仍需：
+候选已拆成两笔可审阅提交：
 
-1. 提交候选；
-2. 推送并创建面向 `dev` 的 PR；
-3. 等待最终 head 的 push 与 pull_request CI 全绿。
+1. `61f456d`：发布包绑定、通道加固、TUI 连续门和验收测试；
+2. `358e7fb`：产品边界、使用说明、runbook、路线图和本检查点。
+
+[PR #26](https://github.com/dff652/ai-asset-hub/pull/26) 面向 `dev` 创建。首个交付
+head `358e7fbc9efc` 的 push CI
+[`30532683967`](https://github.com/dff652/ai-asset-hub/actions/runs/30532683967)
+和 pull_request CI
+[`30532687531`](https://github.com/dff652/ai-asset-hub/actions/runs/30532687531)
+各 9/9 job 全绿，共 18/18。
+
+本证据更新只修改项目文档；推送后仍以 PR 最终 head 的两组 GitHub checks 为合入
+门禁。PR 合并继续需要所有者明确确认，本候选不会自行合入。
 
 公开版 `v0.1.6` 不包含 E3.2–E3.4；Release 能力状态必须与开发候选分开报告。
