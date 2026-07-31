@@ -182,7 +182,7 @@ func (m *Model) previewSettings() {
 }
 
 func (m *Model) discardSettings() {
-	m.applyRuntimeLanguage()
+	m.applyRuntimePreferences()
 	m.settingsDraft = m.currentPreferences
 	m.settingsDirty = false
 	m.settingsNotice = ""
@@ -207,7 +207,7 @@ func (m Model) handlePreferencesSave(message preferencesSaveMsg) (tea.Model, tea
 		m.settingsDirty = false
 		m.settingsCursor = settingsLanguageIndex(m.settingsDraft.Language)
 		m.settingsErr = message.err
-		m.applyRuntimeLanguage()
+		m.applyRuntimePreferences()
 		m.settingsNotice = m.text(msgSettingsSaveFailed)
 		return m, nil
 	}
@@ -216,7 +216,7 @@ func (m Model) handlePreferencesSave(message preferencesSaveMsg) (tea.Model, tea
 	m.settingsDirty = false
 	m.preferenceWarnings = nil
 	m.settingsErr = nil
-	m.applyRuntimeLanguage()
+	m.applyRuntimePreferences()
 	m.settingsNotice = m.text(msgSettingsSaved)
 	return m, nil
 }
@@ -234,10 +234,6 @@ func (m *Model) applyRuntimePreferences() {
 	m.language = tuiLanguage(effective.Language)
 	m.density = effective.Density
 	m.syncLocalizedInputs()
-}
-
-func (m *Model) applyRuntimeLanguage() {
-	m.applyRuntimePreferences()
 }
 
 func (m *Model) resetDiffExpansionForDensity() {

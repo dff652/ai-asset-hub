@@ -102,7 +102,35 @@ install -m 0755 \
 locale 遵循 `LC_ALL` → `LC_MESSAGES` → `LANG` 优先级；测试环境已有上层 locale 时，
 只改 `LANG` 不应覆盖它。显式语言 override 与保存值的优先级均按方案工作。
 
-## 7. 尚未完成
+## 7. PR #28 合并前严格 review
+
+合并前按 `origin/dev...feat/n7-i18n-catalog` 重新审查完整 N7 PR，而不是把测试通过
+直接当作 review 通过。范围为 87 个文件、20 个提交；重点检查分层、文件规模、
+状态机分支、消息目录、偏好路径安全、响应式布局、写入确认和文档发布边界。
+
+结构结论：
+
+- 没有生产文件超过 1000 行，也没有文件因本 PR 跨过 1000 行；
+- `internal/preferences` 独立拥有设备本地偏好，TUI 只编排，资产规则仍由现有 Core
+  拥有；没有 shell-out、第二份业务配置或 MCP 写入口；
+- 双语目录用声明/目录一一对应、两语言 parity、format verb parity 和 production
+  Han literal 检查约束，避免靠人工同步；
+- density 只在新 diff 初始化可选分组，确认页、阻止页和必要信息不受其影响；
+- 60/100 列使用同一内容模型，详情放不下时切为单栏，没有复制业务判断。
+
+review 找到并在合并前修复两项：
+
+1. **P1 文档一致性**：`docs/cli-reference.md` 漏列已实现的 `--density`，并仍称
+   density/首选资产库未开放；ADR-0006 也停留在“偏好尚未实现”。已同步命令语法、
+   三项设置边界和“源码候选已完成、正式 Release 未完成”的真实状态。
+2. **P2 薄包装**：`applyRuntimeLanguage` 已退化为
+   `applyRuntimePreferences` 的无意义转发且名称误导。已删除包装，调用点直接使用
+   实际拥有语言和密度优先级恢复逻辑的函数。
+
+修复后聚焦测试、`git diff --check` 和完整 `./scripts/check-local.sh` 重新通过；
+PR 新一轮 CI 全绿后才允许合并。review 未发现剩余 P0/P1 或需要阻止合并的结构退化。
+
+## 8. 尚未完成
 
 本记录中的二进制来自当前工作树和本地 release 构建脚本，不是 GitHub Release
 下载产物。以下动作未获授权，也未执行：
