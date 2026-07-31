@@ -11,7 +11,7 @@
 | 第一次整理并应用 | 发现 → 整理 → 准备 → 预览 → 人工确认 | `aiah` | TUI 已覆盖；前四步不写目标工具目录 |
 | 日常维护资产 | 查看统一状态 → 更新/移出 → 预览 → 应用 | `aiah` | `update/remove/apply` 都是显式操作，不做后台同步 |
 | 检查或撤销安装 | 安装检查 → 判断漂移 → typed `rollback` | `aiah` 或 CLI | 恢复点只在本机使用，不等于资产库备份 |
-| 迁移到其他设备 | build/publish → 外部搬运 → versions/pull → diff/apply | TUI 看状态，CLI 执行 | TUI E3.1 只读；网络传输不归 aiah |
+| 迁移到其他设备 | 换机检查 → build/publish → 外部搬运 → versions/pull → 取回版本检查 → diff/apply | TUI（当前源码候选）/ CLI | E3.2–E3.4 已合入源码候选；`v0.1.6` 仍为 E3.1；网络传输不归 aiah |
 | AI 或自动化接入 | MCP 只读查询，或 CLI JSON 编排 | `aiah mcp` / CLI | MCP 不开放 build/apply/rollback |
 | 安装或升级 aiah | 检查版本 → 显式安装指定 Release → 复核版本 | installer / `update --check` | 不后台自更新；这不是用户资产生命周期 |
 
@@ -85,13 +85,38 @@ doctor → 正常 / 漂移 / 缺失 / 前置条件失败 → 必要时 typed rol
    versions/pull/bootstrap，再走 diff + typed `apply`。
 
 ```text
-旧设备：检查并生成分发包 → publish
+旧设备：换机前置检查 → 检查并生成分发包 → publish
 传输层：Git / NAS / rsync / U 盘（aiah 不参与）
-新设备：versions → pull/bootstrap → diff → typed apply → doctor
+新设备：versions → pull → 取回版本检查 → diff → typed apply → doctor
 ```
 
-TUI 的“迁移到其他设备”当前只读比较资产库、当前安装和用户选择的普通目录通道；
-`publish`、`pull`、`versions` 和 `bootstrap` 仍由 CLI 执行。完整命令见
+TUI 的“迁移到其他设备”先只读比较资产库、当前安装和用户选择的普通目录通道。
+当前源码候选的 E3.2 在同一页增加两条显式路径：
+
+- 发布：`p` → 选择资产组合 → build → 核对包/通道 → typed `publish`；
+- 取回：`v` → 明确选择版本/profile → 输入已有输出目录 → pull。
+
+E3.3 在同一页增加第三条只读路径：
+
+- 检查：`e` → 选择资产组合 → 查看全部目标、secret、本机不迁移项与问题；
+- credential/session/cache/device-state 等按设计排除，只作提示；
+- 缺失 secret、不支持目标和 adapter 丢弃是阻止项；adapter 降级需人工确认；
+- 检查只针对当前设备和当前资产库/profile，不创建 `dist/`，也不替用户发布、
+  取回或应用。
+
+E3.4 已在当前源码候选把取回后的连续路径补成：
+
+```text
+pull → 绑定 name/version/profile/SHA256 → 目标设备检查
+     → Enter → diff → typed apply → doctor
+```
+
+包级检查重新打开实际 `.tar`，并复用同一 target/adapter/secret/device-private
+报告。坐标或摘要不匹配、有阻止项时不能进入 diff；检查通过也不会自动应用。
+
+光标默认停在最后发布项只用于导航，不会自动取回；TUI 不比较版本号大小。取回不会
+覆盖输出目录中不同或残缺的同名产物，完整同内容四件套才视为幂等。`v0.1.6` 公开版
+仍只提供 E3.1 状态页，全部 CLI 命令继续兼容。完整命令见
 [跨设备迁移 runbook](runbooks/cross-device-transfer.md)。
 
 凭据、session、cache、数据库、device scope 和厂商运行时状态默认不迁移。密钥只在
@@ -101,11 +126,16 @@ TUI 的“迁移到其他设备”当前只读比较资产库、当前安装和�
 
 ### 5.1 AI 工具通过 MCP 读取状态
 
-`aiah mcp` 暴露 `scan`、`validate`、`diff`、`doctor`、`version` 五个只读工具。
-AI 可以盘点、校验和解释差异，但不能通过 MCP build、apply 或 rollback。
+公开版 `v0.1.6` 的 `aiah mcp` 暴露 5 个基础只读工具；当前源码候选已通过 N6
+增加 `aiah_asset_status` 与 `aiah_migration_status`。AI 可以盘点、校验、解释源端与
+资产库状态、查看跨设备版本对齐，但不能通过 MCP build、修改资产库、publish/pull、
+apply 或 rollback。
 
 这是有意的权限边界：写操作必须继续由人或显式 CLI 自动化负责，并保留路径、diff、
 确认和恢复证据。
+
+客户端配置和真实握手验收见
+[MCP 客户端接入 runbook](runbooks/mcp-client-acceptance.md)。
 
 ### 5.2 脚本与 CI
 

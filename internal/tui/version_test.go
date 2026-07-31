@@ -2,6 +2,8 @@ package tui
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -108,6 +110,89 @@ func TestVersionCheckFailureStaysVisible(t *testing.T) {
 	}
 }
 
+func TestVersionViewGoldenByLanguage(t *testing.T) {
+	tests := []struct {
+		name     string
+		language language
+		checked  bool
+		golden   string
+	}{
+		{
+			name: "offline zh-CN", language: languageZhCN,
+			golden: "version.offline.zh-CN.golden",
+		},
+		{
+			name: "offline en", language: languageEnglish,
+			golden: "version.offline.en.golden",
+		},
+		{
+			name: "available zh-CN", language: languageZhCN, checked: true,
+			golden: "version.available.zh-CN.golden",
+		},
+		{
+			name: "available en", language: languageEnglish, checked: true,
+			golden: "version.available.en.golden",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			restoreVersion := setVersionTestBuild()
+			t.Cleanup(restoreVersion)
+			model := versionGoldenModel(test.language, test.checked)
+
+			got := model.View()
+			path := filepath.Join("testdata", test.golden)
+			want, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("read golden: %v\n--- got ---\n%s", err, got)
+			}
+			if normalizeTerminalGolden(got) != normalizeTerminalGolden(string(want)) {
+				t.Fatalf(
+					"view differs from %s:\n--- got ---\n%s\n--- want ---\n%s",
+					path,
+					got,
+					want,
+				)
+			}
+		})
+	}
+}
+
+func TestEnglishVersionStatusesFailureAndHelp(t *testing.T) {
+	model := versionGoldenModel(languageEnglish, false)
+	statuses := map[string]string{
+		updater.StatusCurrent:         "Up to date",
+		updater.StatusUpdateAvailable: "Update available",
+		updater.StatusAhead:           "ahead of the latest Release",
+		updater.StatusDevelopment:     "Development build",
+		"unexpected":                  "Unknown status (unexpected)",
+	}
+	for status, want := range statuses {
+		if got := model.updateStatusLabel(status); !strings.Contains(got, want) {
+			t.Errorf("English status %q = %q, want %q", status, got, want)
+		}
+	}
+
+	model.updateChecking = true
+	updated, _ := model.Update(updateCheckMsg{err: errors.New("network unavailable")})
+	model = updated.(Model)
+	if view := model.View(); !strings.Contains(view, "Check failed: network unavailable") {
+		t.Fatalf("English update failure is not visible:\n%s", view)
+	}
+
+	model.showHelp = true
+	for _, want := range []string{
+		"About and updates · Help",
+		"Opening this page reads only the local program",
+		"Only c queries the latest GitHub Release",
+		"never replaces the current binary",
+	} {
+		if view := model.View(); !strings.Contains(view, want) {
+			t.Fatalf("English version help omits %q:\n%s", want, view)
+		}
+	}
+}
+
 func TestDeploymentOnlyModelDoesNotExposeVersionScreen(t *testing.T) {
 	model := deploymentModel(
 		applyOptions("fixture.tar", t.TempDir()),
@@ -131,6 +216,44 @@ func TestUpdateCheckMessageStopsSpinner(t *testing.T) {
 	next := updated.(Model)
 	if next.updateChecking || !next.updateChecked {
 		t.Fatalf("message did not finish check: %#v", next)
+	}
+}
+
+func versionGoldenModel(selectedLanguage language, checked bool) Model {
+	model := NewModel(inventory.Options{Home: "/unused"}).
+		WithMaintenance(true).
+		withLanguage(selectedLanguage)
+	model.plain = true
+	model.width = 100
+	model.height = 20
+	model.screen = screenVersion
+	model.doctorStatus = statusReady
+	if checked {
+		model.doctorReport.Deployment = &apply.DoctorDeployment{
+			Package: "personal", Version: "2026.07.1", Profile: "personal",
+			BackupID: "backup-123",
+		}
+		model.updateChecked = true
+		model.updateReport = updater.Report{
+			Ok:              true,
+			CurrentVersion:  "0.1.2",
+			LatestVersion:   "0.1.3",
+			Status:          updater.StatusUpdateAvailable,
+			UpdateAvailable: true,
+			ReleaseURL:      "https://github.example/releases/tag/v0.1.3",
+			UpgradeCommand:  testUpgradeCommand,
+		}
+	}
+	return model
+}
+
+func setVersionTestBuild() func() {
+	original := []string{version.Version, version.Commit, version.Date}
+	version.Version = "0.1.2"
+	version.Commit = "1234567890abcdef"
+	version.Date = "2026-07-29T00:00:00Z"
+	return func() {
+		version.Version, version.Commit, version.Date = original[0], original[1], original[2]
 	}
 }
 

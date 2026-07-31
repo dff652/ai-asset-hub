@@ -18,7 +18,7 @@ aiah pull --channel <dir> --name <name> [--version <v>] [--profile <p>] --out <d
 aiah versions --channel <dir> [--name <name>] --output json
 aiah bootstrap --channel <dir> --name <name> [--version <v>] [--profile <p>] --out <dir> [--home <path>] [--project <path>] [--targets claude,codex,grok]
 aiah doctor [--home <path>] [--project <path>] --output json
-aiah ui [--home <path>] [--project <path>] [--workspace <path>] [--package <tar|dir>] [--targets claude,codex,grok]
+aiah ui [--home <path>] [--project <path>] [--workspace <path>] [--package <tar|dir>] [--targets claude,codex,grok] [--language auto|zh-CN|en] [--density standard|detailed]
 aiah mcp
 aiah update --check [--output text|json]
 aiah version [--output text|json]
@@ -113,6 +113,8 @@ Channel 是普通目录，可以位于 U 盘、挂载的 NAS/网盘或 Git check
 
 同一 `(name, version, profile)` 内容相同则 publish 幂等，内容不同则拒绝，没有
 `--force`。省略 `--version` 取最近发布的条目，不比较或猜测版本号大小。
+`pull` 不覆盖输出目录中的同名产物：完整且逐字节相同的四件套视为幂等；残缺或
+任一内容不同则在写入前整单拒绝。
 
 完整流程见[跨设备迁移 runbook](runbooks/cross-device-transfer.md)。
 
@@ -137,12 +139,29 @@ aiah                                            # 推荐：打开任务首页
 aiah ui --home "$HOME"                          # 兼容：同一任务首页
 aiah ui --home "$HOME" --workspace ~/ai-assets # 直接打开资产库
 aiah ui --package <tar|dir> --home "$HOME"     # 高级：直接审阅并应用安装包
+aiah ui --language en                           # 仅本次进程使用 English
+aiah ui --density detailed                      # 仅本次展开全部可选技术明细
 ```
 
 - 首页按用户任务组织为“整理本机资产”“预览并应用资产库”“安装检查与撤销”
-  “迁移到其他设备”和“关于与更新”，不要求先理解内部阶段。
-- “迁移到其他设备”当前是 E3.1 只读状态页：按 `c` 选择已有普通目录通道，
-  比较资产库、当前安装和最近发布版本；不会创建通道、发布、取回或应用文件。
+  “迁移到其他设备”“关于与更新”和“偏好设置”，不要求先理解内部阶段。
+- 当前源码候选的偏好设置支持语言、显示密度和首选资产库预填。语言可选
+  `auto` / `zh-CN` / `en`，密度可选 `standard` / `detailed`；密度只改变可选
+  技术明细的默认展开状态，不隐藏路径、版本、目标、风险、确认或恢复信息。
+- 首选资产库只接受已存在的安全目录，并只用于首页提示和路径框预填；每次会话仍须
+  用户确认后才启用资产库，不会自动创建、打开或选择。
+- 启动时只读加载
+  `${XDG_CONFIG_HOME:-$HOME/.config}/aiah/preferences.json`；文件不存在不创建，
+  损坏或权限不安全时使用安全默认值并在首页/设置页告警。
+- 设置页选择语言只预览；`Esc` / `m` 放弃。只有明确选择“保存偏好”才以
+  `0700` 目录、`0600` 文件原子保存。`--language` / `--density` 只覆盖本次
+  进程，永不反写。public `v0.1.6` 不包含本项源码候选。
+- “迁移到其他设备”先只读比较资产库、当前安装和通道；当前源码候选可按 `p`
+  选择资产组合并 typed `publish`，按 `v` 查看全部发布坐标并明确选择版本/profile
+  与已有输出目录；按 `e` 选择资产组合并零写入检查本机排除项、secret 和 adapter
+  兼容性。当前源码候选的 E3.4 在取回后先按 name/version/profile/SHA256 检查确切发布包和
+  目标设备，通过后由用户按 Enter 进入同一 diff/typed `apply`；不会直接写目标
+  工具目录。`v0.1.6` 公开版仍只包含 E3.1 只读状态页。
 - 用户界面把 workspace 称为“资产库”：它是跨工具资产的可编辑事实源。CLI flag、
   manifest schema 和 API 仍保留 `workspace`，避免破坏兼容性。
 - 没有 `--workspace` 时初始只读；进入需要资产库的任务后，必须明确输入并确认路径
@@ -170,14 +189,23 @@ aiah ui --package <tar|dir> --home "$HOME"     # 高级：直接审阅并应用�
 
 `aiah mcp` 在 stdio 上提供只读 MCP server，暴露：
 
+- `aiah_asset_status`
 - `aiah_scan`
 - `aiah_validate`
 - `aiah_diff`
 - `aiah_doctor`
+- `aiah_migration_status`
 - `aiah_version`
 
-不暴露 `build`、`apply` 或 `rollback`，因此“经 MCP server 零写入”是可测试的绝对
-不变式。该子命令不接受 flag 或 operand。
+`aiah_asset_status` 必须传 `workspace`，可选 `manifest`、`home`、`project`；
+它比较源端与资产库，返回 `unmanaged`、`managed`、`source-changed`、
+`library-only`、`blocked`。
+
+`aiah_migration_status` 必须传 `workspace`，可选 `manifest`、`channel`、`home`、
+`project`；它返回资产库、当前安装、普通目录通道和版本对齐状态。
+
+不暴露 `build`、资产库纳入/更新/移出、`publish/pull`、`apply` 或 `rollback`，
+因此“经 MCP server 零写入”是可测试的绝对不变式。该子命令不接受 flag 或 operand。
 
 Claude Code 接入：
 
@@ -185,7 +213,9 @@ Claude Code 接入：
 claude mcp add aiah -- aiah mcp
 ```
 
-Codex 与其它客户端配置 `command: "aiah"`、`args: ["mcp"]`。
+Codex、Grok 与其它客户端配置 `command: "aiah"`、`args: ["mcp"]`。可复制配置、
+隔离 fake HOME 和三客户端验收步骤见
+[MCP 客户端接入 runbook](runbooks/mcp-client-acceptance.md)。
 
 ## `update`
 

@@ -23,6 +23,9 @@ func TestOpenDirectoryPackage(t *testing.T) {
 	if string(pkg.Files["assets/rules/common.md"]) != "# Common\n" {
 		t.Fatalf("files = %#v", pkg.Files)
 	}
+	if pkg.ArchiveSHA256 != "" {
+		t.Fatalf("directory package has archive digest %q", pkg.ArchiveSHA256)
+	}
 }
 
 func TestOpenDirRejectsLockPathEscape(t *testing.T) {
@@ -183,8 +186,17 @@ func TestOpenTarAcceptsConsistentRootDirectoryEntries(t *testing.T) {
 		{name: "pkg/lock.json", body: lock},
 		{name: "pkg/assets/rules/common.md", body: payload},
 	})
-	if _, err := Open(tarPath); err != nil {
+	pkg, err := Open(tarPath)
+	if err != nil {
 		t.Fatalf("open tar with directory entries: %v", err)
+	}
+	body, err := os.ReadFile(tarPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(body)
+	if pkg.ArchiveSHA256 != hex.EncodeToString(sum[:]) {
+		t.Fatalf("archive digest = %q", pkg.ArchiveSHA256)
 	}
 }
 

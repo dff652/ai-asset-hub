@@ -3,6 +3,11 @@
 - 触发：参考 [xai-org/grok-build](https://github.com/xai-org/grok-build)
   的全屏 TUI 使用体验，评估本项目是否需要同类界面
 - 状态：**评估结论，未动手实现**
+- 后续修订（2026-07-30）：本评估“不做设置面板”继续约束业务配置和控制面板；
+  [N7 方案](../designs/settings-and-i18n.md)已接受语言、首选资产库预填和显示密度
+  三项设备本地 UI 偏好；首页、inventory、资产库管理、diff/apply 和
+  doctor/rollback、migration、version 双语消息目录已建立，设置入口和偏好存储
+  尚未实现
 - 关联：[ADR-0003](../decisions/0003-cli-first-go-core-and-product-surfaces.md)
   （CLI-first、Phase 3.5 只读 Web UI）、2026-07-25 真机 dogfood
 
@@ -78,7 +83,7 @@ ACP、PTY 控制），75 个 crate 里绝大多数与我们无关。我们要的
 加选择器，不是 agent 外壳。
 
 **许可证边界**：grok-build 是 Apache-2.0，与本项目同协议，但
-[security.md §6](../security.md) 对 PromptHub 立的规矩同样适用——
+[security.md §7](../security.md) 对 PromptHub 立的规矩同样适用——
 **参考公开行为与交互思路，不复制源码、不移植受版权保护的实现细节**。
 Rust → Go 本来也没法照抄，但这条要写在开工文档里，避免有人「参考」成搬运。
 

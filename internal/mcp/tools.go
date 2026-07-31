@@ -23,9 +23,12 @@ import (
 	"strings"
 
 	"github.com/dff652/ai-asset-hub/internal/apply"
+	"github.com/dff652/ai-asset-hub/internal/channel"
 	"github.com/dff652/ai-asset-hub/internal/inventory"
+	"github.com/dff652/ai-asset-hub/internal/migration"
 	"github.com/dff652/ai-asset-hub/internal/validate"
 	"github.com/dff652/ai-asset-hub/internal/version"
+	"github.com/dff652/ai-asset-hub/internal/workspace"
 )
 
 // errInvalidArguments marks a caller mistake (bad or unknown argument) as
@@ -48,6 +51,20 @@ type Tool struct {
 // writes belongs on the CLI, not on this surface.
 func Tools() []Tool {
 	tools := []Tool{
+		{
+			Name: "aiah_asset_status",
+			Description: "Compare discovered Claude Code, Codex, Grok and shared assets with " +
+				"one editable asset library. Reports unmanaged, managed, source-changed, " +
+				"library-only and blocked items without modifying either side.",
+			InputSchema: objectSchema(map[string]any{
+				"workspace": stringProperty("Asset library directory containing manifest.yaml."),
+				"manifest": stringProperty("Optional manifest path inside the asset library. " +
+					"Defaults to <workspace>/manifest.yaml."),
+				"home":    stringProperty("Home directory to scan. Defaults to the current user's home."),
+				"project": stringProperty("Optional project directory to scan for project-scoped assets."),
+			}, []string{"workspace"}),
+			Handler: handleAssetStatus,
+		},
 		{
 			Name: "aiah_scan",
 			Description: "Read-only inventory of Claude Code, Codex, Grok and shared AI assets " +
@@ -94,6 +111,21 @@ func Tools() []Tool {
 			Handler: handleDoctor,
 		},
 		{
+			Name: "aiah_migration_status",
+			Description: "Read-only cross-device status for one asset library, the current " +
+				"managed installation and an optional immutable release channel. Reports " +
+				"version alignment but never builds, publishes, pulls or applies.",
+			InputSchema: objectSchema(map[string]any{
+				"workspace": stringProperty("Asset library directory containing manifest.yaml."),
+				"manifest": stringProperty("Optional manifest path inside the asset library. " +
+					"Defaults to <workspace>/manifest.yaml."),
+				"channel": stringProperty("Optional existing Git, NAS or removable-media channel directory."),
+				"home":    stringProperty("Home directory to inspect. Defaults to the current user's home."),
+				"project": stringProperty("Optional project directory used by the managed installation."),
+			}, []string{"workspace"}),
+			Handler: handleMigrationStatus,
+		},
+		{
 			Name:        "aiah_version",
 			Description: "Report the aiah build identity (version, commit, build date).",
 			InputSchema: objectSchema(map[string]any{}, nil),
@@ -102,6 +134,60 @@ func Tools() []Tool {
 	}
 	sort.Slice(tools, func(i, j int) bool { return tools[i].Name < tools[j].Name })
 	return tools
+}
+
+type assetStatusArguments struct {
+	Workspace string `json:"workspace"`
+	Manifest  string `json:"manifest"`
+	Home      string `json:"home"`
+	Project   string `json:"project"`
+}
+
+func handleAssetStatus(arguments json.RawMessage) (any, error) {
+	var args assetStatusArguments
+	if err := decodeArguments(arguments, &args); err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(args.Workspace) == "" {
+		return nil, fmt.Errorf("%w: workspace is required", errInvalidArguments)
+	}
+	home, err := resolveHome(args.Home)
+	if err != nil {
+		return nil, err
+	}
+	inventoryReport, err := inventory.Scan(inventory.Options{
+		Home: home, Project: args.Project,
+	})
+	if err != nil {
+		if errors.Is(err, inventory.ErrInvalidRoot) {
+			return nil, fmt.Errorf(
+				"%w: home or project is not an accessible directory",
+				errInvalidArguments,
+			)
+		}
+		return nil, errors.New("asset status scan failed")
+	}
+	report, err := workspace.Catalog(workspace.CatalogOptions{
+		WorkspaceRoot: args.Workspace,
+		ManifestPath:  args.Manifest,
+		Home:          home,
+		Project:       args.Project,
+		Assets:        inventoryReport.Assets,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, workspace.ErrInvalidOptions):
+			return nil, fmt.Errorf(
+				"%w: workspace or manifest path is invalid",
+				errInvalidArguments,
+			)
+		case errors.Is(err, workspace.ErrInvalidManifest):
+			return nil, errors.New("asset status failed: manifest is invalid")
+		default:
+			return nil, errors.New("asset status failed")
+		}
+	}
+	return report, nil
 }
 
 type scanArguments struct {
@@ -214,6 +300,51 @@ func handleDoctor(arguments json.RawMessage) (any, error) {
 	return report, nil
 }
 
+type migrationStatusArguments struct {
+	Workspace string `json:"workspace"`
+	Manifest  string `json:"manifest"`
+	Channel   string `json:"channel"`
+	Home      string `json:"home"`
+	Project   string `json:"project"`
+}
+
+func handleMigrationStatus(arguments json.RawMessage) (any, error) {
+	var args migrationStatusArguments
+	if err := decodeArguments(arguments, &args); err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(args.Workspace) == "" {
+		return nil, fmt.Errorf("%w: workspace is required", errInvalidArguments)
+	}
+	home, err := resolveHome(args.Home)
+	if err != nil {
+		return nil, err
+	}
+	report, err := migration.Inspect(migration.Options{
+		WorkspaceRoot: args.Workspace,
+		ManifestPath:  args.Manifest,
+		Channel:       args.Channel,
+		Home:          home,
+		Project:       args.Project,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, workspace.ErrInvalidOptions),
+			errors.Is(err, apply.ErrInvalidOptions),
+			errors.Is(err, channel.ErrChannelBlocked):
+			return nil, fmt.Errorf(
+				"%w: workspace, manifest, channel, home or project is invalid",
+				errInvalidArguments,
+			)
+		case errors.Is(err, workspace.ErrInvalidManifest):
+			return nil, errors.New("migration status failed: manifest is invalid")
+		default:
+			return nil, errors.New("migration status failed")
+		}
+	}
+	return report, nil
+}
+
 func handleVersion(arguments json.RawMessage) (any, error) {
 	var args struct{}
 	if err := decodeArguments(arguments, &args); err != nil {
@@ -246,8 +377,9 @@ func decodeArguments(arguments json.RawMessage, target any) error {
 
 func objectSchema(properties map[string]any, required []string) map[string]any {
 	schema := map[string]any{
-		"type":       "object",
-		"properties": properties,
+		"type":                 "object",
+		"properties":           properties,
+		"additionalProperties": false,
 	}
 	if len(required) > 0 {
 		schema["required"] = required

@@ -22,11 +22,11 @@ Phase A/B/C/D1/D2/D3 已按顺序全部落地。
 **✅ 成立的一半——操作台**。浏览盘点、审阅 diff、执行 apply、看部署历史与回滚，
 这些确实需要一个界面，就是 Phase A/C。
 
-**⚠️ 有害的一半——「配置」**。这个工具**几乎没有属于自己的配置**：
+**⚠️ 有害的一半——「业务配置」**。这个工具**几乎没有属于自己的业务配置**：
 
 - 它的「配置」就是 **manifest 文件**，躺在用户的资产工作区里、进 git、可 diff、
-  可跨设备携带。TUI 可以**编辑那个文件**（Phase B），但绝不能引入一份 TUI 私有的
-  设置存储——那会直接违反 ADR-0001「文件是事实源」；
+  可跨设备携带。TUI 可以**编辑那个文件**（Phase B），但绝不能引入另一份 TUI
+  私有的**业务**设置——那会直接违反 ADR-0001「文件是事实源」；
 - 项目已经刻意避免隐式配置：`--manifest` 一直要求显式传，roadmap 明确写了
   「首版不加入隐式默认发现」。一个设置面板会反过来鼓励把状态藏进不可见的地方；
 - 一旦 TUI 能开关 manifest 之外的东西，两台设备的行为就会在没有 diff 的情况下分叉，
@@ -36,6 +36,13 @@ grok-build 的设置面板之所以合理，是因为它是一个**常驻的交�
 per-user 偏好（主题、鼠标、模型、审批模式）。aiah 是**一次性执行的迁移工具**，
 把那个用例照搬过来等于**发明本不该存在的配置**。要借鉴的是它的**交互语法**
 （分组列表、右对齐值、`/` 搜索、底栏键位），不是「设置面板」这个概念。
+
+2026-07-30 接受的 [N7 方案](settings-and-i18n.md)进一步区分了“业务配置”和
+“设备本地 UI 偏好”：后者最多保存语言、首选资产库预填和显示密度，不改变 manifest、
+Core 规则或写入授权。ADR-0006 已按此收窄；首页、inventory、资产库管理、
+diff/apply、doctor/rollback、migration 和 version 的完整双语消息目录已建立；
+设置页、语言切换、安全偏好文件、显示密度和首选资产库只预填也已完成源码候选。
+保存能力已通过独立安全门禁，但在正式 Release 安装包复验前仍不能标记为已发布。
 
 一句话定位：**不是控制面板，是「盘点 → 组包 → 审阅 → 执行」这条既有工作流的
 可视化操作台**。凡是想加进 TUI 的东西，先问一句「它落到哪个文件里、能不能 diff」。
@@ -50,7 +57,7 @@ per-user 偏好（主题、鼠标、模型、审批模式）。aiah 是**一次�
 - 不做资产内容编辑器（改 SKILL.md 用你自己的编辑器）；
 - 不做 agent / 对话 / 流式；
 - 不做鼠标优先设计（键盘优先，鼠标可选支持滚轮）；
-- **不做设置面板**——本工具的「配置」就是 manifest 本身，理由见 §0；
+- 不做业务设置/控制面板；E4 只按 N7 方案实现三项非业务 UI 偏好；
 - 不做主题系统，只跟随终端配色 + 少量语义色。
 
 ## 2. 技术选型
@@ -176,8 +183,8 @@ diff → 输入 `apply` → 展示 backup / rollback → 退出。
 明确输入工作区路径后才创建/打开目录。完成 compose 后按 `b` 选择 manifest profile，
 TUI 调 `build.Build` 写到 `<workspace>/dist/`，成功即把 archive 交给 Phase C。
 
-该阶段只做状态编排，不增加业务规则、私有设置或隐式工作区。publish/pull
-仍留在 CLI。工作区禁入受管工具目录；workspace compose 或重建
+该阶段只做状态编排，不增加业务规则、私有设置或隐式工作区。当时 publish/pull
+仍留在 CLI，后续由 Phase E3.2 在迁移页接入同一 Core。工作区禁入受管工具目录；workspace compose 或重建
 失败后会使当前会话生成的旧包失效，显式 `--package` 不受影响。6 项逐项变异验证和
 真实 PTY 的 workspace → compose → build → diff 链路均通过。
 
@@ -201,6 +208,34 @@ GitHub latest release。
 检查失败在页面可见，不静默吞掉；检查成功区分 current / update-available / ahead /
 development，并在可更新时展示精确 tag 安装命令。TUI 不自替换正在运行的二进制。
 
+### Phase E3.2：跨设备连续发布与取回
+
+**实现状态：已合入 `dev`（2026-07-30），尚未发布。** 在 E3.1 只读状态页上增加：
+
+- `p` → profile → `build.Build` → 显示包/通道 → typed `publish`
+  → `channel.Publish`；
+- `v` → `channel.List` 全部坐标 → 人工选择 version/profile → 输入已有输出目录
+  → `channel.Pull`。
+
+TUI 不 shell out、不自动选定或取回最后发布项、不创建通道目录、不接管传输层。
+用户可明确选择一个空目录；只有 typed publish 成功后才由 Core 初始化索引和包
+布局。pull 输出完整同内容普通文件四件套时幂等；残缺、不同内容或符号链接在写入前
+拒绝，exclusive create 防止并发覆盖。publish/pull 执行期间吞掉按键。
+
+### Phase E3.3/E3.4：资产库前置检查与取回包检查
+
+**实现状态：E3.3/E3.4 已合入 `dev`（2026-07-30），均尚未发布。**
+
+- `e` 选择资产库 profile 后调用 `migration.InspectPreflight`，零写入展示
+  device-private、secret、目标支持和 adapter dropped/degraded；
+- pull 成功后，E3.4 用返回的 name/version/profile/SHA256 调
+  `migration.InspectPackagePreflight`，绑定实际取回包与目标设备；
+- 同一 SHA256 继续进入 `apply.Options.ExpectedSHA256`，diff/apply 重新打开包时
+  仍会拒绝替换；
+- 包级检查有阻止项时不进入 Phase C；通过后仍须用户 Enter 才进入 diff，再 typed
+  `apply`；
+- TUI 不复制 package/adapter/secret 规则，不新增自动 apply 或 `--yes`。
+
 ## 5. 代码落位与状态模型
 
 ```text
@@ -214,6 +249,9 @@ internal/tui/
   diff_view.go          Phase C 视图
   health_view.go        Phase D2 Doctor / 当前部署回滚视图
   version_view.go       Phase D3 构建身份 / deployment / Release 检查
+  migration.go          Phase E3.1 状态与通道路径编排
+  migration_actions.go  Phase E3.2–E3.4 typed publish、取回、包级检查与 Phase C 交接
+  migration_view.go     Phase E3 状态、确认、版本选择、检查与输出路径视图
   styles.go             lipgloss 样式，语义色集中在此
 ```
 
@@ -255,6 +293,8 @@ report 本身**，这样重新扫描与过滤互不干扰。
 | `x` | 在 Doctor 页回滚当前部署（需 typed confirmation） |
 | `v` | 查看本地版本与当前资产 deployment |
 | `c` | 在版本页显式检查 GitHub Release |
+| `p`（迁移页） | 选择资产组合并进入 typed publish |
+| `v`（迁移页） | 查看全部通道版本，明确选择后取回 |
 | `?` | 键位帮助 |
 | `q` `Ctrl+C` | 退出 |
 

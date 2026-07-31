@@ -94,9 +94,61 @@ func TestSelectionSurvivesOnlyForStillReportedAssets(t *testing.T) {
 }
 
 func TestComposeNoticeReportsRollbackOnFailure(t *testing.T) {
-	notice, warn := composeNotice(composeMsg{err: workspace.ErrComposeBlocked})
+	notice, warn := NewModel(inventory.Options{}).
+		composeNotice(composeMsg{err: workspace.ErrComposeBlocked})
 	if !warn || !strings.Contains(notice, "回滚") {
 		t.Fatalf("notice = %q warn=%v; a failed write must say the workspace was rolled back", notice, warn)
+	}
+}
+
+func TestEnglishAssetLibraryViewsAndNotices(t *testing.T) {
+	model := readyTestModel().withLanguage(languageEnglish)
+
+	model.choosingWorkspace = true
+	if view := model.View(); !strings.Contains(view, "Choose an asset library") ||
+		!strings.Contains(view, "Enter Confirm") {
+		t.Fatalf("English workspace prompt is incomplete:\n%s", view)
+	}
+
+	model.choosingWorkspace = false
+	model.confirmManage = true
+	model.manageAction = manageRemove
+	if view := model.View(); !strings.Contains(view, "Confirm asset library operation") ||
+		!strings.Contains(view, "Type remove and press Enter") ||
+		!strings.Contains(view, "Source files are not deleted") {
+		t.Fatalf("English remove confirmation is incomplete:\n%s", view)
+	}
+
+	model.confirmManage = false
+	model.workspace = ""
+	updated, command := model.startCompose()
+	next := updated.(Model)
+	if command != nil || !next.noticeIsWarn ||
+		!strings.Contains(next.notice, "No asset library selected") {
+		t.Fatalf(
+			"English compose guard = notice %q warn=%v command nil=%v",
+			next.notice,
+			next.noticeIsWarn,
+			command == nil,
+		)
+	}
+
+	notice, warn := model.composeNotice(composeMsg{err: workspace.ErrComposeBlocked})
+	if !warn || !strings.Contains(notice, "Could not add assets") ||
+		!strings.Contains(notice, "no partial result remains") {
+		t.Fatalf("English compose failure = %q warn=%v", notice, warn)
+	}
+	notice, warn = model.manageNotice(manageMsg{action: manageUpdate, ok: true, count: 2})
+	if warn || !strings.Contains(notice, "Updated 2 assets") {
+		t.Fatalf("English update result = %q warn=%v", notice, warn)
+	}
+
+	model.choosingProfile = true
+	model.workspace = "/tmp/assets"
+	model.availableProfiles = []string{"personal", "work"}
+	if view := model.View(); !strings.Contains(view, "Preview and apply library") ||
+		!strings.Contains(view, "Available profiles: personal, work") {
+		t.Fatalf("English profile prompt is incomplete:\n%s", view)
 	}
 }
 

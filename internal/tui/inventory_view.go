@@ -16,8 +16,14 @@ func (m Model) View() string {
 	if m.choosingProfile {
 		return m.profileInputView(style)
 	}
-	if m.choosingChannel {
+	if m.migrationFlow.choosingChannel {
 		return m.channelInputView(style)
+	}
+	if m.migrationFlow.choosingPullOut {
+		return m.pullOutputView(style)
+	}
+	if m.migrationFlow.publishConfirming {
+		return m.publishConfirmationView(style)
 	}
 	if m.confirmManage {
 		return m.manageConfirmationView(style)
@@ -40,63 +46,65 @@ func (m Model) View() string {
 	if m.screen == screenMigration {
 		return m.migrationView(style)
 	}
+	if m.screen == screenSettings {
+		return m.settingsView(style)
+	}
 
-	header := style.header.Render("aiah · 本机 AI 资产")
-	counts := fmt.Sprintf("可加入 %d · 排除 %d · 风险与问题 %d",
+	header := style.header.Render(m.text(msgInventoryTitle))
+	counts := m.text(msgInventoryCountsScanned,
 		m.report.Summary.CandidateAssets, m.report.Summary.ExcludedAssets, len(m.report.Findings))
 	if m.workspace != "" && m.catalogErr == nil {
-		counts = fmt.Sprintf(
-			"未纳管 %d · 已纳管 %d · 待更新 %d · 仅库内 %d",
+		counts = m.text(
+			msgInventoryCountsManaged,
 			m.catalog.Summary.Unmanaged, m.catalog.Summary.Managed,
 			m.catalog.Summary.SourceChanged, m.catalog.Summary.LibraryOnly,
 		)
 	}
 	header = joinEdges(header, counts, max(20, m.width))
 
-	workspaceLine := "资产库  未选择 · 跨工具资产的可编辑事实源 · 下一步：按 w 选择或创建"
+	workspaceLine := m.text(msgInventoryWorkspaceUnset)
 	if m.workspace != "" {
-		workspaceLine = "资产库  " + m.workspace +
-			" · 跨工具统一管理（每项“目标工具”决定应用到 Claude/Codex/Grok）"
+		workspaceLine = m.text(msgInventoryWorkspaceSelected, m.workspace)
 	}
-	workspaceLine = style.muted.Render(truncate(workspaceLine, max(20, m.width)))
+	workspaceLine = style.muted.Render(workspaceLine)
 
 	filterLine := ""
 	if m.filtering || m.filterInput.Value() != "" {
 		filterLine = m.filterInput.View()
 	} else {
-		filterLine = style.muted.Render("/ 过滤路径、类型或风险与问题")
+		filterLine = style.muted.Render(m.text(msgInventoryFilterHint))
 	}
 	if m.findingsOnly {
-		filterLine += style.warning.Render("  · 仅看风险与问题")
+		filterLine += style.warning.Render(m.text(msgInventoryFindingsOnly))
 	}
 
 	var body string
 	switch m.status {
 	case statusLoading:
-		body = "\n正在扫描…（可按 q 退出）"
+		body = m.text(msgInventoryScanning)
 	case statusFailed:
-		message := "扫描失败"
+		message := m.text(msgInventoryScanFailed)
 		if m.err != nil {
 			message += ": " + m.err.Error()
 		}
-		body = "\n" + style.error.Render(message) + "\n按 r 重试，q 退出"
+		body = "\n" + style.error.Render(message) + "\n" + m.text(msgInventoryScanRetry)
 	default:
 		body = m.inventoryBody(style)
 	}
 
-	keysHint := "↑↓/jk 导航 · w 选择资产库 · / 搜索 · f 风险 · r 重扫 · m 首页 · ? 帮助 · q 退出"
+	keysHint := m.text(msgInventoryFooterReadOnly)
 	if m.workspace != "" {
-		keysHint = "空格选择 · w 纳入 · u 更新 · X 移出 · b 预览并应用 · m 首页 · ? 帮助"
+		keysHint = m.text(msgInventoryFooterManaged)
 	}
 	if m.deployOptions.Package != "" {
-		keysHint += " · d 变更预览"
+		keysHint += m.text(msgInventoryFooterDiff)
 	}
 	if m.maintenance {
-		keysHint += " · h 安装检查 · v 关于与更新"
+		keysHint += m.text(msgInventoryFooterMaintenance)
 	}
 	footer := style.muted.Render(keysHint)
 	if selected := len(m.selected); selected > 0 {
-		footer = style.header.Render(fmt.Sprintf("已勾选 %d", selected)) + "  " + footer
+		footer = style.header.Render(m.text(msgInventorySelected, selected)) + "  " + footer
 	}
 	if m.notice != "" {
 		noticeStyle := style.muted
@@ -111,13 +119,20 @@ func (m Model) View() string {
 func (m Model) inventoryBody(style styles) string {
 	rows := m.visibleRows()
 	if len(rows) == 0 {
-		return "\n没有匹配的资产或风险与问题"
+		return m.text(msgInventoryEmpty)
+	}
+	if m.width < 80 {
+		return m.narrowInventoryBody(rows, style)
 	}
 
 	bodyHeight := max(4, m.height-6)
 	start, end := visibleRange(len(rows), m.cursor, bodyHeight)
 	leftWidth := max(28, min(52, m.width*45/100))
 	rightWidth := max(24, m.width-leftWidth-3)
+	detailLines := m.detailLines(rows, 1<<20, bodyHeight, style)
+	if !linesFitWidth(detailLines, rightWidth) {
+		return m.narrowInventoryBody(rows, style)
+	}
 
 	leftLines := make([]string, 0, end-start)
 	for index := start; index < end; index++ {
@@ -127,7 +142,6 @@ func (m Model) inventoryBody(style styles) string {
 		leftLines = append(leftLines, "")
 	}
 
-	detailLines := m.detailLines(rows, rightWidth, bodyHeight, style)
 	for len(detailLines) < bodyHeight {
 		detailLines = append(detailLines, "")
 	}
@@ -143,6 +157,24 @@ func (m Model) inventoryBody(style styles) string {
 		combined = append(combined, line)
 	}
 	return strings.Join(combined, "\n")
+}
+
+func (m Model) narrowInventoryBody(rows []treeRow, style styles) string {
+	listHeight := max(3, min(6, m.height/3))
+	start, end := visibleRange(len(rows), m.cursor, listHeight)
+	lines := make([]string, 0, listHeight+10)
+	for index := start; index < end; index++ {
+		lines = append(lines, m.renderTreeRow(
+			rows[index],
+			index == m.cursor,
+			max(20, m.width),
+			style,
+		))
+	}
+	lines = append(lines, style.border.Render(strings.Repeat("─", max(20, m.width))))
+	detailHeight := max(5, m.height-listHeight-7)
+	lines = append(lines, m.detailLines(rows, 1<<20, detailHeight, style)...)
+	return strings.Join(lines, "\n")
 }
 
 func (m Model) renderTreeRow(row treeRow, selected bool, width int, style styles) string {
@@ -189,9 +221,9 @@ func (m Model) detailLines(rows []treeRow, width, height int, style styles) []st
 		finding := *row.finding
 		lines := []string{
 			style.header.Render(string(finding.Code)),
-			fmt.Sprintf("级别        %s", finding.Severity),
-			fmt.Sprintf("说明        %s", finding.Message),
-			fmt.Sprintf("路径        %d", len(finding.Paths)),
+			m.text(msgInventoryDetailSeverity, finding.Severity),
+			m.text(msgInventoryDetailDescription, finding.Message),
+			m.text(msgInventoryDetailPaths, len(finding.Paths)),
 		}
 		for _, path := range finding.Paths {
 			lines = append(lines, "  "+path)
@@ -205,32 +237,35 @@ func (m Model) detailLines(rows []treeRow, width, height int, style styles) []st
 		return lines
 	}
 	if row.asset == nil && row.library == nil {
-		kind := "来源工具"
+		kind := m.text(msgInventoryGroupSource)
 		if row.kind == rowType {
-			kind = "资产类型"
+			kind = m.text(msgInventoryGroupType)
 		} else if row.kind == rowFindingGroup {
-			kind = "风险与问题"
+			kind = m.text(msgInventoryGroupFindings)
 		} else if row.kind == rowLibraryGroup {
-			kind = "资产库状态"
+			kind = m.text(msgInventoryGroupLibraryStatus)
 		}
 		return []string{
 			style.header.Render(row.label),
-			fmt.Sprintf("分组        %s", kind),
-			fmt.Sprintf("风险与问题  %d", row.findings),
+			m.text(msgInventoryDetailGroup, kind),
+			m.text(msgInventoryDetailFindings, row.findings),
 			"",
-			"→/Enter 展开 · ←/Esc 收起",
+			m.text(msgInventoryDetailExpand),
 		}
 	}
 
 	if row.library != nil && row.asset == nil {
 		return []string{
 			style.header.Render(row.library.ID),
-			fmt.Sprintf("资产状态    %s", libraryStateLabel(row.library.State)),
-			fmt.Sprintf("类型        %s", row.library.Type),
-			fmt.Sprintf("资产库路径  %s", row.library.LibraryPath),
-			fmt.Sprintf("目标工具    %s", strings.Join(row.library.Targets, "、")),
+			m.text(msgInventoryDetailAssetState, m.libraryStateLabel(row.library.State)),
+			m.text(msgInventoryDetailType, row.library.Type),
+			m.text(msgInventoryDetailLibraryPath, row.library.LibraryPath),
+			m.text(
+				msgInventoryDetailTargets,
+				strings.Join(row.library.Targets, m.text(msgCommonListSeparator)),
+			),
 			"",
-			"空格选择 · X 移出资产库",
+			m.text(msgInventoryDetailRemove),
 		}
 	}
 
@@ -239,16 +274,19 @@ func (m Model) detailLines(rows []treeRow, width, height int, style styles) []st
 		style.header.Render(asset.LogicalPath),
 	}
 	if row.library != nil {
-		lines = append(lines, fmt.Sprintf("资产状态    %s", libraryStateLabel(row.libraryState())))
+		lines = append(
+			lines,
+			m.text(msgInventoryDetailAssetState, m.libraryStateLabel(row.libraryState())),
+		)
 	}
 	lines = append(lines,
-		fmt.Sprintf("类型        %s", asset.Type),
-		fmt.Sprintf("来源工具    %s", asset.Source),
-		fmt.Sprintf("使用范围    %s", asset.Scope),
-		fmt.Sprintf("可迁移性    %s", asset.Portability),
-		fmt.Sprintf("敏感级别    %s", asset.Sensitivity),
-		fmt.Sprintf("状态        %s", asset.Status),
-		fmt.Sprintf("文件        %d", len(asset.Files)),
+		m.text(msgInventoryDetailType, asset.Type),
+		m.text(msgInventoryDetailSource, asset.Source),
+		m.text(msgInventoryDetailScope, asset.Scope),
+		m.text(msgInventoryDetailPortability, asset.Portability),
+		m.text(msgInventoryDetailSensitivity, asset.Sensitivity),
+		m.text(msgInventoryDetailStatus, asset.Status),
+		m.text(msgInventoryDetailFiles, len(asset.Files)),
 	)
 	for _, file := range asset.Files {
 		lines = append(lines, "  "+file)
@@ -259,9 +297,9 @@ func (m Model) detailLines(rows []treeRow, width, height int, style styles) []st
 
 	findings := m.findingsFor(asset)
 	if len(findings) == 0 {
-		lines = append(lines, "风险与问题  —")
+		lines = append(lines, m.text(msgInventoryDetailNoFindings))
 	} else {
-		lines = append(lines, fmt.Sprintf("风险与问题  %d", len(findings)))
+		lines = append(lines, m.text(msgInventoryDetailFindings, len(findings)))
 		for _, finding := range findings {
 			lines = append(lines, fmt.Sprintf("  %s · %s", finding.Severity, finding.Code))
 			if len(lines) >= height {
@@ -282,18 +320,18 @@ func (row treeRow) libraryState() workspace.LibraryState {
 	return row.library.State
 }
 
-func libraryStateLabel(state workspace.LibraryState) string {
+func (m Model) libraryStateLabel(state workspace.LibraryState) string {
 	switch state {
 	case workspace.LibraryUnmanaged:
-		return "未纳管（可纳入）"
+		return m.text(msgInventoryStateUnmanaged)
 	case workspace.LibraryManaged:
-		return "已纳管"
+		return m.text(msgInventoryStateManaged)
 	case workspace.LibrarySourceChanged:
-		return "源端有更新（可更新）"
+		return m.text(msgInventoryStateSourceChanged)
 	case workspace.LibraryOnly:
-		return "仅在资产库"
+		return m.text(msgInventoryStateLibraryOnly)
 	default:
-		return "不可纳管"
+		return m.text(msgInventoryStateBlocked)
 	}
 }
 
@@ -313,61 +351,64 @@ func (m Model) helpView(style styles) string {
 	if m.screen == screenMigration {
 		return m.migrationHelpView(style)
 	}
+	if m.screen == screenSettings {
+		return m.settingsHelpView(style)
+	}
 	lines := []string{
-		style.header.Render("aiah · 本机 AI 资产 · 帮助"),
+		style.header.Render(m.text(msgInventoryHelpTitle)),
 		"",
-		"↑/↓ 或 j/k   上下移动",
-		"g / G         跳到开头 / 结尾",
-		"→/Enter       展开分组",
-		"←/Esc         收起分组或退出搜索",
-		"/             增量过滤路径、类型或风险与问题",
-		"f             只看有风险与问题的项",
-		"r             重新扫描",
-		"m             返回任务首页",
-		"?             关闭帮助",
-		"q / Ctrl+C    退出",
+		m.text(msgHelpMove),
+		m.text(msgHelpFirstLast),
+		m.text(msgHelpExpand),
+		m.text(msgHelpCollapse),
+		m.text(msgHelpFilter),
+		m.text(msgHelpFindingsOnly),
+		m.text(msgHelpRescan),
+		m.text(msgHelpHome),
+		m.text(msgHelpClose),
+		m.text(msgHelpQuit),
 	}
 	if m.workspace == "" {
 		lines = append(lines,
 			"",
-			"资产库是跨工具资产的可编辑事实源：assets/ 保存内容，manifest.yaml 保存清单。",
-			"它不按 AI 工具拆目录；每项资产的“目标工具”决定应用到 Claude/Codex/Grok。",
-			"当前页面只读。按 w 输入一个明确的资产库路径，或用 --workspace PATH 启动。",
-			"路径确认前不会创建目录；aiah 不会猜测默认资产库。",
+			m.text(msgInventoryHelpLibrary),
+			m.text(msgInventoryHelpTargets),
+			m.text(msgInventoryHelpReadOnly),
+			m.text(msgInventoryHelpNoDefault),
 		)
 	} else {
 		lines = append(lines,
-			"空格          勾选 / 取消勾选可管理资产",
-			"w 纳入        把“未纳管”项目复制进资产库并登记清单",
-			"u 更新        用源端完整替换“源端有更新”项目；需输入 update",
-			"X 移出        从资产库和清单移出；不删源端；需输入 remove",
-			"b 预览        选择资产组合，检查并准备安装包，然后展示变更预览",
-			"a 应用        审阅变化后，再完整输入 apply 写目标工具目录",
+			m.text(msgInventoryHelpSelect),
+			m.text(msgInventoryHelpAdd),
+			m.text(msgInventoryHelpUpdate),
+			m.text(msgInventoryHelpRemove),
+			m.text(msgInventoryHelpPreview),
+			m.text(msgInventoryHelpApply),
 			"",
-			"资产库："+m.workspace,
-			"资产库跨工具统一管理；manifest 中每项资产的 targets 是“目标工具”。",
-			"纳入/更新/移出只写资产库，不写 .claude / .codex / .grok。",
-			"成功后连续进入预览向导；校验不过则恢复操作前状态。",
-			"安装恢复点只用于 rollback，不替代 Git/NAS 对资产库的备份。",
+			m.text(msgInventoryHelpWorkspace, m.workspace),
+			m.text(msgInventoryHelpManagedTargets),
+			m.text(msgInventoryHelpLibraryWrites),
+			m.text(msgInventoryHelpWizard),
+			m.text(msgInventoryHelpBackups),
 		)
 		if findings := m.composeFindingLines(); len(findings) > 0 {
-			lines = append(lines, "", "上次加入资产库时的跳过原因：")
+			lines = append(lines, "", m.text(msgInventoryHelpSkipped))
 			lines = append(lines, findings...)
 		}
 	}
 	if m.deployOptions.Package != "" {
 		lines = append(lines,
-			"d             进入变更预览",
-			"目标目录写入只在完整输入 apply 二次确认后发生。",
+			m.text(msgInventoryHelpDiff),
+			m.text(msgInventoryHelpApplySafety),
 		)
 	} else if m.workspace == "" {
-		lines = append(lines, "未选择资产库或指定 --package 时，TUI 不提供应用入口。")
+		lines = append(lines, m.text(msgInventoryHelpNoApply))
 	}
 	if m.maintenance {
 		lines = append(lines,
-			"h             运行只读安装检查，查看当前安装、备份与文件漂移",
-			"v             查看 aiah、当前资产安装与 Release 版本",
-			"安装检查通过且存在当前安装时，可在检查页按 x 撤销上次安装。",
+			m.text(msgInventoryHelpDoctor),
+			m.text(msgInventoryHelpVersion),
+			m.text(msgInventoryHelpRollback),
 		)
 	}
 	return strings.Join(lines, "\n")
@@ -375,18 +416,18 @@ func (m Model) helpView(style styles) string {
 
 func (m Model) workspaceInputView(style styles) string {
 	lines := []string{
-		style.header.Render("aiah · 选择资产库"),
+		style.header.Render(m.text(msgWorkspaceInputTitle)),
 		"",
-		"资产库是跨工具资产的可编辑事实源，不是最终安装目录。",
-		"assets/ 保存资产，manifest.yaml 保存清单、profile 与每项资产的 targets。",
-		"targets（目标工具）决定资产应用到 Claude、Codex、Grok 或共享目录。",
+		m.text(msgWorkspaceInputDefinition),
+		m.text(msgWorkspaceInputContents),
+		m.text(msgWorkspaceInputTargets),
 		"",
-		"输入要打开或创建的资产库路径：",
+		m.text(msgWorkspaceInputPrompt),
 		m.workspaceInput.View(),
 		"",
-		"支持 ~/...；路径必须由你明确输入，不会使用隐藏默认值。",
-		"确认后流程：选择资产 → 加入资产库 → 预览变化 → 确认应用。",
-		"Enter 确认 · Esc 取消 · Ctrl+C 退出",
+		m.text(msgWorkspaceInputExplicit),
+		m.text(msgWorkspaceInputFlow),
+		m.text(msgWorkspaceInputFooter),
 	}
 	if m.notice != "" {
 		lines = append(lines, "", style.warning.Render(m.notice))
@@ -395,18 +436,33 @@ func (m Model) workspaceInputView(style styles) string {
 }
 
 func (m Model) profileInputView(style styles) string {
+	title := m.text(msgProfileInputApplyTitle)
+	next := m.text(msgProfileInputApplyNext)
+	if m.profilePurpose == profileForPublish {
+		title = m.text(msgProfileInputPublishTitle)
+		next = m.text(msgProfileInputPublishNext)
+	} else if m.profilePurpose == profileForPreflight {
+		title = m.text(msgProfileInputPreflightTitle)
+		next = m.text(msgProfileInputPreflightNext)
+	}
 	lines := []string{
-		style.header.Render("aiah · 预览并应用资产库"),
+		style.header.Render(title),
 		"",
-		"资产库    " + m.workspace,
-		"选择 manifest.yaml 中的资产组合（profile）：",
+		m.text(msgProfileInputLibrary, m.workspace),
+		m.text(msgProfileInputPrompt),
 		m.profileInput.View(),
 		"",
-		"将先检查资产并在 dist/ 准备安装包，然后自动进入只读变更预览。",
-		"Enter 继续 · Esc 取消 · Ctrl+C 退出",
+		next,
+		m.text(msgProfileInputFooter),
 	}
 	if len(m.availableProfiles) > 0 {
-		lines = append(lines, "可用资产组合："+strings.Join(m.availableProfiles, "、"))
+		lines = append(
+			lines,
+			m.text(
+				msgProfileInputAvailable,
+				strings.Join(m.availableProfiles, m.text(msgCommonListSeparator)),
+			),
+		)
 	}
 	if m.notice != "" {
 		lines = append(lines, "", style.warning.Render(m.notice))
@@ -416,25 +472,25 @@ func (m Model) profileInputView(style styles) string {
 
 func (m Model) deploymentHelpView(style styles) string {
 	lines := []string{
-		style.header.Render("aiah · 变更预览 · 帮助"),
+		style.header.Render(m.text(msgDeploymentHelpTitle)),
 		"",
-		"↑/↓ 或 j/k   上下移动",
-		"g / G         跳到开头 / 结尾",
-		"→/Enter       展开分组",
-		"←             收起分组",
-		"a             打开“确认应用”二次确认页（不会直接写）",
-		"d             重新计算只读变更预览",
-		"m             返回任务首页",
-		"?             关闭帮助",
-		"q / Ctrl+C    退出",
+		m.text(msgHelpMove),
+		m.text(msgHelpFirstLast),
+		m.text(msgHelpExpand),
+		m.text(msgHelpCollapseOnly),
+		m.text(msgDeploymentHelpApply),
+		m.text(msgDeploymentHelpRefresh),
+		m.text(msgHelpHome),
+		m.text(msgHelpClose),
+		m.text(msgHelpQuit),
 		"",
-		"执行前必须完整输入 apply。TUI 直接调用与 CLI 相同的 Diff / Apply Core。",
-		"成功后显示备份 ID 与完整撤销命令；失败时保留 Core 原始问题代码。",
+		m.text(msgDeploymentHelpSafety),
+		m.text(msgDeploymentHelpResult),
 	}
 	if m.maintenance {
 		lines = append(lines,
-			"h             运行安装检查",
-			"v             查看 aiah、当前资产安装与 Release 版本",
+			m.text(msgDeploymentHelpDoctor),
+			m.text(msgDeploymentHelpVersion),
 		)
 	}
 	return strings.Join(lines, "\n")
@@ -442,34 +498,34 @@ func (m Model) deploymentHelpView(style styles) string {
 
 func (m Model) healthHelpView(style styles) string {
 	return strings.Join([]string{
-		style.header.Render("aiah · 安装检查 · 帮助"),
+		style.header.Render(m.text(msgHealthHelpTitle)),
 		"",
-		"↑/↓ 或 j/k   上下移动",
-		"g / G         跳到开头 / 结尾",
-		"h             重新运行安装检查",
-		"x             撤销检查识别到的当前安装",
-		"v             查看版本信息",
-		"m             返回任务首页",
-		"?             关闭帮助",
-		"q / Ctrl+C    退出",
+		m.text(msgHelpMove),
+		m.text(msgHelpFirstLast),
+		m.text(msgHealthHelpRerun),
+		m.text(msgHealthHelpRollback),
+		m.text(msgHealthHelpVersion),
+		m.text(msgHelpHome),
+		m.text(msgHelpClose),
+		m.text(msgHelpQuit),
 		"",
-		"只有安装检查通过且当前安装有备份 ID 时，才开放撤销。",
-		"执行前必须完整输入 rollback；历史备份仍需通过 CLI 显式选择。",
+		m.text(msgHealthHelpAvailability),
+		m.text(msgHealthHelpTyped),
 	}, "\n")
 }
 
 func (m Model) versionHelpView(style styles) string {
 	return strings.Join([]string{
-		style.header.Render("aiah · 关于与更新 · 帮助"),
+		style.header.Render(m.text(msgVersionHelpTitle)),
 		"",
-		"c             用户触发只读 Release 检查",
-		"h             进入安装检查",
-		"m             返回任务首页",
-		"?             关闭帮助",
-		"q / Ctrl+C    退出",
+		m.text(msgVersionHelpCheck),
+		m.text(msgVersionHelpHealth),
+		m.text(msgHelpHome),
+		m.text(msgHelpClose),
+		m.text(msgHelpQuit),
 		"",
-		"打开版本页只读取本地程序和当前资产安装信息，不会联网。",
-		"只有按 c 才查询 GitHub latest release；本页不替换当前二进制。",
+		m.text(msgVersionHelpOffline),
+		m.text(msgVersionHelpOnline),
 	}, "\n")
 }
 
@@ -514,6 +570,15 @@ func padRight(value string, width int) string {
 		return value
 	}
 	return value + strings.Repeat(" ", padding)
+}
+
+func linesFitWidth(lines []string, width int) bool {
+	for _, line := range lines {
+		if lipgloss.Width(line) > width {
+			return false
+		}
+	}
+	return true
 }
 
 func joinEdges(left, right string, width int) string {

@@ -11,8 +11,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/dff652/ai-asset-hub/internal/workspace"
 )
 
 type artifactSet struct {
@@ -28,29 +26,20 @@ type artifactSet struct {
 }
 
 func buildArtifacts(
-	document workspace.Document,
-	profileName string,
-	pkgAssets []PackageAsset,
+	packageManifest PackageManifest,
 	lockFiles []LockEntry,
 	filePayloads map[string][]byte,
-	targets []string,
 ) (artifactSet, error) {
-	sort.Slice(pkgAssets, func(i, j int) bool { return pkgAssets[i].ID < pkgAssets[j].ID })
+	sort.Slice(packageManifest.Assets, func(i, j int) bool {
+		return packageManifest.Assets[i].ID < packageManifest.Assets[j].ID
+	})
 	sort.Slice(lockFiles, func(i, j int) bool { return lockFiles[i].Path < lockFiles[j].Path })
 
-	packageManifest := PackageManifest{
-		SchemaVersion: 1,
-		Name:          document.Name,
-		Version:       document.Version,
-		Profile:       profileName,
-		Targets:       targets,
-		Assets:        pkgAssets,
-	}
 	lock := LockFile{
 		SchemaVersion: 1,
-		Name:          document.Name,
-		Version:       document.Version,
-		Profile:       profileName,
+		Name:          packageManifest.Name,
+		Version:       packageManifest.Version,
+		Profile:       packageManifest.Profile,
 		Files:         lockFiles,
 	}
 
@@ -68,9 +57,14 @@ func buildArtifacts(
 	// it out of the artifact name let the second build silently overwrite the
 	// first, and the .sha256, manifest and lock left beside it still read as one
 	// consistent set.
-	baseName := sanitizeFileName(document.Name) + "-" + sanitizeFileName(document.Version) +
-		"-" + sanitizeFileName(profileName)
-	archiveData, err := writeTar(packageRootName(document.Name, document.Version), manifestJSON, lockJSON, filePayloads)
+	baseName := sanitizeFileName(packageManifest.Name) + "-" + sanitizeFileName(packageManifest.Version) +
+		"-" + sanitizeFileName(packageManifest.Profile)
+	archiveData, err := writeTar(
+		packageRootName(packageManifest.Name, packageManifest.Version),
+		manifestJSON,
+		lockJSON,
+		filePayloads,
+	)
 	if err != nil {
 		return artifactSet{}, err
 	}

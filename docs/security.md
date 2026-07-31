@@ -91,7 +91,24 @@ bootstrap 含解析值。后续 inventory 会把这个 native config 识别为
 或把等价内容写成 `"args": []` 时，当前会让**整单 apply 失败**而不是跳过 MCP。
 方向是拒绝写入，不构成安全风险，但会阻断无关资产的安装。
 
-## 5. 供应链
+## 5. AI 只读接入
+
+`aiah mcp` 的权限边界锚在行为测试而不是工具名清单：
+
+- 注册表中的每个工具必须通过 HOME、project、资产库、通道和包目录前后逐字节
+  不变测试；
+- 每个工具通过 MCP annotations 声明只读、非破坏、幂等和封闭世界；
+- 参数 schema 禁止未知字段，server 端也用 `DisallowUnknownFields` 二次执行；
+- 不注册 build、资产库写操作、publish/pull、apply/rollback，也没有
+  `--allow-write` server 开关；
+- 状态报告可以包含用户提供的本地路径和非敏感恢复点 id，但不得返回 secret 值、
+  auth/session/cache 内容或设备凭据。
+
+客户端显示 `Connected` 只证明协议握手；模型实际调用、账户授权和零写入对账是独立
+证据，不能互相替代。可重复步骤见
+[MCP 客户端接入 runbook](runbooks/mcp-client-acceptance.md)。
+
+## 6. 供应链
 
 第三方 Skill 必须记录：
 
@@ -114,7 +131,7 @@ bridge workaround，并完成 legacy no-op 与显式版本升级验收；具体�
 `AIAH_VERSION` 并加入精确字符串回归；该修复不追溯改变旧二进制。下一版本仍须执行
 程序实际生成的命令，并核对安装后的版本、commit 和 SHA256。
 
-## 6. 许可证
+## 7. 许可证
 
 本项目许可证已定为 **Apache-2.0**（2026-07-25 决策）：仓库根 `LICENSE` 为官方
 协议正文，版权署名在 `NOTICE`，第三方依赖清单在

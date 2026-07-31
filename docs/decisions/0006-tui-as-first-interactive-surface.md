@@ -3,13 +3,15 @@
 - 状态：Accepted
 - 实施：Phase A 已实现（2026-07-26）；Phase B/C、Phase D1 引导式本地闭环与
   Phase D2 Doctor/当前部署回滚于 2026-07-28 落地；Phase D3 版本与只读
-  Release 检查于 2026-07-29 落地
+  Release 检查于 2026-07-29 落地；N7.0 于 2026-07-30 接受非业务 UI 偏好边界，
+  N7.0–N7.5 源码候选于 2026-07-31 完成，正式安装包验收与公开发布尚未完成
 - 日期：2026-07-28
 - 取代：[ADR-0003](0003-cli-first-go-core-and-product-surfaces.md) §5（本地只读
   Web UI → 本地 TUI）
 - 关联：[TUI 界面评估](../research/tui-surface-assessment.md)、
   [TUI 技术方案](../designs/tui-technical-design.md)、
-  [ADR-0005](0005-read-only-mcp-server-surface.md)（另一条 agent 面的只读边界）
+  [ADR-0005](0005-read-only-mcp-server-surface.md)（另一条 agent 面的只读边界）、
+  [N7 偏好设置与中英文支持方案](../designs/settings-and-i18n.md)
 
 ## 背景
 
@@ -32,7 +34,24 @@ UI 提出的五项门槛是针对 Web UI 形态写的，需要按 TUI 形态重�
   时作为契约客户端出现；
 - 界面**不得复制** apply / rollback / 编译逻辑，只调用 Core；
 - 定位是**工作流操作台，不是控制面板**：本工具的「配置」就是 manifest 文件本身，
-  TUI 可以编辑那个文件，但**不得引入 TUI 私有的设置存储**。
+  TUI 可以编辑那个文件，但**不得引入 TUI 私有的业务设置存储**。
+
+### 1.1 N7 只允许三项设备本地 UI 偏好
+
+N7.0 接受一个窄例外：语言、首选资产库预填和显示密度可以成为设备本地 UI 偏好。
+它们不进入 manifest、资产包、分发通道或 MCP，也不能改变 Core 规则。
+
+- 首选资产库只预填路径，不自动选择、创建或启用写能力；
+- 最近资产库历史不保存，避免只读浏览产生隐式写入；
+- 显示密度只改变默认展开状态，不得隐藏路径、版本、targets、风险、变更、确认词、
+  摘要或恢复信息；
+- 无偏好时最终采用 `auto`：中文 locale 使用 `zh-CN`，其它使用 `en`；
+- 偏好文件只有用户明确保存时才创建；必须严格 schema、`0600`、原子替换、拒绝
+  软链且不含 secret；
+- CLI 临时覆盖不反写偏好；typed confirmation token、CLI/JSON/MCP 契约不翻译。
+
+这不是控制面板准入。任何新增偏好都必须再次修订本 ADR，不能借设置页加入业务事实、
+自动联网、绕过校验/备份/确认或隐藏决策信息。
 
 ### 2. Phase B 的写入面 = 只有工作区
 

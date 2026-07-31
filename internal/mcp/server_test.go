@@ -13,14 +13,17 @@ import (
 	"testing"
 
 	"github.com/dff652/ai-asset-hub/internal/build"
+	"github.com/dff652/ai-asset-hub/internal/channel"
 )
 
 // readOnlySurface is the whole contract of this package. Anything that writes
 // belongs on the CLI; adding a name here is a boundary change and must be
 // argued in ADR-0005, not slipped in with a feature.
 var readOnlySurface = []string{
+	"aiah_asset_status",
 	"aiah_diff",
 	"aiah_doctor",
+	"aiah_migration_status",
 	"aiah_scan",
 	"aiah_validate",
 	"aiah_version",
@@ -54,18 +57,43 @@ func TestToolsExposeOnlyTheReadOnlySurface(t *testing.T) {
 func TestToolCallsWriteNothing(t *testing.T) {
 	home := copyTree(t, filepath.Join("..", "..", "testdata", "home-basic"))
 	project := t.TempDir()
+	workspaceRoot := copyTree(t, filepath.Join("..", "..", "testdata", "workspace-valid"))
 	pkg := buildFixturePackage(t)
-
-	arguments := map[string]map[string]any{
-		"aiah_scan":     {"home": home, "project": project},
-		"aiah_validate": {"manifest": filepath.Join("..", "..", "testdata", "workspace-2b", "manifest.yaml")},
-		"aiah_diff":     {"package": pkg, "home": home, "project": project},
-		"aiah_doctor":   {"home": home, "project": project},
-		"aiah_version":  {},
+	channelRoot := t.TempDir()
+	if _, err := channel.Publish(channel.PublishOptions{
+		Package: pkg, Channel: channelRoot,
+	}); err != nil {
+		t.Fatalf("publish fixture package: %v", err)
 	}
 
-	beforeHome := snapshotTree(t, home)
-	beforeProject := snapshotTree(t, project)
+	arguments := map[string]map[string]any{
+		"aiah_asset_status": {
+			"workspace": workspaceRoot, "home": home, "project": project,
+		},
+		"aiah_scan": {"home": home, "project": project},
+		"aiah_validate": {
+			"manifest": filepath.Join("..", "..", "testdata", "workspace-2b", "manifest.yaml"),
+		},
+		"aiah_diff":   {"package": pkg, "home": home, "project": project},
+		"aiah_doctor": {"home": home, "project": project},
+		"aiah_migration_status": {
+			"workspace": workspaceRoot, "channel": channelRoot,
+			"home": home, "project": project,
+		},
+		"aiah_version": {},
+	}
+
+	roots := map[string]string{
+		"home":      home,
+		"project":   project,
+		"workspace": workspaceRoot,
+		"channel":   channelRoot,
+		"package":   filepath.Dir(pkg),
+	}
+	before := make(map[string]map[string]string, len(roots))
+	for name, root := range roots {
+		before[name] = snapshotTree(t, root)
+	}
 
 	for _, tool := range Tools() {
 		args, ok := arguments[tool.Name]
@@ -81,11 +109,10 @@ func TestToolCallsWriteNothing(t *testing.T) {
 		}
 	}
 
-	if diff := treeDiff(beforeHome, snapshotTree(t, home)); diff != "" {
-		t.Fatalf("home changed after read-only tool calls:\n%s", diff)
-	}
-	if diff := treeDiff(beforeProject, snapshotTree(t, project)); diff != "" {
-		t.Fatalf("project changed after read-only tool calls:\n%s", diff)
+	for name, root := range roots {
+		if diff := treeDiff(before[name], snapshotTree(t, root)); diff != "" {
+			t.Fatalf("%s changed after read-only tool calls:\n%s", name, diff)
+		}
 	}
 }
 
@@ -126,8 +153,24 @@ func TestToolsListReportsSchemas(t *testing.T) {
 	if first["name"] != readOnlySurface[0] {
 		t.Fatalf("tools are not ordered by name: %v", first["name"])
 	}
-	if _, ok := first["inputSchema"].(map[string]any); !ok {
-		t.Fatal("inputSchema missing from tools/list")
+	for _, raw := range listed {
+		descriptor, ok := raw.(map[string]any)
+		if !ok {
+			t.Fatalf("tool shape = %T", raw)
+		}
+		if _, ok := descriptor["inputSchema"].(map[string]any); !ok {
+			t.Fatalf("%v inputSchema missing from tools/list", descriptor["name"])
+		}
+		annotations, ok := descriptor["annotations"].(map[string]any)
+		if !ok || annotations["readOnlyHint"] != true ||
+			annotations["destructiveHint"] != false ||
+			annotations["idempotentHint"] != true ||
+			annotations["openWorldHint"] != false {
+			t.Fatalf(
+				"%v read-only annotations missing from tools/list: %v",
+				descriptor["name"], descriptor["annotations"],
+			)
+		}
 	}
 }
 

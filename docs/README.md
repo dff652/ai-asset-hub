@@ -8,6 +8,8 @@
   （首次使用、日常维护、撤销、跨设备、MCP/自动化与工具升级）
 - [CLI 命令参考](cli-reference.md)
 - [跨设备迁移 runbook](runbooks/cross-device-transfer.md)（发布 → 搬运 → 取回 → 安装）
+- [MCP 客户端接入与只读验收](runbooks/mcp-client-acceptance.md)
+  （Claude Code / Codex / Grok 握手、工具调用与零写入对账）
 - [真机 dry-run runbook](runbooks/real-home-dry-run.md)
 - [工具安装、升级与 TUI dogfood](runbooks/install-upgrade-dogfood.md)
 - [README 与 SVG 视觉验收 SOP](runbooks/readme-visual-acceptance.md)
@@ -53,11 +55,28 @@
 - [TUI 技术方案](designs/tui-technical-design.md)（Phase A / B / C / D1 / D2 / D3 已实现）
 - [TUI 产品体验与导航方案 V2](designs/tui-product-experience-v2.md)
   （任务首页、友好术语、默认启动、CLI/TUI 边界与设置/i18n 分期）
+- [N7：偏好设置与中英文支持方案](designs/settings-and-i18n.md)
+  （语言目录、首选资产库预填、显示密度、偏好文件安全与分阶段验收）
 - [跨设备迁移与受控版本对齐方案](designs/cross-device-migration-and-version-sync.md)
   （换机迁移、不可变分发、E3 状态模型与未来同步准入条件）
 
 ## 评审
 
+- [2026-07-31 v0.1.7 发布候选就绪检查点](reviews/2026-07-31-v0.1.7-candidate-readiness.md)
+- [2026-07-31 N7.5 发布候选验收](reviews/2026-07-31-n7-release-candidate-acceptance.md)
+- [2026-07-31 N7.4 密度与首选资产库预填检查点](reviews/2026-07-31-n7-density-preferred-library-checkpoint.md)
+- [2026-07-31 N7.3 设置页与语言切换检查点](reviews/2026-07-31-n7-settings-language-checkpoint.md)
+- [2026-07-31 N7.2 偏好 Core 检查点](reviews/2026-07-31-n7-preferences-core-checkpoint.md)
+- [2026-07-31 N7.1 version 与完整双语目录检查点](reviews/2026-07-31-n7-i18n-version-catalog-completion.md)
+- [2026-07-30 N7.1 migration 双语目录检查点](reviews/2026-07-30-n7-i18n-migration-checkpoint.md)
+- [2026-07-30 N7.1 doctor/rollback 双语目录检查点](reviews/2026-07-30-n7-i18n-health-rollback-checkpoint.md)
+- [2026-07-30 N7.1 diff/apply 双语目录检查点](reviews/2026-07-30-n7-i18n-diff-apply-checkpoint.md)
+- [2026-07-30 N7.1 inventory 与资产库管理双语目录检查点](reviews/2026-07-30-n7-i18n-inventory-catalog-checkpoint.md)
+- [2026-07-30 N7.0 决策与 N7.1 首页双语目录检查点](reviews/2026-07-30-n7-i18n-home-catalog-checkpoint.md)
+- [2026-07-30 N6 MCP 只读状态与客户端验收检查点](reviews/2026-07-30-n6-mcp-read-only-status-candidate-readiness.md)
+- [2026-07-30 E3.4 发布包绑定与跨设备验收检查点](reviews/2026-07-30-e3-4-candidate-readiness.md)
+- [2026-07-30 E3.3 换机前置检查候选检查点](reviews/2026-07-30-e3-3-candidate-readiness.md)
+- [2026-07-30 E3.2 连续迁移向导候选检查点](reviews/2026-07-30-e3-2-candidate-readiness.md)
 - [2026-07-30 v0.1.6 bridge 发布与验收检查点](reviews/2026-07-30-v0.1.6-bridge-candidate-readiness.md)
 - [2026-07-30 v0.1.5 候选就绪检查点](reviews/2026-07-30-v0.1.5-candidate-readiness.md)
 - [2026-07-30 E1 / E2 / E3.1 严格实现复审](reviews/2026-07-30-e1-e2-e3-1-strict-review.md)
@@ -84,4 +103,4 @@
 - [第三方依赖许可证清单](licenses/third-party.md)
 
 本项目以 Apache-2.0 发布：协议正文在仓库根 `LICENSE`，署名在 `NOTICE`，
-与 PromptHub 的边界见 [security.md](security.md) §6。
+与 PromptHub 的边界见 [security.md](security.md) §7。

@@ -1,0 +1,11 @@
+aiah · Publish immutable release
+
+Install package  /srv/ai-assets/dist/personal-1.2.3-personal.tar
+Channel          /mnt/team-channel
+
+Publishing writes the channel; a name/version/profile cannot be overwritten with different content.
+If the channel is empty, a successful publish initializes its index and immutable package layout.
+Type the full publish token and press Enter:
+> publish
+
+Esc Cancel; the install package remains in the library dist directory.

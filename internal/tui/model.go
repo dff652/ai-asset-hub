@@ -6,7 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dff652/ai-asset-hub/internal/apply"
 	"github.com/dff652/ai-asset-hub/internal/inventory"
-	"github.com/dff652/ai-asset-hub/internal/migration"
+	"github.com/dff652/ai-asset-hub/internal/preferences"
 	updater "github.com/dff652/ai-asset-hub/internal/update"
 	"github.com/dff652/ai-asset-hub/internal/workspace"
 )
@@ -34,6 +34,7 @@ const (
 	screenHealth
 	screenVersion
 	screenMigration
+	screenSettings
 )
 
 type Model struct {
@@ -48,6 +49,7 @@ type Model struct {
 	choosingProfile    bool
 	availableProfiles  []string
 	building           bool
+	profilePurpose     profilePurpose
 	findingsOnly       bool
 	cursor             int
 	expanded           map[string]bool
@@ -59,6 +61,7 @@ type Model struct {
 	generation         int
 	keys               keyMap
 	plain              bool
+	language           language
 	homeEnabled        bool
 	homeCursor         int
 	afterWorkspace     homeAction
@@ -107,18 +110,30 @@ type Model struct {
 	updateReport   updater.Report
 	updateErr      error
 
-	migrationStatus  status
-	migrationReport  migration.Report
-	migrationErr     error
-	migrationChannel string
-	channelInput     textinput.Model
-	choosingChannel  bool
+	migrationFlow migrationFlow
+
+	preferenceStore    preferences.StoreOptions
+	preferencePath     string
+	preferenceWarnings []preferences.WarningCode
+	currentPreferences preferences.Document
+	localeEnvironment  preferences.LocaleEnvironment
+	languageOverride   preferences.Language
+	densityOverride    preferences.Density
+	autoLanguage       language
+	density            preferences.Density
+	settingsDraft      preferences.Document
+	settingsCursor     int
+	settingsDirty      bool
+	settingsSaving     bool
+	settingsNotice     string
+	settingsErr        error
+	preferredInput     textinput.Model
+	editingPreferred   bool
 }
 
 func NewModel(options inventory.Options) Model {
 	input := textinput.New()
 	input.Prompt = "/ "
-	input.Placeholder = "过滤路径、类型或风险"
 	input.CharLimit = 120
 	input.Width = 36
 	confirm := textinput.New()
@@ -145,36 +160,43 @@ func NewModel(options inventory.Options) Model {
 	manageInput.Prompt = "> "
 	manageInput.CharLimit = 6
 	manageInput.Width = 12
-	channelInput := textinput.New()
-	channelInput.Prompt = "> "
-	channelInput.Placeholder = "/mnt/usb/aiah"
-	channelInput.CharLimit = 512
-	channelInput.Width = 64
-	return Model{
+	preferredInput := textinput.New()
+	preferredInput.Prompt = "> "
+	preferredInput.Placeholder = "~/ai-assets"
+	preferredInput.CharLimit = 512
+	preferredInput.Width = 64
+	model := Model{
 		options:        options,
 		filterInput:    input,
 		workspaceInput: workspaceInput,
 		profileInput:   profileInput,
 		manageInput:    manageInput,
-		channelInput:   channelInput,
+		preferredInput: preferredInput,
+		migrationFlow:  newMigrationFlow(),
 		expanded:       make(map[string]bool),
 		selected:       make(map[string]bool),
 		diffExpanded: map[string]bool{
 			"action:create":    true,
 			"action:update":    true,
-			"action:unchanged": true,
-			"action:skipped":   true,
+			"action:unchanged": false,
+			"action:skipped":   false,
 			"findings":         true,
 		},
-		confirmInput:  confirm,
-		rollbackInput: rollbackInput,
-		screen:        screenInventory,
-		status:        statusLoading,
-		width:         100,
-		height:        30,
-		generation:    1,
-		keys:          defaultKeys(),
+		confirmInput:       confirm,
+		rollbackInput:      rollbackInput,
+		screen:             screenInventory,
+		status:             statusLoading,
+		width:              100,
+		height:             30,
+		generation:         1,
+		keys:               defaultKeys(),
+		language:           languageZhCN,
+		currentPreferences: preferences.Defaults(),
+		autoLanguage:       languageZhCN,
+		density:            preferences.DensityStandard,
 	}
+	model.syncLocalizedInputs()
+	return model
 }
 
 // WithWorkspace enables Phase B composition against the given workspace root.
@@ -256,7 +278,9 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = message.Height
 		m.filterInput.Width = max(10, min(48, message.Width-6))
 		m.workspaceInput.Width = max(10, min(64, message.Width-6))
-		m.channelInput.Width = max(10, min(64, message.Width-6))
+		m.preferredInput.Width = max(10, min(64, message.Width-6))
+		m.migrationFlow.channelInput.Width = max(10, min(64, message.Width-6))
+		m.migrationFlow.pullOutInput.Width = max(10, min(64, message.Width-6))
 		return m, nil
 	case scanMsg:
 		if message.generation != m.generation {
@@ -278,7 +302,7 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case composeMsg:
 		m.composing = false
-		m.notice, m.noticeIsWarn = composeNotice(message)
+		m.notice, m.noticeIsWarn = m.composeNotice(message)
 		m.lastFindings = message.result.Findings
 		if message.err == nil && message.result.Ok {
 			if len(message.result.Registered) > 0 {
@@ -300,7 +324,7 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.managing = false
 		m.confirmManage = false
 		m.manageInput.Blur()
-		m.notice, m.noticeIsWarn = manageNotice(message)
+		m.notice, m.noticeIsWarn = m.manageNotice(message)
 		if message.err == nil && message.ok {
 			m.invalidateBuiltPackage()
 			for key := range m.selected {
@@ -313,7 +337,7 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case workspaceMsg:
 		m.preparingWorkspace = false
 		if message.err != nil {
-			m.notice = "资产库不可用：" + message.err.Error()
+			m.notice = m.text(msgWorkspaceUnavailable, message.err)
 			m.noticeIsWarn = true
 			return m, nil
 		}
@@ -321,9 +345,9 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.refreshCatalog()
 		m.workspaceInput.SetValue("")
 		if message.created {
-			m.notice = "已创建资产库：" + message.root
+			m.notice = m.text(msgWorkspaceCreated, message.root)
 		} else {
-			m.notice = "已打开资产库：" + message.root
+			m.notice = m.text(msgWorkspaceOpened, message.root)
 		}
 		m.noticeIsWarn = false
 		next := m.afterWorkspace
@@ -341,15 +365,18 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.building = false
 		if message.err != nil {
 			m.invalidateBuiltPackage()
-			m.notice = "准备安装包失败：" + message.err.Error()
+			m.notice = m.text(msgProfileBuildCommandFailed, message.err)
 			m.noticeIsWarn = true
 			return m, nil
 		}
 		if !message.report.Ok || message.report.Package == nil {
 			m.invalidateBuiltPackage()
-			m.notice = buildFailureNotice(message.report)
+			m.notice = m.buildFailureNotice(message.report)
 			m.noticeIsWarn = true
 			return m, nil
+		}
+		if message.purpose == profileForPublish {
+			return m.startPublishConfirmation(message.packagePath)
 		}
 		m.deployOptions.Package = message.packagePath
 		m.deployOptions.DryRun = false
@@ -359,7 +386,8 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.deployErr = nil
 		m.applyResult = nil
 		m.diffCursor = 0
-		m.notice = "安装包已准备完成，已进入变更预览"
+		m.resetDiffExpansionForDensity()
+		m.notice = m.text(msgProfileBuildReady)
 		m.noticeIsWarn = false
 		return m, diffCommand(m.deployOptions)
 	case diffMsg:
@@ -427,14 +455,18 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.updateReport = message.report
 		m.updateErr = message.err
 		return m, nil
+	case preferencesSaveMsg:
+		return m.handlePreferencesSave(message)
 	case migrationMsg:
-		m.migrationStatus = statusReady
-		m.migrationReport = message.report
-		m.migrationErr = message.err
-		if message.err != nil {
-			m.migrationStatus = statusFailed
-		}
-		return m, nil
+		return m.handleMigrationMessage(message)
+	case preflightMsg:
+		return m.handlePreflightMessage(message)
+	case versionsMsg:
+		return m.handleVersionsMessage(message)
+	case publishMsg:
+		return m.handlePublishMessage(message)
+	case pullMsg:
+		return m.handlePullMessage(message)
 	case tea.KeyMsg:
 		return m.updateKey(message)
 	}
@@ -458,8 +490,9 @@ func (m *Model) refreshCatalog() {
 }
 
 func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
-	if m.applying || m.rollbacking || m.managing {
-		m.notice = "正在写入文件，请等待操作完成"
+	if m.applying || m.rollbacking || m.managing ||
+		m.migrationFlow.publishing || m.migrationFlow.pulling || m.settingsSaving {
+		m.notice = m.text(msgCommonWriteInProgress)
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -472,11 +505,20 @@ func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.choosingWorkspace {
 		return m.updateWorkspaceInput(message)
 	}
-	if m.choosingChannel {
+	if m.migrationFlow.choosingChannel {
 		return m.updateChannelInput(message)
+	}
+	if m.migrationFlow.choosingPullOut {
+		return m.updatePullOutput(message)
 	}
 	if m.choosingProfile {
 		return m.updateProfileInput(message)
+	}
+	if m.editingPreferred {
+		return m.updatePreferredInput(message)
+	}
+	if m.migrationFlow.publishConfirming {
+		return m.updatePublishConfirmation(message)
 	}
 	if m.confirmManage {
 		return m.updateManageConfirmation(message)
@@ -533,6 +575,9 @@ func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.screen == screenMigration {
 		return m.updateMigrationKey(message)
+	}
+	if m.screen == screenSettings {
+		return m.updateSettingsKey(message)
 	}
 
 	rows := m.visibleRows()

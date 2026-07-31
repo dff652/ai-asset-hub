@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/x/term"
 	"github.com/dff652/ai-asset-hub/internal/apply"
 	"github.com/dff652/ai-asset-hub/internal/inventory"
+	"github.com/dff652/ai-asset-hub/internal/preferences"
 	"github.com/dff652/ai-asset-hub/internal/workspace"
 )
 
@@ -27,10 +28,21 @@ type Options struct {
 	Workspace string
 	// Package enables Phase C diff/apply review. Targets uses the same target
 	// ids as the CLI diff/apply commands.
-	Package string
-	Targets []string
-	Input   io.Reader
-	Output  io.Writer
+	Package        string
+	ExpectedSHA256 string
+	Targets        []string
+	// Language is a process-local override. Empty loads the saved preference
+	// and locale; it is never persisted automatically.
+	Language preferences.Language
+	// Density is a process-local override. It controls only the default
+	// expansion of optional technical detail and is never persisted
+	// automatically.
+	Density preferences.Density
+	// ConfigPath injects the operator preference path for tests and embedded
+	// callers. Empty uses os.UserConfigDir()/aiah/preferences.json.
+	ConfigPath string
+	Input      io.Reader
+	Output     io.Writer
 }
 
 type terminalFile interface {
@@ -86,24 +98,10 @@ func runModel(
 	if !interactiveTerminal(options, getenv, isTerminal) {
 		return Model{}, ErrNotTTY
 	}
-	if options.Workspace != "" {
-		root, _, err := workspace.PrepareRoot(options.Workspace, options.Home, options.Project)
-		if err != nil {
-			return Model{}, err
-		}
-		options.Workspace = root
+	model, err := prepareModel(options, getenv, maintenance)
+	if err != nil {
+		return Model{}, err
 	}
-
-	model := NewModel(inventory.Options{Home: options.Home, Project: options.Project}).
-		WithWorkspace(options.Workspace).
-		WithMaintenance(maintenance).
-		WithHome(maintenance).
-		WithDeployment(apply.Options{
-			Package: options.Package,
-			Home:    options.Home,
-			Project: options.Project,
-			Targets: options.Targets,
-		})
 	program := tea.NewProgram(
 		model,
 		tea.WithInput(options.Input),
@@ -119,6 +117,61 @@ func runModel(
 		return Model{}, errors.New("unexpected final TUI model")
 	}
 	return result, nil
+}
+
+func prepareModel(
+	options Options,
+	getenv func(string) string,
+	maintenance bool,
+) (Model, error) {
+	store := preferences.StoreOptions{
+		ConfigPath: options.ConfigPath,
+		Home:       options.Home,
+		Project:    options.Project,
+	}
+	preferenceReport := preferences.Load(store)
+	locale := preferences.LocaleEnvironment{
+		LCAll:      getenv("LC_ALL"),
+		LCMessages: getenv("LC_MESSAGES"),
+		Lang:       getenv("LANG"),
+	}
+	effective, err := preferences.Resolve(preferences.ResolveOptions{
+		Current:          preferenceReport.Preferences,
+		Locale:           locale,
+		LanguageOverride: options.Language,
+		DensityOverride:  options.Density,
+	})
+	if err != nil {
+		return Model{}, err
+	}
+	if options.Workspace != "" {
+		root, _, err := workspace.PrepareRoot(options.Workspace, options.Home, options.Project)
+		if err != nil {
+			return Model{}, err
+		}
+		options.Workspace = root
+	}
+
+	model := NewModel(inventory.Options{Home: options.Home, Project: options.Project}).
+		WithWorkspace(options.Workspace).
+		WithMaintenance(maintenance).
+		WithHome(maintenance).
+		WithDeployment(apply.Options{
+			Package:        options.Package,
+			ExpectedSHA256: options.ExpectedSHA256,
+			Home:           options.Home,
+			Project:        options.Project,
+			Targets:        options.Targets,
+		})
+	model = model.withPreferences(
+		store,
+		preferenceReport,
+		locale,
+		options.Language,
+		options.Density,
+		effective,
+	)
+	return model, nil
 }
 
 func interactiveTerminal(options Options, getenv func(string) string, isTerminal func(uintptr) bool) bool {

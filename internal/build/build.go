@@ -23,11 +23,62 @@ type Options struct {
 	OutDir string
 }
 
+// PrepareOptions selects one profile without creating package artifacts.
+type PrepareOptions struct {
+	Manifest string
+	Root     string
+	Profile  string
+}
+
 // Build validates the workspace once, selects a profile, and publishes a
 // deterministic package atomically. It never modifies the source workspace.
 func Build(options Options) (Report, error) {
 	if options.Manifest == "" || options.Profile == "" || options.OutDir == "" {
 		return Report{}, ErrInvalidOptions
+	}
+
+	prepared, report, err := Prepare(PrepareOptions{
+		Manifest: options.Manifest,
+		Root:     options.Root,
+		Profile:  options.Profile,
+	})
+	if err != nil || !report.Ok {
+		return report, err
+	}
+
+	lockFiles := make([]LockEntry, 0, report.Summary.FileCount)
+	for _, asset := range prepared.Manifest.Assets {
+		for _, file := range asset.Files {
+			lockFiles = append(lockFiles, LockEntry(file))
+		}
+	}
+	artifacts, err := buildArtifacts(prepared.Manifest, lockFiles, prepared.Files)
+	if err != nil {
+		report.Findings = append(report.Findings, ioFinding("Cannot create package archive."))
+		return finish(report), nil
+	}
+	if err := publishArtifacts(options.OutDir, artifacts); err != nil {
+		report.Findings = append(report.Findings, ioFinding("Cannot write package artifacts."))
+		return finish(report), nil
+	}
+
+	report.Package = &PackageInfo{
+		Name:     prepared.Manifest.Name,
+		Version:  prepared.Manifest.Version,
+		Archive:  artifacts.ArchiveName,
+		Manifest: artifacts.ManifestName,
+		Lock:     artifacts.LockName,
+		SHA256:   artifacts.SHAName,
+		Digest:   artifacts.Digest,
+	}
+	return finish(report), nil
+}
+
+// Prepare validates a workspace and resolves one profile entirely in memory.
+// It is the read-only source of truth for preflight checks and Build.
+func Prepare(options PrepareOptions) (Prepared, Report, error) {
+	if options.Manifest == "" || options.Profile == "" {
+		return Prepared{}, Report{}, ErrInvalidOptions
 	}
 
 	report := Report{
@@ -47,9 +98,9 @@ func Build(options Options) (Report, error) {
 	})
 	if err != nil {
 		if errors.Is(err, workspace.ErrInvalidOptions) {
-			return Report{}, ErrInvalidOptions
+			return Prepared{}, Report{}, ErrInvalidOptions
 		}
-		return Report{}, err
+		return Prepared{}, Report{}, err
 	}
 
 	errorCount := 0
@@ -68,7 +119,7 @@ func Build(options Options) (Report, error) {
 		})
 		// Surface the underlying workspace findings for operators.
 		report.Findings = append(report.Findings, inspection.Findings...)
-		return finish(report), nil
+		return Prepared{}, finish(report), nil
 	}
 
 	document := inspection.Document
@@ -80,18 +131,18 @@ func Build(options Options) (Report, error) {
 			Message:  "Profile is not defined in the manifest.",
 			Paths:    []string{"profiles/" + options.Profile},
 		})
-		return finish(report), nil
+		return Prepared{}, finish(report), nil
 	}
 
 	selected, findings := selectAssets(document, profile)
 	report.Findings = append(report.Findings, findings...)
 	if workspace.HasError(report.Findings) {
-		return finish(report), nil
+		return Prepared{}, finish(report), nil
 	}
 
 	pkgAssets := make([]PackageAsset, 0, len(selected))
-	lockFiles := make([]LockEntry, 0)
 	filePayloads := make(map[string][]byte)
+	fileCount := 0
 	targetsSet := make(map[string]bool)
 	capSet := make(map[string]map[string]bool)
 
@@ -112,8 +163,8 @@ func Build(options Options) (Report, error) {
 				continue
 			}
 			pkgFiles = append(pkgFiles, PackageFile{Path: blob.Path, SHA256: blob.SHA256})
-			lockFiles = append(lockFiles, LockEntry{Path: blob.Path, SHA256: blob.SHA256})
 			filePayloads[blob.Path] = blob.Body
+			fileCount++
 		}
 		pkgAssets = append(pkgAssets, PackageAsset{
 			ID:          asset.ID,
@@ -137,31 +188,23 @@ func Build(options Options) (Report, error) {
 		report.Capabilities[target] = list
 	}
 
-	artifacts, err := buildArtifacts(document, options.Profile, pkgAssets, lockFiles, filePayloads, targets)
-	if err != nil {
-		report.Findings = append(report.Findings, ioFinding("Cannot create package archive."))
-		return finish(report), nil
-	}
-	if err := publishArtifacts(options.OutDir, artifacts); err != nil {
-		report.Findings = append(report.Findings, ioFinding("Cannot write package artifacts."))
-		return finish(report), nil
-	}
-
-	report.Package = &PackageInfo{
-		Name:     document.Name,
-		Version:  document.Version,
-		Archive:  artifacts.ArchiveName,
-		Manifest: artifacts.ManifestName,
-		Lock:     artifacts.LockName,
-		SHA256:   artifacts.SHAName,
-		Digest:   artifacts.Digest,
-	}
 	report.Summary = Summary{
 		AssetCount: len(pkgAssets),
-		FileCount:  len(lockFiles),
+		FileCount:  fileCount,
 		Targets:    targets,
 	}
-	return finish(report), nil
+	prepared := Prepared{
+		Manifest: PackageManifest{
+			SchemaVersion: 1,
+			Name:          document.Name,
+			Version:       document.Version,
+			Profile:       options.Profile,
+			Targets:       targets,
+			Assets:        pkgAssets,
+		},
+		Files: filePayloads,
+	}
+	return prepared, finish(report), nil
 }
 
 func finish(report Report) Report {
