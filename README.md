@@ -148,9 +148,10 @@ name/version/profile/SHA256；任一不匹配都阻止进入 diff。`v0.1.6` 公
 | `aiah update --check` | 用户触发的只读 Release 版本检查 |
 | MCP：`aiah mcp` | 供 AI 工具调用的只读盘点、统一资产状态、迁移状态、diff 与安装检查 |
 
-公开版 `v0.1.6` 的 MCP 提供 5 个基础工具；本 N6 候选（目标分支 `dev`）新增
-`aiah_asset_status` 与 `aiah_migration_status`，共 7 个只读工具。MCP 不开放任何
-写操作。完整参数见[命令参考](docs/cli-reference.md)，客户端接入与验收见
+公开版 `v0.1.6` 的 MCP 提供 5 个基础工具；当前 `dev` 已通过 N6 新增
+`aiah_asset_status` 与 `aiah_migration_status`，共 7 个只读工具，尚未进入公开
+Release。MCP 不开放任何写操作。完整参数见[命令参考](docs/cli-reference.md)，
+客户端接入与验收见
 [MCP runbook](docs/runbooks/mcp-client-acceptance.md)，跨设备人工操作见
 [迁移 runbook](docs/runbooks/cross-device-transfer.md)。
 

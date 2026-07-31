@@ -1,0 +1,11 @@
+aiah · 发布不可变版本
+
+安装包    /srv/ai-assets/dist/personal-1.2.3-personal.tar
+分发通道  /mnt/team-channel
+
+发布会写入通道；同名/版本/组合一旦发布，不允许覆盖不同内容。
+若通道目录为空，成功发布会在其中初始化索引和不可变包布局。
+请完整输入 publish 后按 Enter：
+> publish
+
+Esc 取消；取消时安装包仍保留在资产库 dist 目录。

@@ -1,0 +1,26 @@
+aiah · Move to another device                                                                Version alignment
+Status reads are read-only; only explicit Publish or Retrieve actions write the channel or output directory.
+
+Asset library
+  Path          /srv/ai-assets
+  Name/version  personal / 1.2.3
+  Assets/profiles 4 / 1 (personal)
+  Status        Healthy
+
+Current install
+  Name/version  personal / 1.2.3
+  Asset profile personal
+  Target tools  claude, codex
+  Status        Healthy
+
+Distribution channel
+  Path          /mnt/team-channel
+  Releases      2
+  Latest publish 1.2.3 / personal
+  SHA256        bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+Version alignment
+  Current install Matches the asset library version
+  Channel         Matches the asset library version
+
+e Device check · p Publish current version · v View/retrieve releases · c Choose channel · r Refresh · m Home…

@@ -55,11 +55,22 @@
 - [TUI 技术方案](designs/tui-technical-design.md)（Phase A / B / C / D1 / D2 / D3 已实现）
 - [TUI 产品体验与导航方案 V2](designs/tui-product-experience-v2.md)
   （任务首页、友好术语、默认启动、CLI/TUI 边界与设置/i18n 分期）
+- [N7：偏好设置与中英文支持方案](designs/settings-and-i18n.md)
+  （语言目录、首选资产库预填、显示密度、偏好文件安全与分阶段验收）
 - [跨设备迁移与受控版本对齐方案](designs/cross-device-migration-and-version-sync.md)
   （换机迁移、不可变分发、E3 状态模型与未来同步准入条件）
 
 ## 评审
 
+- [2026-07-31 N7.4 密度与首选资产库预填检查点](reviews/2026-07-31-n7-density-preferred-library-checkpoint.md)
+- [2026-07-31 N7.3 设置页与语言切换检查点](reviews/2026-07-31-n7-settings-language-checkpoint.md)
+- [2026-07-31 N7.2 偏好 Core 检查点](reviews/2026-07-31-n7-preferences-core-checkpoint.md)
+- [2026-07-31 N7.1 version 与完整双语目录检查点](reviews/2026-07-31-n7-i18n-version-catalog-completion.md)
+- [2026-07-30 N7.1 migration 双语目录检查点](reviews/2026-07-30-n7-i18n-migration-checkpoint.md)
+- [2026-07-30 N7.1 doctor/rollback 双语目录检查点](reviews/2026-07-30-n7-i18n-health-rollback-checkpoint.md)
+- [2026-07-30 N7.1 diff/apply 双语目录检查点](reviews/2026-07-30-n7-i18n-diff-apply-checkpoint.md)
+- [2026-07-30 N7.1 inventory 与资产库管理双语目录检查点](reviews/2026-07-30-n7-i18n-inventory-catalog-checkpoint.md)
+- [2026-07-30 N7.0 决策与 N7.1 首页双语目录检查点](reviews/2026-07-30-n7-i18n-home-catalog-checkpoint.md)
 - [2026-07-30 N6 MCP 只读状态与客户端验收检查点](reviews/2026-07-30-n6-mcp-read-only-status-candidate-readiness.md)
 - [2026-07-30 E3.4 发布包绑定与跨设备验收检查点](reviews/2026-07-30-e3-4-candidate-readiness.md)
 - [2026-07-30 E3.3 换机前置检查候选检查点](reviews/2026-07-30-e3-3-candidate-readiness.md)

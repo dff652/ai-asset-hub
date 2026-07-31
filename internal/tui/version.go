@@ -21,7 +21,7 @@ func updateCheckCommand(options updater.Options) tea.Cmd {
 
 func (m Model) startVersion() (tea.Model, tea.Cmd) {
 	if !m.maintenance {
-		m.notice = "当前交互只提供部署审阅；请用 aiah 启动完整操作台"
+		m.notice = m.text(msgVersionUnavailable)
 		m.noticeIsWarn = true
 		return m, nil
 	}

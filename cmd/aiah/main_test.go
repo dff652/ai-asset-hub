@@ -197,6 +197,55 @@ func TestRunUIAcceptsTargetsForGuidedBuild(t *testing.T) {
 	}
 }
 
+func TestRunUIPreferenceOverridesAreValidatedAndPassedToTUI(t *testing.T) {
+	previousLaunch := launchUI
+	defer func() { launchUI = previousLaunch }()
+
+	var received tui.Options
+	launchUI = func(options tui.Options) error {
+		received = options
+		return nil
+	}
+	var stdout, stderr bytes.Buffer
+	if code := run(
+		[]string{"ui", "--language", "en", "--density", "detailed"},
+		&stdout,
+		&stderr,
+	); code != 0 {
+		t.Fatalf("exit code = %d, stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	if received.Language != "en" || received.Density != "detailed" {
+		t.Fatalf(
+			"preference overrides = language %q density %q",
+			received.Language,
+			received.Density,
+		)
+	}
+
+	called := false
+	launchUI = func(tui.Options) error {
+		called = true
+		return nil
+	}
+	stdout.Reset()
+	stderr.Reset()
+	if code := run([]string{"ui", "--language", "fr"}, &stdout, &stderr); code != 2 {
+		t.Fatalf("invalid language exit code = %d, want 2", code)
+	}
+	if called || !strings.Contains(stderr.String(), "unsupported interface language") {
+		t.Fatalf("invalid language called TUI=%v stderr=%q", called, stderr.String())
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	if code := run([]string{"ui", "--density", "compact"}, &stdout, &stderr); code != 2 {
+		t.Fatalf("invalid density exit code = %d, want 2", code)
+	}
+	if called || !strings.Contains(stderr.String(), "unsupported information density") {
+		t.Fatalf("invalid density called TUI=%v stderr=%q", called, stderr.String())
+	}
+}
+
 func TestRunValidateWritesJSONReport(t *testing.T) {
 	manifest, err := filepath.Abs(filepath.Join("..", "..", "testdata", "workspace-valid", "manifest.yaml"))
 	if err != nil {

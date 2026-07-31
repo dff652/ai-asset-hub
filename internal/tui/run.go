@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/x/term"
 	"github.com/dff652/ai-asset-hub/internal/apply"
 	"github.com/dff652/ai-asset-hub/internal/inventory"
+	"github.com/dff652/ai-asset-hub/internal/preferences"
 	"github.com/dff652/ai-asset-hub/internal/workspace"
 )
 
@@ -30,8 +31,18 @@ type Options struct {
 	Package        string
 	ExpectedSHA256 string
 	Targets        []string
-	Input          io.Reader
-	Output         io.Writer
+	// Language is a process-local override. Empty loads the saved preference
+	// and locale; it is never persisted automatically.
+	Language preferences.Language
+	// Density is a process-local override. It controls only the default
+	// expansion of optional technical detail and is never persisted
+	// automatically.
+	Density preferences.Density
+	// ConfigPath injects the operator preference path for tests and embedded
+	// callers. Empty uses os.UserConfigDir()/aiah/preferences.json.
+	ConfigPath string
+	Input      io.Reader
+	Output     io.Writer
 }
 
 type terminalFile interface {
@@ -87,6 +98,52 @@ func runModel(
 	if !interactiveTerminal(options, getenv, isTerminal) {
 		return Model{}, ErrNotTTY
 	}
+	model, err := prepareModel(options, getenv, maintenance)
+	if err != nil {
+		return Model{}, err
+	}
+	program := tea.NewProgram(
+		model,
+		tea.WithInput(options.Input),
+		tea.WithOutput(options.Output),
+		tea.WithAltScreen(),
+	)
+	final, err := program.Run()
+	if err != nil {
+		return Model{}, err
+	}
+	result, ok := final.(Model)
+	if !ok {
+		return Model{}, errors.New("unexpected final TUI model")
+	}
+	return result, nil
+}
+
+func prepareModel(
+	options Options,
+	getenv func(string) string,
+	maintenance bool,
+) (Model, error) {
+	store := preferences.StoreOptions{
+		ConfigPath: options.ConfigPath,
+		Home:       options.Home,
+		Project:    options.Project,
+	}
+	preferenceReport := preferences.Load(store)
+	locale := preferences.LocaleEnvironment{
+		LCAll:      getenv("LC_ALL"),
+		LCMessages: getenv("LC_MESSAGES"),
+		Lang:       getenv("LANG"),
+	}
+	effective, err := preferences.Resolve(preferences.ResolveOptions{
+		Current:          preferenceReport.Preferences,
+		Locale:           locale,
+		LanguageOverride: options.Language,
+		DensityOverride:  options.Density,
+	})
+	if err != nil {
+		return Model{}, err
+	}
 	if options.Workspace != "" {
 		root, _, err := workspace.PrepareRoot(options.Workspace, options.Home, options.Project)
 		if err != nil {
@@ -106,21 +163,15 @@ func runModel(
 			Project:        options.Project,
 			Targets:        options.Targets,
 		})
-	program := tea.NewProgram(
-		model,
-		tea.WithInput(options.Input),
-		tea.WithOutput(options.Output),
-		tea.WithAltScreen(),
+	model = model.withPreferences(
+		store,
+		preferenceReport,
+		locale,
+		options.Language,
+		options.Density,
+		effective,
 	)
-	final, err := program.Run()
-	if err != nil {
-		return Model{}, err
-	}
-	result, ok := final.(Model)
-	if !ok {
-		return Model{}, errors.New("unexpected final TUI model")
-	}
-	return result, nil
+	return model, nil
 }
 
 func interactiveTerminal(options Options, getenv func(string) string, isTerminal func(uintptr) bool) bool {

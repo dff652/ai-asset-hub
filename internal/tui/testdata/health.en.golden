@@ -1,0 +1,13 @@
+aiah · Install check                                                                         Healthy
+Current install Yes · Backups 2 · Unchanged 1 · Modified 1 · Missing 0 · Risks/issues 0
+Current install · backup-123                  │ Current install
+locally-modified · home/.claude/managed.md    │ Backup ID     backup-123
+                                              │ Package       personal.tar
+                                              │ Version       1.2.3
+                                              │ Profile       personal
+                                              │ Produced by   aiah test
+                                              │ Applied at    2026-07-30T12:00:00Z
+                                              │
+                                              │
+                                              │
+↑↓/jk Navigate · h Recheck · x Undo last install · v Version · m Home · ? Help · q Quit

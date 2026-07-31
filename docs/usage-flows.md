@@ -126,9 +126,8 @@ pull → 绑定 name/version/profile/SHA256 → 目标设备检查
 
 ### 5.1 AI 工具通过 MCP 读取状态
 
-公开版 `v0.1.6` 的 `aiah mcp` 暴露 5 个基础只读工具；本 N6 候选（目标分支
-`dev`）增加
-`aiah_asset_status` 与 `aiah_migration_status`。AI 可以盘点、校验、解释源端与
+公开版 `v0.1.6` 的 `aiah mcp` 暴露 5 个基础只读工具；当前 `dev` 已通过 N6
+增加 `aiah_asset_status` 与 `aiah_migration_status`。AI 可以盘点、校验、解释源端与
 资产库状态、查看跨设备版本对齐，但不能通过 MCP build、修改资产库、publish/pull、
 apply 或 rollback。
 

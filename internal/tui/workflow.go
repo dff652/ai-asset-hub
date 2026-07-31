@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -57,7 +56,7 @@ func (m Model) startWorkspaceInput() (tea.Model, tea.Cmd) {
 func (m Model) startWorkspaceInputFor(next homeAction) (tea.Model, tea.Cmd) {
 	m.choosingWorkspace = true
 	m.afterWorkspace = next
-	m.workspaceInput.SetValue("")
+	m.workspaceInput.SetValue(m.currentPreferences.PreferredAssetLibrary)
 	m.notice = ""
 	m.noticeIsWarn = false
 	return m, m.workspaceInput.Focus()
@@ -73,14 +72,14 @@ func (m Model) updateWorkspaceInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if message.Type == tea.KeyEnter {
 		candidate := strings.TrimSpace(m.workspaceInput.Value())
 		if candidate == "" {
-			m.notice = "必须输入资产库路径"
+			m.notice = m.text(msgWorkspacePathRequired)
 			m.noticeIsWarn = true
 			return m, nil
 		}
 		m.choosingWorkspace = false
 		m.preparingWorkspace = true
 		m.workspaceInput.Blur()
-		m.notice = "正在打开资产库…"
+		m.notice = m.text(msgWorkspaceOpening)
 		m.noticeIsWarn = false
 		return m, prepareWorkspaceCommand(candidate, m.options.Home, m.options.Project)
 	}
@@ -95,19 +94,19 @@ func (m Model) startProfileInput() (tea.Model, tea.Cmd) {
 
 func (m Model) startProfileInputFor(purpose profilePurpose) (tea.Model, tea.Cmd) {
 	if m.composing {
-		m.notice = "正在加入资产库，请完成后再继续"
+		m.notice = m.text(msgProfileComposeBusy)
 		m.noticeIsWarn = true
 		return m, nil
 	}
 	if m.workspace == "" {
-		m.notice = "先按 w 明确选择资产库"
+		m.notice = m.text(msgWorkspaceSelectFirst)
 		m.noticeIsWarn = true
 		return m, nil
 	}
 	manifest := filepath.Join(m.workspace, "manifest.yaml")
 	document, _, err := workspace.LoadManifest(manifest)
 	if err != nil {
-		m.notice = "无法读取 manifest.yaml：" + err.Error()
+		m.notice = m.text(msgProfileManifestReadFailed, err)
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -138,7 +137,7 @@ func (m Model) updateProfileInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if message.Type == tea.KeyEnter {
 		profile := strings.TrimSpace(m.profileInput.Value())
 		if profile == "" {
-			m.notice = "必须输入资产组合名称"
+			m.notice = m.text(msgProfileRequired)
 			m.noticeIsWarn = true
 			return m, nil
 		}
@@ -152,9 +151,9 @@ func (m Model) updateProfileInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.invalidateBuiltPackage()
 		m.building = true
 		if purpose == profileForPublish {
-			m.notice = "正在检查资产并准备待发布安装包…"
+			m.notice = m.text(msgProfileBuildPublishing)
 		} else {
-			m.notice = "正在检查资产并准备安装包…"
+			m.notice = m.text(msgProfileBuildPreparing)
 		}
 		m.noticeIsWarn = false
 		return m, buildCommand(build.Options{
@@ -169,10 +168,10 @@ func (m Model) updateProfileInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, command
 }
 
-func buildFailureNotice(report build.Report) string {
+func (m Model) buildFailureNotice(report build.Report) string {
 	if len(report.Findings) > 0 {
 		finding := report.Findings[0]
-		return fmt.Sprintf("资产检查未通过：%s — %s", finding.Code, finding.Message)
+		return m.text(msgProfileBuildFailedFinding, finding.Code, finding.Message)
 	}
-	return "资产检查未通过；未生成安装包"
+	return m.text(msgProfileBuildFailedNoPackage)
 }

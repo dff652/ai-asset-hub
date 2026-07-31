@@ -94,8 +94,8 @@ Codex 使用临时会话与只读 sandbox；Grok 使用 disposable project 配�
 
 ## 6. 候选交付状态
 
-公开版 `v0.1.6` 仍只有 5 个基础只读工具；本页描述的是当前 `dev` 之上的 N6
-候选，不等同于已发布能力。
+公开版 `v0.1.6` 仍只有 5 个基础只读工具；N6 已进入 `dev`，但仍不等同于已发布
+能力。
 
 最终文件树运行 `./scripts/check-local.sh` 通过，覆盖开发环境、许可证、
 installer/Release/README 资产检查、全量 test、race、vet、gofmt、
@@ -114,3 +114,16 @@ golangci-lint 和 fake HOME build/diff/apply/doctor/rollback 闭环。
 
 本证据更新只修改项目文档；推送后仍以 PR 最终 head 的两组 GitHub checks 为合入
 门禁，不能用前一提交的绿灯替代。PR 合并和 Release 继续由项目所有者明确决定。
+
+所有者确认后，最终 head `b2e50139a4c9` 的 push CI
+[`30535101642`](https://github.com/dff652/ai-asset-hub/actions/runs/30535101642)
+和 pull_request CI
+[`30535103745`](https://github.com/dff652/ai-asset-hub/actions/runs/30535103745)
+各 9/9 job 全绿。PR #27 于 2026-07-30 squash 合入
+`dev@9eedd7bde8a9`；合并后的主线 CI
+[`30549858137`](https://github.com/dff652/ai-asset-hub/actions/runs/30549858137)
+共 9/9 job 全绿。
+
+因此 N6 的本地、候选最终 head 和合并后门禁均已闭合。Claude 模型级调用仍因组织
+策略 403 未执行；这是如实保留的外部补测项，不影响已验证的 server 协议、Claude
+客户端握手、Codex/Grok 模型调用或 MCP 零写入边界。

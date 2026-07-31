@@ -143,16 +143,21 @@ func (m Model) handleVersionsMessage(message versionsMsg) (tea.Model, tea.Cmd) {
 func (m Model) handlePublishMessage(message publishMsg) (tea.Model, tea.Cmd) {
 	m.migrationFlow.publishing = false
 	if message.err != nil || !message.report.Ok {
-		m.notice = "发布失败：" + operationError(message.err)
+		m.notice = m.text(msgMigrationPublishFailed, m.operationError(message.err))
 		m.noticeIsWarn = true
 		return m, nil
 	}
-	action := "已发布"
+	action := m.text(msgMigrationPublished)
 	if message.report.Unchanged {
-		action = "通道中已有相同版本"
+		action = m.text(msgMigrationPublishedUnchanged)
 	}
-	m.notice = action + "：" + message.report.Name + " " +
-		message.report.Version + " (" + message.report.Profile + ")"
+	m.notice = m.text(
+		msgMigrationPublishedResult,
+		action,
+		message.report.Name,
+		message.report.Version,
+		message.report.Profile,
+	)
 	m.noticeIsWarn = false
 	m.migrationFlow.status = statusLoading
 	return m, migrationCommand(m.migrationOptions())
@@ -161,7 +166,7 @@ func (m Model) handlePublishMessage(message publishMsg) (tea.Model, tea.Cmd) {
 func (m Model) handlePullMessage(message pullMsg) (tea.Model, tea.Cmd) {
 	m.migrationFlow.pulling = false
 	if message.err != nil || !message.report.Ok {
-		m.notice = "取回失败：" + operationError(message.err)
+		m.notice = m.text(msgMigrationPullFailed, m.operationError(message.err))
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -172,22 +177,26 @@ func (m Model) handlePullMessage(message pullMsg) (tea.Model, tea.Cmd) {
 	m.migrationFlow.preflightCursor = 0
 	m.migrationFlow.mode = migrationModePreflight
 	m.screen = screenMigration
-	m.notice = "已取回 " + message.report.Name + " " + message.report.Version +
-		" (" + message.report.Profile + ")，正在检查目标设备"
+	m.notice = m.text(
+		msgMigrationPulledChecking,
+		message.report.Name,
+		message.report.Version,
+		message.report.Profile,
+	)
 	m.noticeIsWarn = false
 	return m, packagePreflightCommand(m.packagePreflightOptions())
 }
 
-func operationError(err error) string {
+func (m Model) operationError(err error) string {
 	if err == nil {
-		return "Core 未返回成功状态"
+		return m.text(msgMigrationOperationNoSuccess)
 	}
 	return err.Error()
 }
 
 func (m Model) startMigrationPublish() (tea.Model, tea.Cmd) {
 	if m.migrationFlow.status != statusReady {
-		m.notice = "迁移状态尚未可用；先刷新，或按 c 重新选择通道"
+		m.notice = m.text(msgMigrationStatusUnavailableChannel)
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -195,7 +204,7 @@ func (m Model) startMigrationPublish() (tea.Model, tea.Cmd) {
 		return m.startChannelInputFor(migrationActionPublish)
 	}
 	m.migrationFlow.publishPackage = ""
-	m.notice = "选择要生成并发布的资产组合"
+	m.notice = m.text(msgMigrationPublishSelectProfile)
 	m.noticeIsWarn = false
 	return m.startProfileInputFor(profileForPublish)
 }
@@ -218,13 +227,13 @@ func (m Model) updatePublishConfirmation(message tea.KeyMsg) (tea.Model, tea.Cmd
 		m.migrationFlow.publishPackage = ""
 		m.migrationFlow.publishInput.SetValue("")
 		m.migrationFlow.publishInput.Blur()
-		m.notice = "已取消发布；生成的安装包保留在资产库 dist 目录"
+		m.notice = m.text(msgMigrationPublishCancelled)
 		m.noticeIsWarn = false
 		return m, nil
 	}
 	if message.Type == tea.KeyEnter {
 		if m.migrationFlow.publishInput.Value() != "publish" {
-			m.notice = "确认文本不匹配；必须完整输入 publish"
+			m.notice = m.text(msgMigrationPublishMismatch)
 			m.noticeIsWarn = true
 			m.migrationFlow.publishInput.SetValue("")
 			return m, nil
@@ -246,7 +255,7 @@ func (m Model) updatePublishConfirmation(message tea.KeyMsg) (tea.Model, tea.Cmd
 
 func (m Model) startVersions() (tea.Model, tea.Cmd) {
 	if m.migrationFlow.status != statusReady {
-		m.notice = "迁移状态尚未可用；先刷新，或按 c 重新选择通道"
+		m.notice = m.text(msgMigrationStatusUnavailableChannel)
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -254,7 +263,7 @@ func (m Model) startVersions() (tea.Model, tea.Cmd) {
 		return m.startChannelInputFor(migrationActionVersions)
 	}
 	if strings.TrimSpace(m.migrationFlow.report.Library.Name) == "" {
-		m.notice = "无法确定资产库名称；先刷新迁移状态"
+		m.notice = m.text(msgMigrationLibraryNameUnknown)
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -275,7 +284,7 @@ func (m Model) startPullOutput() (tea.Model, tea.Cmd) {
 	if m.migrationFlow.versionsStatus != statusReady ||
 		m.migrationFlow.versionsCursor < 0 ||
 		m.migrationFlow.versionsCursor >= len(m.migrationFlow.versionsReport.Releases) {
-		m.notice = "先选择一个可取回版本"
+		m.notice = m.text(msgMigrationPullSelectRelease)
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -302,7 +311,7 @@ func (m Model) updatePullOutput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.options.Home,
 		)
 		if candidate == "" {
-			m.notice = "必须输入已有的取回目录；本页不会创建目录"
+			m.notice = m.text(msgMigrationPullOutRequired)
 			m.noticeIsWarn = true
 			return m, nil
 		}
@@ -452,7 +461,7 @@ func (m Model) continuePulledPackage() (tea.Model, tea.Cmd) {
 	if m.migrationFlow.preflightStatus != statusReady ||
 		!m.migrationFlow.preflightReport.Ok ||
 		!m.hasPackagePreflight() {
-		m.notice = "目标设备检查未通过；处理阻止项并按 r 重查后才能预览变化"
+		m.notice = m.text(msgMigrationPreflightBlocked)
 		m.noticeIsWarn = true
 		return m, nil
 	}
@@ -465,7 +474,8 @@ func (m Model) continuePulledPackage() (tea.Model, tea.Cmd) {
 	m.deployErr = nil
 	m.applyResult = nil
 	m.diffCursor = 0
-	m.notice = "发布包检查通过，已进入变更预览；仍需完整输入 apply 才会写入"
+	m.resetDiffExpansionForDensity()
+	m.notice = m.text(msgMigrationDiffReady)
 	m.noticeIsWarn = false
 	return m, diffCommand(m.deployOptions)
 }

@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -17,6 +16,7 @@ const (
 	homeActionHealth
 	homeActionMigration
 	homeActionVersion
+	homeActionSettings
 )
 
 type homeItem struct {
@@ -25,59 +25,68 @@ type homeItem struct {
 	description string
 }
 
-func homeItems() []homeItem {
+func (m Model) homeItems() []homeItem {
 	return []homeItem{
 		{
 			action:      homeActionOrganize,
-			title:       "整理本机资产",
-			description: "发现并加入统一资产库",
+			title:       m.text(msgHomeOrganizeTitle),
+			description: m.text(msgHomeOrganizeDesc),
 		},
 		{
 			action:      homeActionApply,
-			title:       "预览并应用资产库",
-			description: "检查资产、准备安装包并预览变化",
+			title:       m.text(msgHomeApplyTitle),
+			description: m.text(msgHomeApplyDesc),
 		},
 		{
 			action:      homeActionHealth,
-			title:       "安装检查与撤销",
-			description: "检查漂移，必要时撤销上次安装",
+			title:       m.text(msgHomeHealthTitle),
+			description: m.text(msgHomeHealthDesc),
 		},
 		{
 			action:      homeActionMigration,
-			title:       "迁移到其他设备",
-			description: "比较版本，发布或取回不可变安装包",
+			title:       m.text(msgHomeMigrationTitle),
+			description: m.text(msgHomeMigrationDesc),
 		},
 		{
 			action:      homeActionVersion,
-			title:       "关于与更新",
-			description: "查看版本并手动检查 Release",
+			title:       m.text(msgHomeVersionTitle),
+			description: m.text(msgHomeVersionDesc),
+		},
+		{
+			action:      homeActionSettings,
+			title:       m.text(msgHomeSettingsTitle),
+			description: m.text(msgHomeSettingsDesc),
 		},
 	}
 }
 
 func (m Model) homeView(style styles) string {
 	header := joinEdges(
-		style.header.Render("AI 编程资产管理器"),
+		style.header.Render(m.text(msgHomeAppTitle)),
 		"aiah",
 		max(20, m.width),
 	)
 	lines := []string{
 		header,
-		style.muted.Render("统一管理 Claude、Codex、Grok 的资产，并安全迁移到新工具或设备"),
+		style.muted.Render(m.text(msgHomeSummary)),
 		"",
-		"资产库    " + m.homeWorkspaceStatus(),
-		"资产状态  " + m.homeInventoryStatus(),
-		"当前安装  " + m.homeDeploymentStatus(),
-		"",
-		style.header.Render("你想做什么？"),
+		padRight(m.text(msgHomeLibraryLabel), 15) + " " + m.homeWorkspaceStatus(),
+		padRight(m.text(msgHomeAssetStatusLabel), 15) + " " + m.homeInventoryStatus(),
+		padRight(m.text(msgHomeInstallLabel), 15) + " " + m.homeDeploymentStatus(),
 	}
+	if len(m.preferenceWarnings) > 0 {
+		lines = append(lines, style.warning.Render(m.text(msgHomePreferencesWarning)))
+	}
+	lines = append(lines, "", style.header.Render(m.text(msgHomeTaskPrompt)))
 
-	for index, item := range homeItems() {
+	for index, item := range m.homeItems() {
 		prefix := "  "
 		if index == m.homeCursor {
 			prefix = "> "
 		}
-		line := fmt.Sprintf("%s%-18s %s", prefix, item.title, item.description)
+		const titleWidth = 28
+		title := padRight(truncate(item.title, titleWidth), titleWidth)
+		line := truncate(prefix+title+" "+item.description, max(20, m.width))
 		if index == m.homeCursor {
 			line = style.selected.Render(line)
 		}
@@ -86,14 +95,20 @@ func (m Model) homeView(style styles) string {
 
 	lines = append(lines,
 		"",
-		style.muted.Render("↑↓/jk 选择 · Enter 进入 · ? 帮助 · q 退出"),
+		style.muted.Render(m.text(msgHomeFooter)),
 	)
 	return strings.Join(lines, "\n")
 }
 
 func (m Model) homeWorkspaceStatus() string {
 	if m.workspace == "" {
-		return "未选择（整理或应用时再明确选择）"
+		if m.currentPreferences.PreferredAssetLibrary != "" {
+			return m.text(
+				msgHomeWorkspaceSuggested,
+				m.currentPreferences.PreferredAssetLibrary,
+			)
+		}
+		return m.text(msgHomeWorkspaceUnset)
 	}
 	return m.workspace
 }
@@ -101,21 +116,20 @@ func (m Model) homeWorkspaceStatus() string {
 func (m Model) homeInventoryStatus() string {
 	switch m.status {
 	case statusLoading:
-		return "正在扫描…"
+		return m.text(msgHomeScanLoading)
 	case statusFailed:
-		return "扫描失败"
+		return m.text(msgHomeScanFailed)
 	default:
 		if m.workspace != "" {
 			if m.catalogErr != nil {
-				return fmt.Sprintf(
-					"资产库状态不可用 · 本机风险 %d",
+				return m.text(
+					msgHomeCatalogUnavailable,
 					len(m.report.Findings),
 				)
 			}
 			summary := m.catalog.Summary
-			return fmt.Sprintf(
-				"未纳管 %d · 已纳管 %d · 待更新 %d\n"+
-					"          仅库内 %d · 不可纳管 %d · 本机问题 %d",
+			return m.text(
+				msgHomeCatalogSummary,
 				summary.Unmanaged,
 				summary.Managed,
 				summary.SourceChanged,
@@ -124,8 +138,8 @@ func (m Model) homeInventoryStatus() string {
 				len(m.report.Findings),
 			)
 		}
-		return fmt.Sprintf(
-			"发现 %d 项 · %d 个风险与问题",
+		return m.text(
+			msgHomeDiscovered,
 			m.report.Summary.CandidateAssets,
 			len(m.report.Findings),
 		)
@@ -135,7 +149,7 @@ func (m Model) homeInventoryStatus() string {
 func (m Model) homeDeploymentStatus() string {
 	if m.doctorStatus == statusReady {
 		if m.doctorReport.Deployment == nil {
-			return "尚无受管安装"
+			return m.text(msgHomeNoManagedInstall)
 		}
 		deployment := m.doctorReport.Deployment
 		packageVersion := strings.TrimSpace(strings.Join([]string{
@@ -151,21 +165,21 @@ func (m Model) homeDeploymentStatus() string {
 		}
 		identity := strings.Join(parts, " · ")
 		if identity == "" {
-			identity = "受管安装"
+			identity = m.text(msgHomeManagedInstall)
 		}
 		if m.doctorReport.Ok {
-			return identity + " · 正常"
+			return identity + " · " + m.text(msgHomeInstallHealthy)
 		}
-		return fmt.Sprintf("%s · %d 个风险与问题", identity, len(m.doctorReport.Findings))
+		return m.text(msgHomeInstallRisk, identity, len(m.doctorReport.Findings))
 	}
 	if m.doctorErr != nil {
-		return "检查失败"
+		return m.text(msgHomeDoctorFailed)
 	}
-	return "正在检查…"
+	return m.text(msgHomeDoctorChecking)
 }
 
 func (m Model) updateHomeKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
-	items := homeItems()
+	items := m.homeItems()
 	switch {
 	case key.Matches(message, m.keys.Quit):
 		return m, tea.Quit
@@ -196,7 +210,7 @@ func (m Model) startHomeAction(action homeAction) (tea.Model, tea.Cmd) {
 			return m.startWorkspaceInputFor(homeActionOrganize)
 		}
 		m.screen = screenInventory
-		m.notice = "选择要管理的资产：空格勾选，按 w 加入资产库"
+		m.notice = m.text(msgHomeOrganizeNotice)
 		m.noticeIsWarn = false
 		return m, nil
 	case homeActionApply:
@@ -213,6 +227,8 @@ func (m Model) startHomeAction(action homeAction) (tea.Model, tea.Cmd) {
 		return m.startMigration()
 	case homeActionVersion:
 		return m.startVersion()
+	case homeActionSettings:
+		return m.startSettings()
 	default:
 		return m, nil
 	}
@@ -220,18 +236,19 @@ func (m Model) startHomeAction(action homeAction) (tea.Model, tea.Cmd) {
 
 func (m Model) homeHelpView(style styles) string {
 	return strings.Join([]string{
-		style.header.Render("AI 编程资产管理器 · 帮助"),
+		style.header.Render(m.text(msgHomeHelpTitle)),
 		"",
-		"这个工具把散落在 Claude、Codex、Grok 中的 AI 编程资产整理进统一资产库，",
-		"并安全迁移到新工具或设备；写入前展示变化，写入后支持安装检查和撤销。",
+		m.text(msgHomeHelpIntroFirst),
+		m.text(msgHomeHelpIntroSecond),
 		"",
-		"整理本机资产      选择 skills、rules、agents 等并加入资产库",
-		"预览并应用资产库  检查资产、准备安装包、预览变化，再确认应用",
-		"安装检查与撤销    检查当前安装、文件漂移和备份",
-		"迁移到其他设备    比较版本；显式发布或取回，取回后仍须预览并确认应用",
-		"关于与更新        查看本地版本；只有再次按 c 才联网检查 Release",
+		m.text(msgHomeHelpOrganize),
+		m.text(msgHomeHelpApply),
+		m.text(msgHomeHelpHealth),
+		m.text(msgHomeHelpMigration),
+		m.text(msgHomeHelpVersion),
+		m.text(msgHomeHelpSettings),
 		"",
-		"资产库是跨工具统一、可编辑、可进入 Git 的事实源，不是工具安装目录。",
-		"↑↓/jk 选择 · Enter 进入 · ? 关闭帮助 · q 退出",
+		m.text(msgHomeHelpLibrary),
+		m.text(msgHomeHelpFooter),
 	}, "\n")
 }
