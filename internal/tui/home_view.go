@@ -102,6 +102,12 @@ func (m Model) homeView(style styles) string {
 
 func (m Model) homeWorkspaceStatus() string {
 	if m.workspace == "" {
+		if m.currentPreferences.PreferredAssetLibrary != "" {
+			return m.text(
+				msgHomeWorkspaceSuggested,
+				m.currentPreferences.PreferredAssetLibrary,
+			)
+		}
 		return m.text(msgHomeWorkspaceUnset)
 	}
 	return m.workspace

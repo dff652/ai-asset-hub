@@ -197,7 +197,7 @@ func TestRunUIAcceptsTargetsForGuidedBuild(t *testing.T) {
 	}
 }
 
-func TestRunUILanguageOverrideIsValidatedAndPassedToTUI(t *testing.T) {
+func TestRunUIPreferenceOverridesAreValidatedAndPassedToTUI(t *testing.T) {
 	previousLaunch := launchUI
 	defer func() { launchUI = previousLaunch }()
 
@@ -207,11 +207,19 @@ func TestRunUILanguageOverrideIsValidatedAndPassedToTUI(t *testing.T) {
 		return nil
 	}
 	var stdout, stderr bytes.Buffer
-	if code := run([]string{"ui", "--language", "en"}, &stdout, &stderr); code != 0 {
+	if code := run(
+		[]string{"ui", "--language", "en", "--density", "detailed"},
+		&stdout,
+		&stderr,
+	); code != 0 {
 		t.Fatalf("exit code = %d, stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 	}
-	if received.Language != "en" {
-		t.Fatalf("language override = %q, want en", received.Language)
+	if received.Language != "en" || received.Density != "detailed" {
+		t.Fatalf(
+			"preference overrides = language %q density %q",
+			received.Language,
+			received.Density,
+		)
 	}
 
 	called := false
@@ -226,6 +234,15 @@ func TestRunUILanguageOverrideIsValidatedAndPassedToTUI(t *testing.T) {
 	}
 	if called || !strings.Contains(stderr.String(), "unsupported interface language") {
 		t.Fatalf("invalid language called TUI=%v stderr=%q", called, stderr.String())
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	if code := run([]string{"ui", "--density", "compact"}, &stdout, &stderr); code != 2 {
+		t.Fatalf("invalid density exit code = %d, want 2", code)
+	}
+	if called || !strings.Contains(stderr.String(), "unsupported information density") {
+		t.Fatalf("invalid density called TUI=%v stderr=%q", called, stderr.String())
 	}
 }
 

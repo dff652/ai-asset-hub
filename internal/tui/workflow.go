@@ -56,7 +56,7 @@ func (m Model) startWorkspaceInput() (tea.Model, tea.Cmd) {
 func (m Model) startWorkspaceInputFor(next homeAction) (tea.Model, tea.Cmd) {
 	m.choosingWorkspace = true
 	m.afterWorkspace = next
-	m.workspaceInput.SetValue("")
+	m.workspaceInput.SetValue(m.currentPreferences.PreferredAssetLibrary)
 	m.notice = ""
 	m.noticeIsWarn = false
 	return m, m.workspaceInput.Focus()

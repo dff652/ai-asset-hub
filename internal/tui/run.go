@@ -34,6 +34,10 @@ type Options struct {
 	// Language is a process-local override. Empty loads the saved preference
 	// and locale; it is never persisted automatically.
 	Language preferences.Language
+	// Density is a process-local override. It controls only the default
+	// expansion of optional technical detail and is never persisted
+	// automatically.
+	Density preferences.Density
 	// ConfigPath injects the operator preference path for tests and embedded
 	// callers. Empty uses os.UserConfigDir()/aiah/preferences.json.
 	ConfigPath string
@@ -135,6 +139,7 @@ func prepareModel(
 		Current:          preferenceReport.Preferences,
 		Locale:           locale,
 		LanguageOverride: options.Language,
+		DensityOverride:  options.Density,
 	})
 	if err != nil {
 		return Model{}, err
@@ -163,6 +168,7 @@ func prepareModel(
 		preferenceReport,
 		locale,
 		options.Language,
+		options.Density,
 		effective,
 	)
 	return model, nil

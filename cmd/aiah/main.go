@@ -34,7 +34,7 @@ const usage = `usage:
   aiah pull --channel DIR --name NAME [--version V] [--profile P] --out DIR [--output json]
   aiah versions --channel DIR [--name NAME] [--output json]
   aiah bootstrap --channel DIR --name NAME [--version V] [--profile P] --out DIR [--home PATH] [--project PATH] [--targets LIST]
-  aiah ui [--home PATH] [--project PATH] [--workspace PATH] [--package PATH] [--targets LIST] [--language auto|zh-CN|en]
+  aiah ui [--home PATH] [--project PATH] [--workspace PATH] [--package PATH] [--targets LIST] [--language auto|zh-CN|en] [--density standard|detailed]
   aiah mcp
   aiah update --check [--output text|json]
   aiah version [--output text|json]
@@ -157,6 +157,7 @@ func runUI(args []string, stdout, stderr io.Writer) int {
 	pkg := flags.String("package", "", "package .tar or extracted directory; enables diff/apply review")
 	targets := flags.String("targets", "", "comma-separated deployment targets (claude,codex,grok)")
 	language := flags.String("language", "", "interface language for this process (auto|zh-CN|en)")
+	density := flags.String("density", "", "technical detail density for this process (standard|detailed)")
 	if ok, code := parseFlagSet(flags, args); !ok {
 		return code
 	}
@@ -174,6 +175,16 @@ func runUI(args []string, stdout, stderr io.Writer) int {
 			return 2
 		}
 	}
+	densityOverride := preferences.Density(*density)
+	if densityOverride != "" {
+		if _, err := preferences.Resolve(preferences.ResolveOptions{
+			Current:         preferences.Defaults(),
+			DensityOverride: densityOverride,
+		}); err != nil {
+			_, _ = io.WriteString(stderr, "aiah: unsupported information density\n")
+			return 2
+		}
+	}
 
 	err = launchUI(tui.Options{
 		Home:      *home,
@@ -182,6 +193,7 @@ func runUI(args []string, stdout, stderr io.Writer) int {
 		Package:   *pkg,
 		Targets:   splitCSV(*targets),
 		Language:  languageOverride,
+		Density:   densityOverride,
 		Input:     stdin,
 		Output:    stdout,
 	})

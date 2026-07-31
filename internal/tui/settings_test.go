@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dff652/ai-asset-hub/internal/inventory"
 	"github.com/dff652/ai-asset-hub/internal/preferences"
 )
@@ -109,6 +110,240 @@ func TestLanguageOverrideWinsWithoutChangingStoredPreference(t *testing.T) {
 	}
 }
 
+func TestDensityOverrideWinsWithoutChangingStoredPreference(t *testing.T) {
+	store := testPreferenceStore(t)
+	document := preferences.Defaults()
+	document.Density = preferences.DensityStandard
+	if _, err := preferences.Save(store, document); err != nil {
+		t.Fatal(err)
+	}
+	before := readPreferenceBytes(t, store.ConfigPath)
+
+	model, err := prepareModel(
+		Options{
+			Home:       store.Home,
+			ConfigPath: store.ConfigPath,
+			Density:    preferences.DensityDetailed,
+		},
+		localeGetter("zh_CN.UTF-8"),
+		true,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if model.density != preferences.DensityDetailed ||
+		model.densityOverride != preferences.DensityDetailed ||
+		!model.diffExpanded["action:unchanged"] ||
+		!model.diffExpanded["action:skipped"] {
+		t.Fatalf(
+			"density override = density %q override %q expanded %#v",
+			model.density,
+			model.densityOverride,
+			model.diffExpanded,
+		)
+	}
+	if after := readPreferenceBytes(t, store.ConfigPath); !reflect.DeepEqual(after, before) {
+		t.Fatal("process-local density override changed the preference file")
+	}
+}
+
+func TestSettingsDensityPreviewCancelAndSave(t *testing.T) {
+	store := testPreferenceStoreWithoutDirectory(t)
+	model, err := prepareModel(
+		Options{Home: store.Home, ConfigPath: store.ConfigPath},
+		localeGetter("zh_CN.UTF-8"),
+		true,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	model = openSettings(t, model)
+	model.settingsCursor = 4
+	updated, command := model.Update(keyPress("enter"))
+	model = updated.(Model)
+	if command != nil || model.density != preferences.DensityDetailed ||
+		!model.settingsDirty {
+		t.Fatalf(
+			"density preview = %q dirty=%v command nil=%v",
+			model.density,
+			model.settingsDirty,
+			command == nil,
+		)
+	}
+	if _, err := os.Stat(store.ConfigPath); !os.IsNotExist(err) {
+		t.Fatalf("density preview wrote preferences: %v", err)
+	}
+
+	updated, _ = model.Update(keyPress("esc"))
+	model = updated.(Model)
+	if model.density != preferences.DensityStandard {
+		t.Fatalf("cancel kept preview density: %q", model.density)
+	}
+
+	model = openSettings(t, model)
+	model.settingsCursor = 4
+	updated, _ = model.Update(keyPress("enter"))
+	model = updated.(Model)
+	model.settingsCursor = 6
+	updated, command = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(Model)
+	updated, _ = model.Update(command())
+	model = updated.(Model)
+	report := preferences.Load(store)
+	if report.Preferences.Density != preferences.DensityDetailed ||
+		model.density != preferences.DensityDetailed {
+		t.Fatalf("saved density = report %#v model %q", report.Preferences, model.density)
+	}
+}
+
+func TestPreferredLibraryEditorValidatesWithoutCreatingOrOpening(t *testing.T) {
+	store := testPreferenceStoreWithoutDirectory(t)
+	model, err := prepareModel(
+		Options{Home: store.Home, ConfigPath: store.ConfigPath},
+		localeGetter("zh_CN.UTF-8"),
+		true,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	model = openSettings(t, model)
+	model.settingsCursor = 5
+	updated, command := model.Update(keyPress("enter"))
+	model = updated.(Model)
+	if command == nil || !model.editingPreferred {
+		t.Fatalf("preferred editor did not focus: editing=%v command nil=%v", model.editingPreferred, command == nil)
+	}
+
+	missing := filepath.Join(store.Home, "missing-library")
+	model.preferredInput.SetValue(missing)
+	updated, command = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(Model)
+	if command != nil || !model.editingPreferred || model.settingsErr == nil ||
+		model.settingsDraft.PreferredAssetLibrary != "" || model.workspace != "" {
+		t.Fatalf(
+			"missing preferred path state = editing=%v err=%v draft=%q workspace=%q",
+			model.editingPreferred,
+			model.settingsErr,
+			model.settingsDraft.PreferredAssetLibrary,
+			model.workspace,
+		)
+	}
+	if _, err := os.Stat(missing); !os.IsNotExist(err) {
+		t.Fatalf("preferred editor created missing path: %v", err)
+	}
+
+	existing := filepath.Join(store.Home, "existing-library")
+	if err := os.Mkdir(existing, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	model.preferredInput.SetValue(existing)
+	updated, command = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(Model)
+	if command != nil || model.editingPreferred ||
+		model.settingsDraft.PreferredAssetLibrary != existing ||
+		model.workspace != "" || !model.settingsDirty {
+		t.Fatalf(
+			"preferred draft = editing=%v value=%q workspace=%q dirty=%v",
+			model.editingPreferred,
+			model.settingsDraft.PreferredAssetLibrary,
+			model.workspace,
+			model.settingsDirty,
+		)
+	}
+	if _, err := os.Stat(store.ConfigPath); !os.IsNotExist(err) {
+		t.Fatalf("preferred draft wrote preferences: %v", err)
+	}
+}
+
+func TestSavedPreferredLibraryOnlySuggestsAndPrefills(t *testing.T) {
+	store := testPreferenceStore(t)
+	library := filepath.Join(store.Home, "assets")
+	if err := os.Mkdir(library, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	document := preferences.Defaults()
+	document.PreferredAssetLibrary = library
+	if _, err := preferences.Save(store, document); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(library); err != nil {
+		t.Fatal(err)
+	}
+	model, err := prepareModel(
+		Options{Home: store.Home, ConfigPath: store.ConfigPath},
+		localeGetter("zh_CN.UTF-8"),
+		true,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if model.workspace != "" || !strings.Contains(model.homeWorkspaceStatus(), library) ||
+		!reflect.DeepEqual(
+			model.preferenceWarnings,
+			[]preferences.WarningCode{preferences.WarningPreferredLibrary},
+		) {
+		t.Fatalf("preferred library auto-selected or hidden: workspace=%q status=%q", model.workspace, model.homeWorkspaceStatus())
+	}
+	if _, err := os.Stat(library); !os.IsNotExist(err) {
+		t.Fatalf("startup recreated stale preferred library: %v", err)
+	}
+	updated, command := model.startWorkspaceInputFor(homeActionOrganize)
+	model = updated.(Model)
+	if command == nil || !model.choosingWorkspace ||
+		model.workspaceInput.Value() != library || model.workspace != "" {
+		t.Fatalf(
+			"preferred prefill = choosing=%v value=%q workspace=%q command nil=%v",
+			model.choosingWorkspace,
+			model.workspaceInput.Value(),
+			model.workspace,
+			command == nil,
+		)
+	}
+}
+
+func TestExplicitWorkspaceWinsOverStalePreferredLibrary(t *testing.T) {
+	store := testPreferenceStore(t)
+	preferred := filepath.Join(store.Home, "preferred")
+	explicit := filepath.Join(store.Home, "explicit")
+	for _, path := range []string{preferred, explicit} {
+		if err := os.Mkdir(path, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	document := preferences.Defaults()
+	document.PreferredAssetLibrary = preferred
+	if _, err := preferences.Save(store, document); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(preferred); err != nil {
+		t.Fatal(err)
+	}
+
+	model, err := prepareModel(
+		Options{
+			Home:       store.Home,
+			ConfigPath: store.ConfigPath,
+			Workspace:  explicit,
+		},
+		localeGetter("zh_CN.UTF-8"),
+		true,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if model.workspace != explicit ||
+		model.currentPreferences.PreferredAssetLibrary != preferred {
+		t.Fatalf(
+			"workspace priority = workspace %q preferred %q",
+			model.workspace,
+			model.currentPreferences.PreferredAssetLibrary,
+		)
+	}
+	if _, err := os.Stat(preferred); !os.IsNotExist(err) {
+		t.Fatalf("startup recreated stale preferred library: %v", err)
+	}
+}
+
 func TestSettingsPreviewCancelAndExplicitSaveBoundary(t *testing.T) {
 	store := testPreferenceStoreWithoutDirectory(t)
 	model, err := prepareModel(
@@ -149,7 +384,7 @@ func TestSettingsPreviewCancelAndExplicitSaveBoundary(t *testing.T) {
 	model.settingsCursor = 2
 	updated, _ = model.Update(keyPress("enter"))
 	model = updated.(Model)
-	model.settingsCursor = 3
+	model.settingsCursor = 6
 	updated, command = model.Update(keyPress("enter"))
 	model = updated.(Model)
 	if command == nil || !model.settingsSaving {
@@ -198,7 +433,7 @@ func TestSettingsSavePreservesPreferencesNotEditedInN73(t *testing.T) {
 	model.settingsCursor = 2
 	updated, _ := model.Update(keyPress("enter"))
 	model = updated.(Model)
-	model.settingsCursor = 3
+	model.settingsCursor = 6
 	updated, command := model.Update(keyPress("enter"))
 	model = updated.(Model)
 	updated, _ = model.Update(command())
@@ -237,7 +472,7 @@ func TestSettingsSaveFailureRestoresEffectivePreferences(t *testing.T) {
 	if model.language != languageEnglish {
 		t.Fatalf("preview language = %q, want English", model.language)
 	}
-	model.settingsCursor = 3
+	model.settingsCursor = 6
 	updated, command := model.Update(keyPress("enter"))
 	model = updated.(Model)
 	updated, _ = model.Update(command())
@@ -294,7 +529,7 @@ func TestSettingsResetRepairsStalePreferredLibraryOnlyAfterSave(t *testing.T) {
 		t.Fatalf("warnings = %v", model.preferenceWarnings)
 	}
 	model = openSettings(t, model)
-	model.settingsCursor = 4
+	model.settingsCursor = 7
 	updated, _ := model.Update(keyPress("enter"))
 	model = updated.(Model)
 	if model.settingsDraft != preferences.Defaults() || !model.settingsDirty {
@@ -303,7 +538,7 @@ func TestSettingsResetRepairsStalePreferredLibraryOnlyAfterSave(t *testing.T) {
 	if after := readPreferenceBytes(t, store.ConfigPath); !reflect.DeepEqual(after, before) {
 		t.Fatal("reset preview changed the preference file")
 	}
-	model.settingsCursor = 3
+	model.settingsCursor = 6
 	updated, command := model.Update(keyPress("enter"))
 	model = updated.(Model)
 	updated, _ = model.Update(command())
@@ -375,6 +610,7 @@ func TestSettingsViewGoldenByLanguage(t *testing.T) {
 					},
 					report,
 					locale,
+					"",
 					"",
 					effective,
 				)

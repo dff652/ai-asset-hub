@@ -13,6 +13,8 @@ import (
 	"github.com/dff652/ai-asset-hub/internal/apply"
 	"github.com/dff652/ai-asset-hub/internal/build"
 	"github.com/dff652/ai-asset-hub/internal/inventory"
+	"github.com/dff652/ai-asset-hub/internal/preferences"
+	"github.com/dff652/ai-asset-hub/internal/workspace"
 )
 
 func TestDeploymentRequiresTypedApplyConfirmation(t *testing.T) {
@@ -93,6 +95,114 @@ func TestDeploymentGroupsChangesAndCollapses(t *testing.T) {
 	if after := len(updated.(Model).deploymentRows()); after >= before {
 		t.Fatalf("collapse kept %d rows, before %d", after, before)
 	}
+}
+
+func TestDensityOnlyChangesOptionalDiffExpansion(t *testing.T) {
+	report := successfulDiffReport()
+	report.Summary = apply.Summary{
+		Staged: 4, Create: 1, Update: 1, Unchanged: 1, Skipped: 1,
+	}
+	report.Changes = []apply.Change{
+		{Path: "home/create", Action: "create"},
+		{Path: "home/update", Action: "update"},
+		{Path: "home/unchanged", Action: "unchanged"},
+		{Path: "home/skipped", Action: "skipped"},
+	}
+	standard := deploymentModel(
+		apply.Options{Package: "fixture.tar", Home: t.TempDir()},
+		report,
+	).withLanguage(languageEnglish)
+	standard.density = preferences.DensityStandard
+	standard.resetDiffExpansionForDensity()
+	detailed := deploymentModel(
+		apply.Options{Package: "fixture.tar", Home: t.TempDir()},
+		report,
+	).withLanguage(languageEnglish)
+	detailed.density = preferences.DensityDetailed
+	detailed.resetDiffExpansionForDensity()
+
+	standardView := standard.View()
+	detailedView := detailed.View()
+	for _, necessary := range []string{
+		"fixture.tar", "Create 1", "Update 1", "Unchanged 1", "Skipped 1",
+		"Create (1)", "Update (1)", "Unchanged (1)", "Skipped (1)",
+	} {
+		if !strings.Contains(standardView, necessary) ||
+			!strings.Contains(detailedView, necessary) {
+			t.Fatalf("density hid necessary information %q", necessary)
+		}
+	}
+	for _, optional := range []string{"home/unchanged", "home/skipped"} {
+		if strings.Contains(standardView, optional) {
+			t.Fatalf("standard density expanded optional detail %q", optional)
+		}
+		if !strings.Contains(detailedView, optional) {
+			t.Fatalf("detailed density did not expand optional detail %q", optional)
+		}
+	}
+
+	standard.confirming = true
+	detailed.confirming = true
+	if standard.View() != detailed.View() {
+		t.Fatal("density changed the write confirmation screen")
+	}
+}
+
+func TestDensityKeepsNonDiffAndBlockedScreensEquivalent(t *testing.T) {
+	blockedReport := apply.Report{
+		SchemaVersion: 1,
+		Kind:          "apply",
+		Ok:            false,
+		DryRun:        true,
+		Findings: []workspace.Finding{{
+			Code: "blocked_fixture", Severity: workspace.SeverityError,
+			Message: "blocked for test", Paths: []string{"home/.claude/blocked"},
+		}},
+	}
+	blocked := deploymentModel(
+		apply.Options{Package: "blocked.tar", Home: "/unused"},
+		blockedReport,
+	).withLanguage(languageEnglish)
+
+	home := readyTestModel().WithHome(true).WithMaintenance(true).
+		withLanguage(languageEnglish)
+	inventoryModel := readyTestModel().withLanguage(languageEnglish)
+	health := doctorTestModel("/unused", healthGoldenReport()).
+		withLanguage(languageEnglish)
+	migrationModel := migrationGoldenModel().withLanguage(languageEnglish)
+	versionModel := versionGoldenModel(languageEnglish, true)
+
+	tests := []struct {
+		name  string
+		model Model
+	}{
+		{name: "home", model: home},
+		{name: "inventory", model: inventoryModel},
+		{name: "health", model: health},
+		{name: "migration", model: migrationModel},
+		{name: "version", model: versionModel},
+		{name: "blocked deployment", model: blocked},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			standard := test.model
+			detailed := test.model
+			detailed.diffExpanded = cloneExpansionMap(test.model.diffExpanded)
+			detailed.density = preferences.DensityDetailed
+			detailed.resetDiffExpansionForDensity()
+			if standard.View() != detailed.View() {
+				t.Fatalf("density changed %s outside optional diff detail", test.name)
+			}
+		})
+	}
+}
+
+func cloneExpansionMap(source map[string]bool) map[string]bool {
+	result := make(map[string]bool, len(source))
+	for key, value := range source {
+		result[key] = value
+	}
+	return result
 }
 
 func TestDiffCommandMatchesCoreAndWritesNothing(t *testing.T) {

@@ -5,9 +5,18 @@ Interface language
 > [x] Automatic (current: English)   Use LC_ALL / LC_MESSAGES / LANG
       简体中文                       Preview this session in Simplified Chinese
       English                        Preview this session in English
+
+Information density
+  [x] Standard                       Collapse unchanged, skipped, and other optional technical deta…
+      Detailed                       Expand all optional technical detail by default
+
+Preferred asset library
+      Not set                        Hint and prefill only; every session still requires confirmati…
+
+Save and reset
       Save preferences               Explicitly write the local preference file
       Reset all local preferences    Reset language, density, and preferred library; save separately
 
 Preference file  /tmp/aiah/preferences.json
 
-↑↓/jk Select · Enter Preview/Run · Esc/m Discard and return · ? Help · q Quit
+↑↓/jk Select · Enter Edit/Preview/Run · Esc/m Discard and return · ? Help · q Quit

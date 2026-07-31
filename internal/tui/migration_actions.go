@@ -474,6 +474,7 @@ func (m Model) continuePulledPackage() (tea.Model, tea.Cmd) {
 	m.deployErr = nil
 	m.applyResult = nil
 	m.diffCursor = 0
+	m.resetDiffExpansionForDensity()
 	m.notice = m.text(msgMigrationDiffReady)
 	m.noticeIsWarn = false
 	return m, diffCommand(m.deployOptions)

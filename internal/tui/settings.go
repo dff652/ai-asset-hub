@@ -6,19 +6,24 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dff652/ai-asset-hub/internal/preferences"
+	"github.com/dff652/ai-asset-hub/internal/workspace"
 )
 
 type settingsItemKind int
 
 const (
 	settingsItemLanguage settingsItemKind = iota
+	settingsItemDensity
+	settingsItemPreferredLibrary
 	settingsItemSave
 	settingsItemReset
 )
 
 type settingsItem struct {
 	kind        settingsItemKind
+	section     messageID
 	language    preferences.Language
+	density     preferences.Density
 	title       string
 	description string
 }
@@ -32,7 +37,8 @@ func (m Model) withPreferences(
 	store preferences.StoreOptions,
 	report preferences.LoadReport,
 	locale preferences.LocaleEnvironment,
-	override preferences.Language,
+	languageOverride preferences.Language,
+	densityOverride preferences.Density,
 	effective preferences.Effective,
 ) Model {
 	m.preferenceStore = store
@@ -40,13 +46,16 @@ func (m Model) withPreferences(
 	m.preferenceWarnings = append([]preferences.WarningCode(nil), report.Warnings...)
 	m.currentPreferences = report.Preferences
 	m.localeEnvironment = locale
-	m.languageOverride = override
+	m.languageOverride = languageOverride
+	m.densityOverride = densityOverride
 	m.autoLanguage = resolvedLanguage(preferences.Document{
 		SchemaVersion: report.Preferences.SchemaVersion,
 		Language:      preferences.LanguageAuto,
 		Density:       report.Preferences.Density,
 	}, locale, "")
 	m.language = tuiLanguage(effective.Language)
+	m.density = effective.Density
+	m.resetDiffExpansionForDensity()
 	m.syncLocalizedInputs()
 	return m
 }
@@ -91,7 +100,19 @@ func (m Model) updateSettingsKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.settingsDirty = m.settingsDraft != m.currentPreferences
 			m.settingsNotice = ""
 			m.settingsErr = nil
-			m.previewSettingsLanguage()
+			m.previewSettings()
+		case settingsItemDensity:
+			m.settingsDraft.Density = item.density
+			m.settingsDirty = m.settingsDraft != m.currentPreferences
+			m.settingsNotice = ""
+			m.settingsErr = nil
+			m.previewSettings()
+		case settingsItemPreferredLibrary:
+			m.editingPreferred = true
+			m.preferredInput.SetValue(m.settingsDraft.PreferredAssetLibrary)
+			m.settingsNotice = ""
+			m.settingsErr = nil
+			return m, m.preferredInput.Focus()
 		case settingsItemSave:
 			m.settingsSaving = true
 			m.settingsNotice = m.text(msgSettingsSaving)
@@ -102,15 +123,61 @@ func (m Model) updateSettingsKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.settingsDirty = m.settingsDraft != m.currentPreferences
 			m.settingsNotice = m.text(msgSettingsResetReady)
 			m.settingsErr = nil
-			m.previewSettingsLanguage()
+			m.previewSettings()
 		}
 	}
 	return m, nil
 }
 
-func (m *Model) previewSettingsLanguage() {
-	selected := resolvedLanguage(m.settingsDraft, m.localeEnvironment, "")
-	m.language = selected
+func (m Model) updatePreferredInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if message.Type == tea.KeyEsc {
+		m.editingPreferred = false
+		m.preferredInput.SetValue("")
+		m.preferredInput.Blur()
+		m.settingsNotice = ""
+		m.settingsErr = nil
+		return m, nil
+	}
+	if message.Type == tea.KeyEnter {
+		candidate := strings.TrimSpace(m.preferredInput.Value())
+		if candidate == "" {
+			m.settingsDraft.PreferredAssetLibrary = ""
+		} else {
+			normalized, err := workspace.ValidateExistingRoot(
+				candidate,
+				m.options.Home,
+				m.options.Project,
+			)
+			if err != nil {
+				m.settingsNotice = m.text(msgSettingsLibraryInvalid)
+				m.settingsErr = err
+				return m, nil
+			}
+			m.settingsDraft.PreferredAssetLibrary = normalized
+		}
+		m.editingPreferred = false
+		m.preferredInput.SetValue("")
+		m.preferredInput.Blur()
+		m.settingsDirty = m.settingsDraft != m.currentPreferences
+		m.settingsNotice = ""
+		m.settingsErr = nil
+		return m, nil
+	}
+	var command tea.Cmd
+	m.preferredInput, command = m.preferredInput.Update(message)
+	return m, command
+}
+
+func (m *Model) previewSettings() {
+	effective, err := preferences.Resolve(preferences.ResolveOptions{
+		Current: m.settingsDraft,
+		Locale:  m.localeEnvironment,
+	})
+	if err != nil {
+		return
+	}
+	m.language = tuiLanguage(effective.Language)
+	m.density = effective.Density
 	m.syncLocalizedInputs()
 }
 
@@ -154,13 +221,33 @@ func (m Model) handlePreferencesSave(message preferencesSaveMsg) (tea.Model, tea
 	return m, nil
 }
 
-func (m *Model) applyRuntimeLanguage() {
-	m.language = resolvedLanguage(
-		m.currentPreferences,
-		m.localeEnvironment,
-		m.languageOverride,
-	)
+func (m *Model) applyRuntimePreferences() {
+	effective, err := preferences.Resolve(preferences.ResolveOptions{
+		Current:          m.currentPreferences,
+		Locale:           m.localeEnvironment,
+		LanguageOverride: m.languageOverride,
+		DensityOverride:  m.densityOverride,
+	})
+	if err != nil {
+		return
+	}
+	m.language = tuiLanguage(effective.Language)
+	m.density = effective.Density
 	m.syncLocalizedInputs()
+}
+
+func (m *Model) applyRuntimeLanguage() {
+	m.applyRuntimePreferences()
+}
+
+func (m *Model) resetDiffExpansionForDensity() {
+	detailed := m.density == preferences.DensityDetailed
+	m.diffExpanded["action:create"] = true
+	m.diffExpanded["action:update"] = true
+	m.diffExpanded["action:unchanged"] = detailed
+	m.diffExpanded["action:skipped"] = detailed
+	m.diffExpanded["findings"] = true
+	m.clampDiffCursor()
 }
 
 func resolvedLanguage(
@@ -201,6 +288,7 @@ func (m Model) settingsItems() []settingsItem {
 	return []settingsItem{
 		{
 			kind:        settingsItemLanguage,
+			section:     msgSettingsLanguageTitle,
 			language:    preferences.LanguageAuto,
 			title:       m.text(msgSettingsLanguageAuto, m.languageLabel(m.autoLanguage)),
 			description: m.text(msgSettingsLanguageAutoDesc),
@@ -218,7 +306,27 @@ func (m Model) settingsItems() []settingsItem {
 			description: m.text(msgSettingsLanguageEnglishDesc),
 		},
 		{
+			kind:        settingsItemDensity,
+			section:     msgSettingsDensityTitle,
+			density:     preferences.DensityStandard,
+			title:       m.text(msgSettingsDensityStandard),
+			description: m.text(msgSettingsDensityStandardDesc),
+		},
+		{
+			kind:        settingsItemDensity,
+			density:     preferences.DensityDetailed,
+			title:       m.text(msgSettingsDensityDetailed),
+			description: m.text(msgSettingsDensityDetailedDesc),
+		},
+		{
+			kind:        settingsItemPreferredLibrary,
+			section:     msgSettingsLibraryTitle,
+			title:       m.preferredLibraryLabel(),
+			description: m.text(msgSettingsLibraryDesc),
+		},
+		{
 			kind:        settingsItemSave,
+			section:     msgSettingsActionsTitle,
 			title:       m.text(msgSettingsSaveTitle),
 			description: m.text(msgSettingsSaveDesc),
 		},
@@ -228,6 +336,13 @@ func (m Model) settingsItems() []settingsItem {
 			description: m.text(msgSettingsResetDesc),
 		},
 	}
+}
+
+func (m Model) preferredLibraryLabel() string {
+	if m.settingsDraft.PreferredAssetLibrary == "" {
+		return m.text(msgSettingsLibraryNone)
+	}
+	return m.text(msgSettingsLibrarySelected, m.settingsDraft.PreferredAssetLibrary)
 }
 
 func (m Model) languageLabel(value language) string {
@@ -255,6 +370,9 @@ func (m Model) preferenceWarningLabel(code preferences.WarningCode) string {
 }
 
 func (m Model) settingsView(style styles) string {
+	if m.editingPreferred {
+		return m.preferredLibraryInputView(style)
+	}
 	state := m.text(msgSettingsStateSaved)
 	if m.settingsDirty {
 		state = m.text(msgSettingsStateUnsaved)
@@ -267,10 +385,11 @@ func (m Model) settingsView(style styles) string {
 	lines := []string{
 		header,
 		style.muted.Render(m.text(msgSettingsSummary)),
-		"",
-		style.header.Render(m.text(msgSettingsLanguageTitle)),
 	}
 	for index, item := range m.settingsItems() {
+		if item.section != "" {
+			lines = append(lines, "", style.header.Render(m.text(item.section)))
+		}
 		prefix := "  "
 		if index == m.settingsCursor {
 			prefix = "> "
@@ -278,6 +397,9 @@ func (m Model) settingsView(style styles) string {
 		checked := "   "
 		if item.kind == settingsItemLanguage &&
 			item.language == m.settingsDraft.Language {
+			checked = "[x]"
+		} else if item.kind == settingsItemDensity &&
+			item.density == m.settingsDraft.Density {
 			checked = "[x]"
 		}
 		line := prefix + checked + " " +
@@ -294,6 +416,14 @@ func (m Model) settingsView(style styles) string {
 			lines,
 			style.muted.Render(
 				m.text(msgSettingsOverride, string(m.languageOverride)),
+			),
+		)
+	}
+	if m.densityOverride != "" {
+		lines = append(
+			lines,
+			style.muted.Render(
+				m.text(msgSettingsDensityOverride, string(m.densityOverride)),
 			),
 		)
 	}
@@ -314,12 +444,29 @@ func (m Model) settingsView(style styles) string {
 	return strings.Join(lines, "\n")
 }
 
+func (m Model) preferredLibraryInputView(style styles) string {
+	lines := []string{
+		style.header.Render(m.text(msgSettingsLibraryEditTitle)),
+		"",
+		m.text(msgSettingsLibraryEditPrompt),
+		m.preferredInput.View(),
+		"",
+		m.text(msgSettingsLibraryEditBoundary),
+		m.text(msgSettingsLibraryEditFooter),
+	}
+	if m.settingsNotice != "" {
+		lines = append(lines, "", style.error.Render(m.settingsNotice))
+	}
+	return strings.Join(lines, "\n")
+}
+
 func (m Model) settingsHelpView(style styles) string {
 	return strings.Join([]string{
 		style.header.Render(m.text(msgSettingsHelpTitle)),
 		"",
 		m.text(msgSettingsHelpChoose),
 		m.text(msgSettingsHelpPreview),
+		m.text(msgSettingsHelpLibrary),
 		m.text(msgSettingsHelpSave),
 		m.text(msgSettingsHelpReset),
 		m.text(msgSettingsHelpOverride),

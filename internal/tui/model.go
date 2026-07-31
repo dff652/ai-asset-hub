@@ -118,13 +118,17 @@ type Model struct {
 	currentPreferences preferences.Document
 	localeEnvironment  preferences.LocaleEnvironment
 	languageOverride   preferences.Language
+	densityOverride    preferences.Density
 	autoLanguage       language
+	density            preferences.Density
 	settingsDraft      preferences.Document
 	settingsCursor     int
 	settingsDirty      bool
 	settingsSaving     bool
 	settingsNotice     string
 	settingsErr        error
+	preferredInput     textinput.Model
+	editingPreferred   bool
 }
 
 func NewModel(options inventory.Options) Model {
@@ -156,20 +160,26 @@ func NewModel(options inventory.Options) Model {
 	manageInput.Prompt = "> "
 	manageInput.CharLimit = 6
 	manageInput.Width = 12
+	preferredInput := textinput.New()
+	preferredInput.Prompt = "> "
+	preferredInput.Placeholder = "~/ai-assets"
+	preferredInput.CharLimit = 512
+	preferredInput.Width = 64
 	model := Model{
 		options:        options,
 		filterInput:    input,
 		workspaceInput: workspaceInput,
 		profileInput:   profileInput,
 		manageInput:    manageInput,
+		preferredInput: preferredInput,
 		migrationFlow:  newMigrationFlow(),
 		expanded:       make(map[string]bool),
 		selected:       make(map[string]bool),
 		diffExpanded: map[string]bool{
 			"action:create":    true,
 			"action:update":    true,
-			"action:unchanged": true,
-			"action:skipped":   true,
+			"action:unchanged": false,
+			"action:skipped":   false,
 			"findings":         true,
 		},
 		confirmInput:       confirm,
@@ -183,6 +193,7 @@ func NewModel(options inventory.Options) Model {
 		language:           languageZhCN,
 		currentPreferences: preferences.Defaults(),
 		autoLanguage:       languageZhCN,
+		density:            preferences.DensityStandard,
 	}
 	model.syncLocalizedInputs()
 	return model
@@ -267,6 +278,7 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = message.Height
 		m.filterInput.Width = max(10, min(48, message.Width-6))
 		m.workspaceInput.Width = max(10, min(64, message.Width-6))
+		m.preferredInput.Width = max(10, min(64, message.Width-6))
 		m.migrationFlow.channelInput.Width = max(10, min(64, message.Width-6))
 		m.migrationFlow.pullOutInput.Width = max(10, min(64, message.Width-6))
 		return m, nil
@@ -374,6 +386,7 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.deployErr = nil
 		m.applyResult = nil
 		m.diffCursor = 0
+		m.resetDiffExpansionForDensity()
 		m.notice = m.text(msgProfileBuildReady)
 		m.noticeIsWarn = false
 		return m, diffCommand(m.deployOptions)
@@ -500,6 +513,9 @@ func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.choosingProfile {
 		return m.updateProfileInput(message)
+	}
+	if m.editingPreferred {
+		return m.updatePreferredInput(message)
 	}
 	if m.migrationFlow.publishConfirming {
 		return m.updatePublishConfirmation(message)
