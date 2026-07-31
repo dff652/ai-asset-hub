@@ -2,6 +2,8 @@ package pkgload
 
 import (
 	"archive/tar"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"io"
 	"os"
@@ -30,6 +32,9 @@ type Package struct {
 	Files map[string][]byte
 	// Source is the user-supplied package path (tar or directory).
 	Source string
+	// ArchiveSHA256 identifies the exact tar bytes read. It is empty for an
+	// extracted directory, which has no single archive digest.
+	ArchiveSHA256 string
 }
 
 // Open loads and verifies a package from a .tar archive or extracted directory.
@@ -123,7 +128,8 @@ func openTar(filePath string) (Package, error) {
 	}
 	defer file.Close()
 
-	reader := tar.NewReader(file)
+	digest := sha256.New()
+	reader := tar.NewReader(io.TeeReader(file, digest))
 	members := make(map[string][]byte)
 	prefix := ""
 	layoutSet := false
@@ -173,6 +179,12 @@ func openTar(filePath string) (Package, error) {
 		}
 		members[name] = body
 	}
+	// tar.Reader may stop at the end-of-archive marker before trailing bytes.
+	// Hash the remainder from the same open file so the digest identifies the
+	// complete archive without reopening a replaceable path.
+	if _, err := io.Copy(digest, file); err != nil {
+		return Package{}, ErrInvalidPackage
+	}
 
 	var manifest build.PackageManifest
 	if err := decodeJSON(members["manifest.json"], &manifest); err != nil {
@@ -203,7 +215,13 @@ func openTar(filePath string) (Package, error) {
 	if err := validateFiles(lock, files); err != nil {
 		return Package{}, err
 	}
-	return Package{Manifest: manifest, Lock: lock, Files: files, Source: filePath}, nil
+	return Package{
+		Manifest:      manifest,
+		Lock:          lock,
+		Files:         files,
+		Source:        filePath,
+		ArchiveSHA256: hex.EncodeToString(digest.Sum(nil)),
+	}, nil
 }
 
 func canonicalMemberName(value string, isDirectory bool) (string, string, error) {

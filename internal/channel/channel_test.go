@@ -53,6 +53,125 @@ func TestPublishThenPullRoundTrip(t *testing.T) {
 	}
 }
 
+func TestPullRefusesToOverwriteOutputArtifacts(t *testing.T) {
+	source := buildPackage(t, "workspace-2b", "personal")
+	channelRoot := t.TempDir()
+	published, err := Publish(PublishOptions{Package: source.archive, Channel: channelRoot})
+	if err != nil {
+		t.Fatalf("publish: %v", err)
+	}
+
+	out := t.TempDir()
+	target := filepath.Join(out, filepath.Base(source.archive))
+	if err := os.WriteFile(target, []byte("keep this local file"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	before := snapshotTree(t, out)
+
+	_, err = Pull(PullOptions{Channel: channelRoot, Name: published.Name, Out: out})
+	if !errors.Is(err, ErrChannelBlocked) {
+		t.Fatalf("err = %v, want ErrChannelBlocked", err)
+	}
+	if diff := treeDiff(before, snapshotTree(t, out)); diff != "" {
+		t.Fatalf("a refused pull changed the output directory:\n%s", diff)
+	}
+	body, err := os.ReadFile(target)
+	if err != nil || string(body) != "keep this local file" {
+		t.Fatalf("pre-existing artifact was not preserved: body=%q err=%v", body, err)
+	}
+}
+
+func TestPullRefusesAPartialIdenticalArtifactSet(t *testing.T) {
+	source := buildPackage(t, "workspace-2b", "personal")
+	channelRoot := t.TempDir()
+	published, err := Publish(PublishOptions{Package: source.archive, Channel: channelRoot})
+	if err != nil {
+		t.Fatalf("publish: %v", err)
+	}
+
+	out := t.TempDir()
+	archive, err := os.ReadFile(source.archive)
+	if err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(out, filepath.Base(source.archive))
+	if err := os.WriteFile(target, archive, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	before := snapshotTree(t, out)
+
+	_, err = Pull(PullOptions{Channel: channelRoot, Name: published.Name, Out: out})
+	if !errors.Is(err, ErrChannelBlocked) {
+		t.Fatalf("err = %v, want ErrChannelBlocked", err)
+	}
+	if diff := treeDiff(before, snapshotTree(t, out)); diff != "" {
+		t.Fatalf("a refused partial pull changed the output directory:\n%s", diff)
+	}
+}
+
+func TestPullOfAnIdenticalArtifactSetIsIdempotent(t *testing.T) {
+	source := buildPackage(t, "workspace-2b", "personal")
+	channelRoot := t.TempDir()
+	published, err := Publish(PublishOptions{Package: source.archive, Channel: channelRoot})
+	if err != nil {
+		t.Fatalf("publish: %v", err)
+	}
+	out := t.TempDir()
+	options := PullOptions{Channel: channelRoot, Name: published.Name, Out: out}
+	first, err := Pull(options)
+	if err != nil {
+		t.Fatalf("first pull: %v", err)
+	}
+	before := snapshotTree(t, out)
+
+	second, err := Pull(options)
+	if err != nil {
+		t.Fatalf("second pull: %v", err)
+	}
+	if !second.Ok || second.Package != first.Package || second.SHA256 != first.SHA256 {
+		t.Fatalf("second report = %#v, first = %#v", second, first)
+	}
+	if diff := treeDiff(before, snapshotTree(t, out)); diff != "" {
+		t.Fatalf("an idempotent pull changed the output directory:\n%s", diff)
+	}
+}
+
+func TestPullRefusesAnOutputArtifactSymlink(t *testing.T) {
+	source := buildPackage(t, "workspace-2b", "personal")
+	channelRoot := t.TempDir()
+	published, err := Publish(PublishOptions{Package: source.archive, Channel: channelRoot})
+	if err != nil {
+		t.Fatalf("publish: %v", err)
+	}
+
+	out := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "outside")
+	archive, err := os.ReadFile(source.archive)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(outside, archive, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(out, filepath.Base(source.archive))
+	if err := os.Symlink(outside, target); err != nil {
+		t.Fatal(err)
+	}
+	before := snapshotTree(t, out)
+
+	_, err = Pull(PullOptions{Channel: channelRoot, Name: published.Name, Out: out})
+	if !errors.Is(err, ErrChannelBlocked) {
+		t.Fatalf("err = %v, want ErrChannelBlocked", err)
+	}
+	if diff := treeDiff(before, snapshotTree(t, out)); diff != "" {
+		t.Fatalf("a refused symlink pull changed the output directory:\n%s", diff)
+	}
+	body, err := os.ReadFile(outside)
+	if err != nil || string(body) != string(archive) {
+		t.Fatalf("symlink target changed: err=%v", err)
+	}
+}
+
 // TestPublishIsImmutable anchors ADR-0007 §3.
 func TestPublishIsImmutable(t *testing.T) {
 	source := buildPackage(t, "workspace-2b", "personal")

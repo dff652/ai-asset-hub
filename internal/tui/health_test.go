@@ -123,6 +123,27 @@ func TestRollbackRequiresHealthyCurrentDeploymentAndTypedConfirmation(t *testing
 	}
 }
 
+func TestRollbackRejectsWrongConfirmation(t *testing.T) {
+	model := doctorTestModel(t.TempDir(), apply.DoctorReport{
+		Ok: true,
+		Deployment: &apply.DoctorDeployment{
+			BackupID: "backup-123",
+		},
+	})
+	updated, _ := model.Update(keyPress("x"))
+	model = updated.(Model)
+	for _, character := range "yes" {
+		updated, _ = model.Update(keyPress(string(character)))
+		model = updated.(Model)
+	}
+	updated, command := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(Model)
+	if command != nil || !model.rollbackConfirming || model.rollbacking ||
+		!model.noticeIsWarn || !strings.Contains(model.notice, "rollback") {
+		t.Fatalf("wrong rollback confirmation was not rejected: %#v command=%v", model, command != nil)
+	}
+}
+
 func TestRollbackCommandUsesCoreAndRefreshesHealth(t *testing.T) {
 	home := t.TempDir()
 	pkg := buildTUIFixturePackage(t, "workspace-valid")
@@ -164,6 +185,89 @@ func TestRollbackCommandUsesCoreAndRefreshesHealth(t *testing.T) {
 		model.status != statusLoading || model.rollbackResult == nil {
 		t.Fatalf("rollback did not refresh health and inventory: %#v command=%v",
 			model, refresh != nil)
+	}
+}
+
+func TestHealthViewGoldenByLanguage(t *testing.T) {
+	tests := []struct {
+		name       string
+		language   language
+		confirming bool
+		golden     string
+	}{
+		{
+			name: "health zh-CN", language: languageZhCN,
+			golden: "health.zh-CN.golden",
+		},
+		{
+			name: "health en", language: languageEnglish,
+			golden: "health.en.golden",
+		},
+		{
+			name: "rollback confirm zh-CN", language: languageZhCN, confirming: true,
+			golden: "rollback.confirm.zh-CN.golden",
+		},
+		{
+			name: "rollback confirm en", language: languageEnglish, confirming: true,
+			golden: "rollback.confirm.en.golden",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			model := doctorTestModel("/unused", healthGoldenReport()).
+				withLanguage(test.language)
+			model.rollbackConfirming = test.confirming
+			model.width = 100
+			model.height = 16
+			model.plain = true
+
+			got := model.View()
+			path := filepath.Join("testdata", test.golden)
+			want, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("read golden: %v\n--- got ---\n%s", err, got)
+			}
+			if normalizeTerminalGolden(got) != normalizeTerminalGolden(string(want)) {
+				t.Fatalf(
+					"view differs from %s:\n--- got ---\n%s\n--- want ---\n%s",
+					path,
+					got,
+					want,
+				)
+			}
+		})
+	}
+}
+
+func TestEnglishRollbackResultAndBlockedNotice(t *testing.T) {
+	model := doctorTestModel("/unused", healthGoldenReport()).
+		withLanguage(languageEnglish)
+	model.rollbackResult = &apply.RollbackReport{
+		Ok: true, BackupID: "backup-123",
+		Restored: []string{"home/restored"}, Removed: []string{"home/removed"},
+	}
+	for _, want := range []string{"Undo complete", "Backup ID backup-123", "Restored 1", "Removed 1"} {
+		if view := model.View(); !strings.Contains(view, want) {
+			t.Fatalf("English rollback result omits %q:\n%s", want, view)
+		}
+	}
+
+	blocked := doctorTestModel("/unused", apply.DoctorReport{
+		Ok: false,
+		Deployment: &apply.DoctorDeployment{
+			BackupID: "backup-123",
+		},
+	}).withLanguage(languageEnglish)
+	updated, command := blocked.Update(keyPress("x"))
+	next := updated.(Model)
+	if command != nil || !next.noticeIsWarn ||
+		!strings.Contains(next.notice, "did not pass") {
+		t.Fatalf(
+			"English rollback guard = notice %q warn=%v command nil=%v",
+			next.notice,
+			next.noticeIsWarn,
+			command == nil,
+		)
 	}
 }
 
@@ -225,4 +329,20 @@ func doctorTestModel(home string, report apply.DoctorReport) Model {
 	model.screen = screenHealth
 	updated, _ := model.Update(doctorMsg{report: report})
 	return updated.(Model)
+}
+
+func healthGoldenReport() apply.DoctorReport {
+	return apply.DoctorReport{
+		Ok: true,
+		Summary: apply.DoctorSummary{
+			Deployment: true, Backups: 2, Unchanged: 1, LocallyModified: 1,
+		},
+		Deployment: &apply.DoctorDeployment{
+			BackupID: "backup-123", Package: "personal.tar", Version: "1.2.3",
+			Profile: "personal", ProducedBy: "aiah test", AppliedAt: "2026-07-30T12:00:00Z",
+		},
+		Drift: []apply.DriftEntry{{
+			Path: "home/.claude/managed.md", Status: "locally-modified",
+		}},
+	}
 }

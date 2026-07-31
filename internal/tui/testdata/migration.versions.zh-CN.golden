@@ -1,0 +1,10 @@
+aiah · 查看与取回版本                                                                             team-channel
+按发布顺序显示；不会比较版本号大小，也不会自动选择“最新版”。
+
+  1.2.2              personal         aaaaaaaaaaaa
+> 1.2.3              personal         bbbbbbbbbbbb
+
+当前选择  personal / 1.2.3 / personal
+SHA256    bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+↑↓/jk 选择 · Enter 取回此版本 · r 刷新 · Esc 返回 · m 首页 · ? 帮助

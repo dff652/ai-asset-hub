@@ -1,6 +1,8 @@
 package channel
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -41,8 +43,9 @@ type PullReport struct {
 // Pull copies a published release out of the channel and verifies it.
 //
 // The archive is checked against its recorded digest after the copy; a mismatch
-// removes what was written and fails closed. Pull never touches HOME: it hands
-// back a package path for the user to inspect with diff and then apply.
+// removes only artifacts created by this call and fails closed. Pull never
+// touches HOME: it hands back a package path for the user to inspect with diff
+// and then apply.
 func Pull(options PullOptions) (PullReport, error) {
 	report := PullReport{SchemaVersion: 1, Kind: "pull", ProducedBy: producedBy(), Files: []string{}}
 
@@ -70,7 +73,13 @@ func Pull(options PullOptions) (PullReport, error) {
 	report.Name, report.Version, report.Profile = release.Name, release.Version, release.Profile
 	report.ResolvedLatest = strings.TrimSpace(options.Version) == ""
 
-	source := filepath.Join(channelRoot, filepath.FromSlash(release.Path))
+	source, err := secureChannelDirectory(channelRoot, release.Path, false)
+	if err != nil {
+		return report, fmt.Errorf(
+			"%w: the channel index lists %s %s outside a safe release tree",
+			ErrChannelBlocked, release.Name, release.Version,
+		)
+	}
 	artifacts := artifactsFor(strings.TrimSuffix(release.Archive, ".tar"))
 	for _, member := range artifacts.names() {
 		if !regularFile(filepath.Join(source, member)) {
@@ -80,9 +89,9 @@ func Pull(options PullOptions) (PullReport, error) {
 		}
 	}
 
-	written, err := copyArtifacts(source, outRoot, artifacts)
+	created, err := copyArtifacts(source, outRoot, artifacts)
 	if err != nil {
-		removeAll(written)
+		removeAll(created)
 		return report, err
 	}
 
@@ -92,11 +101,11 @@ func Pull(options PullOptions) (PullReport, error) {
 		filepath.Join(outRoot, artifacts.sha),
 	)
 	if err != nil {
-		removeAll(written)
+		removeAll(created)
 		return report, err
 	}
 	if release.SHA256 != "" && digest != release.SHA256 {
-		removeAll(written)
+		removeAll(created)
 		return report, fmt.Errorf(
 			"%w: %s does not match the digest the channel index recorded",
 			ErrChannelBlocked, artifacts.archive)
@@ -153,20 +162,87 @@ func List(options ListOptions) (ListReport, error) {
 	return report, nil
 }
 
+// copyArtifacts never overwrites an output artifact. A complete, byte-identical
+// set is an idempotent no-op; a partial or different set is refused before any
+// write. O_EXCL closes the preflight-to-write race for a concurrently created
+// target.
+type artifactCopy struct {
+	name   string
+	target string
+	body   []byte
+}
+
 func copyArtifacts(source, destination string, artifacts artifactSet) ([]string, error) {
-	written := make([]string, 0, len(artifacts.names()))
+	copies := make([]artifactCopy, 0, len(artifacts.names()))
+	existing := 0
 	for _, member := range artifacts.names() {
-		body, err := os.ReadFile(filepath.Join(source, member))
-		if err != nil {
-			return written, fmt.Errorf("%w: cannot read %s from the channel", ErrChannelBlocked, member)
-		}
+		sourcePath := filepath.Join(source, member)
 		target := filepath.Join(destination, member)
-		if err := os.WriteFile(target, body, 0o644); err != nil {
-			return written, fmt.Errorf("%w: cannot write %s", ErrChannelBlocked, member)
+
+		want, err := os.ReadFile(sourcePath)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"%w: cannot read %s from the channel", ErrChannelBlocked, member,
+			)
 		}
-		written = append(written, target)
+		copies = append(copies, artifactCopy{name: member, target: target, body: want})
+		info, err := os.Lstat(target)
+		switch {
+		case err == nil:
+			if !info.Mode().IsRegular() {
+				return nil, fmt.Errorf(
+					"%w: output artifact %s exists but is not a regular file",
+					ErrChannelBlocked, member,
+				)
+			}
+			got, err := os.ReadFile(target)
+			if err != nil {
+				return nil, fmt.Errorf(
+					"%w: cannot inspect output artifact %s", ErrChannelBlocked, member,
+				)
+			}
+			existing++
+			if !bytes.Equal(got, want) {
+				return nil, fmt.Errorf(
+					"%w: output artifact %s already exists with different content",
+					ErrChannelBlocked, member,
+				)
+			}
+		case !errors.Is(err, os.ErrNotExist):
+			return nil, fmt.Errorf(
+				"%w: cannot inspect output artifact %s", ErrChannelBlocked, member,
+			)
+		}
 	}
-	return written, nil
+	if existing != 0 {
+		if existing == len(copies) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf(
+			"%w: output contains only part of the requested artifact set",
+			ErrChannelBlocked,
+		)
+	}
+
+	created := make([]string, 0, len(copies))
+	for _, copy := range copies {
+		output, err := os.OpenFile(copy.target, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		if err != nil {
+			return created, fmt.Errorf("%w: cannot create %s", ErrChannelBlocked, copy.name)
+		}
+		written, err := output.Write(copy.body)
+		if err != nil || written != len(copy.body) {
+			_ = output.Close()
+			_ = os.Remove(copy.target)
+			return created, fmt.Errorf("%w: cannot write %s", ErrChannelBlocked, copy.name)
+		}
+		if err := output.Close(); err != nil {
+			_ = os.Remove(copy.target)
+			return created, fmt.Errorf("%w: cannot close %s", ErrChannelBlocked, copy.name)
+		}
+		created = append(created, copy.target)
+	}
+	return created, nil
 }
 
 func removeAll(paths []string) {

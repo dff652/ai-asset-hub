@@ -1,14 +1,19 @@
 package tui
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/dff652/ai-asset-hub/internal/apply"
+	"github.com/dff652/ai-asset-hub/internal/build"
 	"github.com/dff652/ai-asset-hub/internal/channel"
+	"github.com/dff652/ai-asset-hub/internal/inventory"
 	"github.com/dff652/ai-asset-hub/internal/migration"
 )
 
@@ -24,14 +29,14 @@ func TestHomeMigrationRequiresAnExplicitAssetLibrary(t *testing.T) {
 	}
 }
 
-func TestMigrationViewExplainsReadOnlyAlignment(t *testing.T) {
+func TestMigrationViewExplainsAlignmentAndExplicitActions(t *testing.T) {
 	model := readyTestModel().
 		WithWorkspace("/tmp/assets").
 		WithHome(true).
 		WithMaintenance(true)
 	model.screen = screenMigration
-	model.migrationStatus = statusReady
-	model.migrationReport = migration.Report{
+	model.migrationFlow.status = statusReady
+	model.migrationFlow.report = migration.Report{
 		Ok: true,
 		Library: migration.LibraryStatus{
 			Root: "/tmp/assets", Name: "personal", Version: "1.2.3",
@@ -49,13 +54,588 @@ func TestMigrationViewExplainsReadOnlyAlignment(t *testing.T) {
 	}
 	view := model.View()
 	for _, want := range []string{
-		"迁移到其他设备", "只读状态", "personal / 1.2.3",
+		"迁移到其他设备", "版本对齐", "personal / 1.2.3",
 		"claude、codex", "/mnt/aiah", "与资产库版本一致",
-		"不会生成、发布、取回或应用",
+		"状态读取保持只读", "p 发布当前版本", "v 查看/取回版本",
+		"e 换机检查",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("migration view omits %q:\n%s", want, view)
 		}
+	}
+}
+
+func TestMigrationWriteActionsRequireReadableStatus(t *testing.T) {
+	for _, pressed := range []string{"e", "p", "v"} {
+		model := readyTestModel().
+			WithWorkspace("/tmp/assets").
+			WithHome(true).
+			WithMaintenance(true)
+		model.screen = screenMigration
+		model.migrationFlow.status = statusFailed
+		model.migrationFlow.channel = t.TempDir()
+
+		updated, command := model.Update(keyPress(pressed))
+		next := updated.(Model)
+		if command != nil || next.choosingProfile ||
+			next.migrationFlow.mode != migrationModeStatus ||
+			!next.noticeIsWarn ||
+			!strings.Contains(next.notice, "迁移状态尚未可用") {
+			t.Fatalf("key %q bypassed failed status: %#v", pressed, next)
+		}
+	}
+}
+
+func TestMigrationPreflightUsesTheProfileAndWritesNothing(t *testing.T) {
+	workspaceRoot := copyMigrationFixture(t, "workspace-valid")
+	home := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(home, ".codex"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(home, ".codex", "auth.json"),
+		[]byte(`{"token":"device-private"}`),
+		0o600,
+	); err != nil {
+		t.Fatal(err)
+	}
+	model := migrationTestModel(t, workspaceRoot, home, t.TempDir())
+	beforeWorkspace := snapshotTree(t, workspaceRoot)
+	beforeHome := snapshotTree(t, home)
+
+	updated, focus := model.Update(keyPress("e"))
+	model = updated.(Model)
+	if focus == nil || !model.choosingProfile ||
+		model.profilePurpose != profileForPreflight ||
+		!strings.Contains(model.View(), "不会生成安装包") {
+		t.Fatalf("preflight profile state=choosing %v purpose=%d command nil=%v\n%s",
+			model.choosingProfile, model.profilePurpose, focus == nil, model.View())
+	}
+
+	updated, command := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(Model)
+	if command == nil || model.building ||
+		model.migrationFlow.mode != migrationModePreflight ||
+		model.migrationFlow.preflightStatus != statusLoading {
+		t.Fatalf("preflight state=mode %d status %d building %v command nil=%v",
+			model.migrationFlow.mode,
+			model.migrationFlow.preflightStatus,
+			model.building,
+			command == nil,
+		)
+	}
+	if _, err := os.Stat(filepath.Join(workspaceRoot, "dist")); !os.IsNotExist(err) {
+		t.Fatalf("starting preflight created dist: %v", err)
+	}
+
+	updated, _ = model.Update(command())
+	model = updated.(Model)
+	if model.migrationFlow.preflightStatus != statusReady ||
+		!model.migrationFlow.preflightReport.Ok ||
+		model.migrationFlow.preflightReport.Summary.DevicePrivateItems != 1 {
+		t.Fatalf("preflight report=%#v err=%v",
+			model.migrationFlow.preflightReport,
+			model.migrationFlow.preflightErr,
+		)
+	}
+	view := model.View()
+	for _, want := range []string{
+		"换机前置检查", "检查阶段零写入", "本机不迁移 1",
+		"目标工具 · claude", "本机不迁移 · home/.codex/auth.json",
+	} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("preflight view omits %q:\n%s", want, view)
+		}
+	}
+	if !reflect.DeepEqual(beforeWorkspace, snapshotTree(t, workspaceRoot)) ||
+		!reflect.DeepEqual(beforeHome, snapshotTree(t, home)) {
+		t.Fatal("preflight changed the workspace or target HOME")
+	}
+}
+
+func TestMigrationPublishRequiresTypedConfirmation(t *testing.T) {
+	workspaceRoot := copyMigrationFixture(t, "workspace-valid")
+	home := t.TempDir()
+	channelRoot := t.TempDir()
+	model := migrationTestModel(t, workspaceRoot, home, channelRoot)
+
+	updated, focus := model.Update(keyPress("p"))
+	model = updated.(Model)
+	if focus == nil || !model.choosingProfile || model.profilePurpose != profileForPublish {
+		t.Fatalf("publish profile state=choosing %v purpose=%d command nil=%v",
+			model.choosingProfile, model.profilePurpose, focus == nil)
+	}
+	updated, buildCommand := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(Model)
+	if buildCommand == nil || !model.building {
+		t.Fatal("profile confirmation did not start a publish build")
+	}
+	updated, _ = model.Update(buildCommand())
+	model = updated.(Model)
+	if !model.migrationFlow.publishConfirming || model.migrationFlow.publishPackage == "" {
+		t.Fatalf("build did not enter publish confirmation: %#v", model)
+	}
+
+	before := snapshotTree(t, channelRoot)
+	for _, character := range "wrong" {
+		updated, _ = model.Update(keyPress(string(character)))
+		model = updated.(Model)
+	}
+	updated, publishCommand := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(Model)
+	if publishCommand != nil || !model.migrationFlow.publishConfirming || !model.noticeIsWarn {
+		t.Fatalf("wrong confirmation started publish: confirming=%v notice=%q command nil=%v",
+			model.migrationFlow.publishConfirming, model.notice, publishCommand == nil)
+	}
+	if !strings.Contains(model.View(), "必须完整输入 publish") {
+		t.Fatalf("publish confirmation did not show the mismatch:\n%s", model.View())
+	}
+	if after := snapshotTree(t, channelRoot); !reflect.DeepEqual(before, after) {
+		t.Fatalf("channel changed before typed confirmation:\nbefore=%#v\nafter=%#v", before, after)
+	}
+
+	for _, character := range "publish" {
+		updated, _ = model.Update(keyPress(string(character)))
+		model = updated.(Model)
+	}
+	updated, publishCommand = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(Model)
+	if publishCommand == nil || !model.migrationFlow.publishing ||
+		model.migrationFlow.publishConfirming {
+		t.Fatalf("publish confirmation state=publishing %v confirming %v command nil=%v",
+			model.migrationFlow.publishing,
+			model.migrationFlow.publishConfirming,
+			publishCommand == nil)
+	}
+	updated, refresh := model.Update(publishCommand())
+	model = updated.(Model)
+	if refresh == nil || model.migrationFlow.publishing ||
+		!strings.Contains(model.notice, "已发布") {
+		t.Fatalf("publish notice=%q publishing=%v refresh nil=%v",
+			model.notice, model.migrationFlow.publishing, refresh == nil)
+	}
+	updated, _ = model.Update(refresh())
+	model = updated.(Model)
+	if model.migrationFlow.status != statusReady ||
+		model.migrationFlow.report.Alignment.Channel != "same-version" {
+		t.Fatalf("post-publish status=%d report=%#v",
+			model.migrationFlow.status, model.migrationFlow.report)
+	}
+}
+
+func TestMigrationPullChecksTheSelectedPackageBeforeDiffAndDoesNotWriteHome(t *testing.T) {
+	workspaceRoot := copyMigrationFixture(t, "workspace-valid")
+	channelRoot := t.TempDir()
+	buildOut := t.TempDir()
+	built, err := build.Build(build.Options{
+		Manifest: filepath.Join(workspaceRoot, "manifest.yaml"),
+		Root:     workspaceRoot,
+		Profile:  "personal",
+		OutDir:   buildOut,
+	})
+	if err != nil || !built.Ok || built.Package == nil {
+		t.Fatalf("build: err=%v report=%#v", err, built)
+	}
+	archive := filepath.Join(buildOut, built.Package.Archive)
+	if _, err := channel.Publish(channel.PublishOptions{
+		Package: archive,
+		Channel: channelRoot,
+	}); err != nil {
+		t.Fatalf("publish: %v", err)
+	}
+	manifestPath := filepath.Join(workspaceRoot, "manifest.yaml")
+	manifest, err := os.ReadFile(manifestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	updatedManifest := strings.Replace(string(manifest), `version: "2026.07.1"`,
+		`version: "2026.07.2"`, 1)
+	if updatedManifest == string(manifest) {
+		t.Fatal("fixture version was not updated")
+	}
+	if err := os.WriteFile(manifestPath, []byte(updatedManifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	secondOut := t.TempDir()
+	second, err := build.Build(build.Options{
+		Manifest: manifestPath,
+		Root:     workspaceRoot,
+		Profile:  "personal",
+		OutDir:   secondOut,
+	})
+	if err != nil || !second.Ok || second.Package == nil {
+		t.Fatalf("second build: err=%v report=%#v", err, second)
+	}
+	if _, err := channel.Publish(channel.PublishOptions{
+		Package: filepath.Join(secondOut, second.Package.Archive),
+		Channel: channelRoot,
+	}); err != nil {
+		t.Fatalf("second publish: %v", err)
+	}
+
+	home := t.TempDir()
+	model := migrationTestModel(t, workspaceRoot, home, channelRoot)
+	beforeHome := snapshotTree(t, home)
+
+	updated, listCommand := model.Update(keyPress("v"))
+	model = updated.(Model)
+	if listCommand == nil || model.migrationFlow.mode != migrationModeVersions ||
+		model.migrationFlow.versionsStatus != statusLoading {
+		t.Fatalf("versions state=mode %d status %d command nil=%v",
+			model.migrationFlow.mode, model.migrationFlow.versionsStatus, listCommand == nil)
+	}
+	updated, _ = model.Update(listCommand())
+	model = updated.(Model)
+	if model.migrationFlow.versionsStatus != statusReady ||
+		len(model.migrationFlow.versionsReport.Releases) != 2 ||
+		model.migrationFlow.versionsCursor != 1 ||
+		model.migrationFlow.selectedRelease.Version != "" {
+		t.Fatalf("versions report=%#v err=%v",
+			model.migrationFlow.versionsReport,
+			model.migrationFlow.versionsErr)
+	}
+
+	updated, _ = model.Update(keyPress("up"))
+	model = updated.(Model)
+	updated, _ = model.Update(keyPress("enter"))
+	model = updated.(Model)
+	if !model.migrationFlow.choosingPullOut ||
+		model.migrationFlow.selectedRelease.Version != "2026.07.1" {
+		t.Fatalf("pull selection=%#v choosing=%v",
+			model.migrationFlow.selectedRelease, model.migrationFlow.choosingPullOut)
+	}
+	incoming := t.TempDir()
+	for _, character := range incoming {
+		updated, _ = model.Update(keyPress(string(character)))
+		model = updated.(Model)
+	}
+	updated, pullCommand := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(Model)
+	if pullCommand == nil || !model.migrationFlow.pulling ||
+		model.migrationFlow.choosingPullOut {
+		t.Fatalf("pull state=pulling %v choosing %v command nil=%v",
+			model.migrationFlow.pulling,
+			model.migrationFlow.choosingPullOut,
+			pullCommand == nil)
+	}
+	updated, packageCheckCommand := model.Update(pullCommand())
+	model = updated.(Model)
+	if packageCheckCommand == nil ||
+		model.screen != screenMigration ||
+		model.migrationFlow.mode != migrationModePreflight ||
+		model.migrationFlow.preflightStatus != statusLoading ||
+		!model.hasPackagePreflight() ||
+		model.deployOptions.Package != "" ||
+		model.packageFromBuild {
+		t.Fatalf("pull did not enter package check: screen=%d mode=%d status=%d package=%q generated=%v command nil=%v",
+			model.screen,
+			model.migrationFlow.mode,
+			model.migrationFlow.preflightStatus,
+			model.deployOptions.Package,
+			model.packageFromBuild,
+			packageCheckCommand == nil,
+		)
+	}
+	updated, _ = model.Update(packageCheckCommand())
+	model = updated.(Model)
+	if model.migrationFlow.preflightStatus != statusReady ||
+		!model.migrationFlow.preflightReport.Ok ||
+		model.migrationFlow.preflightReport.Subject.Source != "package" ||
+		model.migrationFlow.preflightReport.Subject.Version != "2026.07.1" {
+		t.Fatalf("package check report=%#v err=%v",
+			model.migrationFlow.preflightReport,
+			model.migrationFlow.preflightErr,
+		)
+	}
+	for _, want := range []string{
+		"取回版本检查", "已绑定所选版本、资产组合与 SHA256",
+		"Enter 进入变更预览", "2026.07.1",
+	} {
+		if view := model.View(); !strings.Contains(view, want) {
+			t.Fatalf("package check view omits %q:\n%s", want, view)
+		}
+	}
+	if strings.Contains(model.View(), "正在检查目标设备") {
+		t.Fatalf("completed package check retained a loading notice:\n%s", model.View())
+	}
+	if !reflect.DeepEqual(beforeHome, snapshotTree(t, home)) {
+		t.Fatal("versions, pull, or package check wrote the target HOME")
+	}
+
+	updated, diffCommand := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(Model)
+	if diffCommand == nil || model.screen != screenDeployment {
+		t.Fatalf("a successful package check did not enter diff: screen=%d command nil=%v",
+			model.screen, diffCommand == nil)
+	}
+	if model.deployOptions.Package == "" ||
+		model.deployOptions.ExpectedSHA256 != model.migrationFlow.pulledReport.SHA256 {
+		t.Fatalf("diff was not bound to pulled package: %#v", model.deployOptions)
+	}
+	updated, _ = model.Update(diffCommand())
+	model = updated.(Model)
+	if model.diffStatus != statusReady || !model.diffReport.Ok {
+		t.Fatalf("pulled package diff failed: status=%d err=%v report=%#v",
+			model.diffStatus, model.deployErr, model.diffReport)
+	}
+	if !reflect.DeepEqual(beforeHome, snapshotTree(t, home)) {
+		t.Fatal("versions, pull, package check, or diff wrote the target HOME before typed apply")
+	}
+}
+
+func TestPulledPackageBlockersPreventEnteringDiff(t *testing.T) {
+	model := readyTestModel().WithHome(true).WithMaintenance(true)
+	model.screen = screenMigration
+	model.migrationFlow.mode = migrationModePreflight
+	model.migrationFlow.pulledReport = channel.PullReport{
+		Package: filepath.Join(t.TempDir(), "selected.tar"),
+		SHA256:  strings.Repeat("a", 64),
+	}
+	model.migrationFlow.preflightStatus = statusReady
+	model.migrationFlow.preflightReport = migration.PreflightReport{Ok: false}
+	model.deployOptions = apply.Options{
+		Home: t.TempDir(),
+	}
+
+	updated, command := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	next := updated.(Model)
+	if command != nil || next.screen != screenMigration ||
+		!next.noticeIsWarn ||
+		!strings.Contains(next.notice, "目标设备检查未通过") {
+		t.Fatalf("blocked package entered diff: screen=%d command nil=%v notice=%q",
+			next.screen, command == nil, next.notice)
+	}
+	if strings.Contains(next.View(), "Enter 进入变更预览") {
+		t.Fatalf("blocked package view still offered continuation:\n%s", next.View())
+	}
+}
+
+func TestPulledPackageCheckDoesNotExposePublishOrVersionShortcuts(t *testing.T) {
+	for _, pressed := range []string{"p", "v"} {
+		model := readyTestModel().WithHome(true).WithMaintenance(true)
+		model.screen = screenMigration
+		model.migrationFlow.mode = migrationModePreflight
+		model.migrationFlow.status = statusReady
+		model.migrationFlow.preflightStatus = statusReady
+		model.migrationFlow.preflightReport = migration.PreflightReport{Ok: true}
+		model.migrationFlow.pulledReport = channel.PullReport{
+			Package: filepath.Join(t.TempDir(), "selected.tar"),
+		}
+
+		updated, command := model.Update(keyPress(pressed))
+		next := updated.(Model)
+		if command != nil || next.migrationFlow.mode != migrationModePreflight ||
+			next.choosingProfile {
+			t.Fatalf("key %q escaped package check: mode=%d choosing=%v command nil=%v",
+				pressed, next.migrationFlow.mode, next.choosingProfile, command == nil)
+		}
+	}
+}
+
+func TestMigrationHomeKeyWorksInEveryMode(t *testing.T) {
+	for _, mode := range []migrationMode{
+		migrationModeStatus,
+		migrationModeVersions,
+		migrationModePreflight,
+	} {
+		model := readyTestModel().WithHome(true).WithMaintenance(true)
+		model.screen = screenMigration
+		model.migrationFlow.mode = mode
+		model.migrationFlow.status = statusReady
+		model.migrationFlow.versionsStatus = statusReady
+		model.migrationFlow.preflightStatus = statusReady
+
+		updated, command := model.Update(keyPress("m"))
+		next := updated.(Model)
+		if command != nil || next.screen != screenHome {
+			t.Fatalf("mode %d did not return home: screen=%d command nil=%v",
+				mode, next.screen, command == nil)
+		}
+	}
+}
+
+func TestMigrationViewGoldenByLanguage(t *testing.T) {
+	type goldenCase struct {
+		name   string
+		golden string
+		setup  func(Model) Model
+	}
+	cases := []goldenCase{
+		{
+			name: "status", golden: "migration.status",
+			setup: func(model Model) Model {
+				return model
+			},
+		},
+		{
+			name: "preflight", golden: "migration.preflight",
+			setup: func(model Model) Model {
+				model.migrationFlow.mode = migrationModePreflight
+				model.migrationFlow.preflightStatus = statusReady
+				model.migrationFlow.preflightProfile = "personal"
+				model.migrationFlow.preflightReport = migration.PreflightReport{
+					Ok: true,
+					Summary: migration.PreflightSummary{
+						TargetCount: 1, DevicePrivateItems: 1,
+					},
+					Targets: []migration.TargetPreflight{{
+						Target: "claude", Supported: true, Emitted: 3,
+					}},
+					DevicePrivate: []migration.DevicePrivateItem{{
+						LogicalPath: "home/.codex/auth.json",
+						Source:      "codex",
+						Type:        "config",
+						Status:      "device-private",
+					}},
+				}
+				return model
+			},
+		},
+		{
+			name: "publish confirm", golden: "migration.publish-confirm",
+			setup: func(model Model) Model {
+				model.migrationFlow.publishConfirming = true
+				model.migrationFlow.publishPackage =
+					"/srv/ai-assets/dist/personal-1.2.3-personal.tar"
+				return model
+			},
+		},
+		{
+			name: "versions", golden: "migration.versions",
+			setup: func(model Model) Model {
+				model.migrationFlow.mode = migrationModeVersions
+				model.migrationFlow.versionsStatus = statusReady
+				model.migrationFlow.versionsCursor = 1
+				model.migrationFlow.versionsReport = channel.ListReport{
+					Ok: true,
+					Releases: []channel.Release{
+						{
+							Name: "personal", Version: "1.2.2", Profile: "personal",
+							SHA256: strings.Repeat("a", 64),
+						},
+						{
+							Name: "personal", Version: "1.2.3", Profile: "personal",
+							SHA256: strings.Repeat("b", 64),
+						},
+					},
+				}
+				return model
+			},
+		},
+	}
+	languages := []struct {
+		value  language
+		suffix string
+	}{
+		{value: languageZhCN, suffix: "zh-CN"},
+		{value: languageEnglish, suffix: "en"},
+	}
+	for _, languageCase := range languages {
+		for _, test := range cases {
+			t.Run(test.name+" "+languageCase.suffix, func(t *testing.T) {
+				model := test.setup(
+					migrationGoldenModel().withLanguage(languageCase.value),
+				)
+				got := model.View()
+				path := filepath.Join(
+					"testdata",
+					test.golden+"."+languageCase.suffix+".golden",
+				)
+				want, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatalf("read golden: %v\n--- got ---\n%s", err, got)
+				}
+				if normalizeTerminalGolden(got) !=
+					normalizeTerminalGolden(string(want)) {
+					t.Fatalf(
+						"view differs from %s:\n--- got ---\n%s\n--- want ---\n%s",
+						path,
+						got,
+						want,
+					)
+				}
+			})
+		}
+	}
+}
+
+func TestEnglishMigrationActionsAndPullBoundary(t *testing.T) {
+	model := migrationGoldenModel().withLanguage(languageEnglish)
+
+	updated, command := model.handlePublishMessage(publishMsg{})
+	next := updated.(Model)
+	if command != nil || !next.noticeIsWarn ||
+		!strings.Contains(next.notice, "Core did not return a successful result") {
+		t.Fatalf(
+			"English publish failure = warning %v notice %q command nil=%v",
+			next.noticeIsWarn,
+			next.notice,
+			command == nil,
+		)
+	}
+
+	next = migrationGoldenModel().withLanguage(languageEnglish)
+	next.migrationFlow.publishConfirming = true
+	for _, character := range "yes" {
+		updated, _ = next.Update(keyPress(string(character)))
+		next = updated.(Model)
+	}
+	updated, command = next.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	next = updated.(Model)
+	if command != nil || !next.migrationFlow.publishConfirming ||
+		!next.noticeIsWarn ||
+		!strings.Contains(next.notice, "full publish token") {
+		t.Fatalf(
+			"English wrong publish confirmation = confirming %v notice %q command nil=%v",
+			next.migrationFlow.publishConfirming,
+			next.notice,
+			command == nil,
+		)
+	}
+
+	next = migrationGoldenModel().withLanguage(languageEnglish)
+	next.migrationFlow.choosingPullOut = true
+	next.migrationFlow.selectedRelease = channel.Release{
+		Name: "personal", Version: "1.2.3", Profile: "personal",
+	}
+	view := next.View()
+	for _, want := range []string{
+		"existing output directory",
+		"never .claude/.codex/.grok",
+		"never overwritten",
+	} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("English pull boundary omits %q:\n%s", want, view)
+		}
+	}
+
+	next = migrationGoldenModel().withLanguage(languageEnglish)
+	next.migrationFlow.mode = migrationModePreflight
+	next.migrationFlow.pulledReport = channel.PullReport{
+		Name: "personal", Version: "1.2.3", Profile: "personal",
+		Package: "/tmp/personal-1.2.3-personal.tar",
+		SHA256:  strings.Repeat("b", 64),
+	}
+	next.migrationFlow.preflightStatus = statusReady
+	next.migrationFlow.preflightReport = migration.PreflightReport{
+		Ok: false,
+		Summary: migration.PreflightSummary{
+			UnsupportedTargets: 1,
+		},
+	}
+	view = next.View()
+	for _, want := range []string{
+		"Retrieved release check",
+		"selected release, profile, and SHA256 are bound",
+		"Action required: blockers found",
+		"Recheck after fixes",
+	} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("English package blocker view omits %q:\n%s", want, view)
+		}
+	}
+	if strings.Contains(view, "Enter Preview changes") {
+		t.Fatalf("blocked English package view offered continuation:\n%s", view)
 	}
 }
 
@@ -67,7 +647,7 @@ func TestChannelPromptDoesNotCreateTheTypedDirectory(t *testing.T) {
 
 	updated, focus := model.Update(keyPress("c"))
 	model = updated.(Model)
-	if focus == nil || !model.choosingChannel {
+	if focus == nil || !model.migrationFlow.choosingChannel {
 		t.Fatal("c did not open the channel path prompt")
 	}
 	for _, character := range missing {
@@ -76,7 +656,8 @@ func TestChannelPromptDoesNotCreateTheTypedDirectory(t *testing.T) {
 	}
 	updated, command := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	model = updated.(Model)
-	if command == nil || model.choosingChannel || model.migrationStatus != statusLoading {
+	if command == nil || model.migrationFlow.choosingChannel ||
+		model.migrationFlow.status != statusLoading {
 		t.Fatalf("channel confirmation state=%#v command nil=%v", model, command == nil)
 	}
 	if _, err := os.Stat(missing); !os.IsNotExist(err) {
@@ -84,14 +665,97 @@ func TestChannelPromptDoesNotCreateTheTypedDirectory(t *testing.T) {
 	}
 	message := command()
 	updated, _ = model.Update(message)
-	if next := updated.(Model); next.migrationStatus != statusFailed {
-		t.Fatalf("missing channel did not surface as a read failure: %#v", next.migrationReport)
+	if next := updated.(Model); next.migrationFlow.status != statusFailed {
+		t.Fatalf("missing channel did not surface as a read failure: %#v",
+			next.migrationFlow.report)
 	}
+}
+
+func migrationGoldenModel() Model {
+	model := readyTestModel().
+		WithWorkspace("/srv/ai-assets").
+		WithHome(true).
+		WithMaintenance(true)
+	model.screen = screenMigration
+	model.plain = true
+	model.width = 110
+	model.height = 18
+	model.migrationFlow.channel = "/mnt/team-channel"
+	model.migrationFlow.status = statusReady
+	model.migrationFlow.report = migration.Report{
+		Ok: true,
+		Library: migration.LibraryStatus{
+			Root: "/srv/ai-assets", Name: "personal", Version: "1.2.3",
+			AssetCount: 4, Profiles: []string{"personal"}, Ok: true,
+		},
+		Installation: migration.InstallationStatus{
+			Present: true, Ok: true, Package: "personal", Version: "1.2.3",
+			Profile: "personal", Targets: []string{"claude", "codex"},
+		},
+		Channel: migration.ChannelStatus{
+			Selected: true, Path: "/mnt/team-channel", ReleaseCount: 2,
+			Latest: &channel.Release{
+				Name: "personal", Version: "1.2.3", Profile: "personal",
+				SHA256: strings.Repeat("b", 64),
+			},
+		},
+		Alignment: migration.Alignment{
+			Installation: "same-version", Channel: "same-version",
+		},
+	}
+	return model
+}
+
+func migrationTestModel(t *testing.T, workspaceRoot, home, channelRoot string) Model {
+	t.Helper()
+	model := NewModel(inventory.Options{Home: home}).
+		WithWorkspace(workspaceRoot).
+		WithHome(true).
+		WithMaintenance(true).
+		WithDeployment(apply.Options{Home: home})
+	model.plain = true
+	model.screen = screenMigration
+	model.migrationFlow.channel = channelRoot
+	report, err := migration.Inspect(model.migrationOptions())
+	if err != nil {
+		t.Fatalf("migration inspect: %v", err)
+	}
+	model.migrationFlow.status = statusReady
+	model.migrationFlow.report = report
+	return model
+}
+
+func copyMigrationFixture(t *testing.T, name string) string {
+	t.Helper()
+	source := filepath.Join("..", "..", "testdata", name)
+	destination := t.TempDir()
+	err := filepath.WalkDir(source, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		relative, err := filepath.Rel(source, path)
+		if err != nil || relative == "." {
+			return err
+		}
+		target := filepath.Join(destination, relative)
+		if entry.IsDir() {
+			return os.MkdirAll(target, 0o755)
+		}
+		body, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(target, body, 0o644)
+	})
+	if err != nil {
+		t.Fatalf("copy fixture: %v", err)
+	}
+	return destination
 }
 
 func homeActionIndex(t *testing.T, action homeAction) int {
 	t.Helper()
-	for index, item := range homeItems() {
+	for index, item := range NewModel(inventory.Options{}).homeItems() {
 		if item.action == action {
 			return index
 		}

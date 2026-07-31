@@ -1,0 +1,10 @@
+aiah · View and retrieve releases                                                                 team-channel
+Shown in publish order; version values are not compared and no "latest" release is selected automatically.
+
+  1.2.2              personal         aaaaaaaaaaaa
+> 1.2.3              personal         bbbbbbbbbbbb
+
+Selected    personal / 1.2.3 / personal
+SHA256      bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+↑↓/jk Select · Enter Retrieve release · r Refresh · Esc Back · m Home · ? Help

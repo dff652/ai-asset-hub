@@ -62,6 +62,17 @@ golangci-lint run ./...             # 与 CI 同版本 v1.62.2
 CI 跑的就是这几条里的同名脚本，不是另抄一份 inline 步骤——门禁必须能本地跑，
 这也是 §2.3 的直接推论。
 
+MCP surface 变化还必须：
+
+1. 更新 ADR-0005 的工具清单和只读边界；
+2. 让 `TestToolCallsWriteNothing` 覆盖新增工具可达的所有目录；
+3. 临时放回写入或错误 Core 路由，确认安全/行为测试会变红后恢复；
+4. 用实际 Claude Code、Codex、Grok 客户端做握手；模型级调用被账户策略阻止时，
+   必须标为 blocked，不能拿 `Connected` 伪装为调用成功。
+
+可重复命令和结果记录格式见
+[MCP 客户端接入 runbook](runbooks/mcp-client-acceptance.md)。
+
 ### 2.3 不许把没本机验证过的东西推进 CI
 
 `b274ce1` 是在「以为本机没有 go 工具链」的情况下直接 push 的，两个测试缺陷
@@ -192,6 +203,26 @@ PR 的两组检查和合并后的
 pin 已在发布后收口到验收完成的 `v0.1.6`。候选与历史证据见
 [v0.1.6 bridge 检查点](reviews/2026-07-30-v0.1.6-bridge-candidate-readiness.md)和
 [v0.1.5 检查点 §5](reviews/2026-07-30-v0.1.5-candidate-readiness.md#5-发布结果与已知问题)。
+
+发布后 [PR #22](https://github.com/dff652/ai-asset-hub/pull/22) 已把安装器默认 pin、
+README 与发布证据收口到 `main@307041ec7c33`，最终提交的 push / pull_request
+两轮 CI 共 18 个 job 全绿。随后 [PR #23](https://github.com/dff652/ai-asset-hub/pull/23)
+把该文件树同步回 `dev@3b4856629cb5`；两端 `git diff --quiet` 为 0。仓库策略禁止
+merge commit，普通 PR merge 和直接非强制快进均被服务器拒绝且没有远端部分写入，
+所以 PR #23 按 squash 合入：**tree 相同，但 main 不是 dev 的祖先**。可重复流程见
+[发版 runbook §5](runbooks/release.md#5-发布后把文件树同步回-dev)。
+
+E3.2 已通过 [PR #24](https://github.com/dff652/ai-asset-hub/pull/24) 合入 `dev`，
+实现 TUI typed publish、显式 versions/pull 和 pull→diff/typed apply 连续向导，
+并修复 pull 输出覆盖缺口。E3.3 已通过
+[PR #25](https://github.com/dff652/ai-asset-hub/pull/25) 合入 `dev`，增加当前
+资产库/profile 的零写入换机检查。两次合并后 CI 均通过，但都不属于 `v0.1.6`
+Release 能力。
+
+E3.4 已通过 [PR #26](https://github.com/dff652/ai-asset-hub/pull/26) 合入
+`dev@0a7171b`，把 pull 与 diff 之间补成“绑定 name/version/profile/SHA256 的
+取回版本检查 → 用户 Enter → diff”，并补双设备、旧版本显式恢复、中断恢复和
+恶意通道夹具；合并后主线 CI 9/9 全绿。E3.2–E3.4 仍未进入公开 Release。
 
 首次发布时 GitHub 把 `actions/checkout@v4`、`actions/setup-go@v5` 与
 `softprops/action-gh-release@v2` 的 Node.js 20 action 强制运行在 Node.js 24，

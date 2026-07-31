@@ -11,6 +11,7 @@ review；尚未实现的能力只列缺口，不先写一份无法验证的“�
 | 假 HOME 资产闭环 | [fake-home-loop.md](fake-home-loop.md) | CI 与本机共同执行 |
 | 真实 HOME 安全预演 | [real-home-dry-run.md](real-home-dry-run.md) | 默认只读；真写有人工门槛 |
 | 跨设备资产分发 | [cross-device-transfer.md](cross-device-transfer.md) | publish/pull/bootstrap 与校验闭环 |
+| MCP 客户端接入与只读验收 | [mcp-client-acceptance.md](mcp-client-acceptance.md) | 7 工具协议、Claude/Codex/Grok 握手、模型调用与零写入边界 |
 | 工具安装、升级与 TUI dogfood | [install-upgrade-dogfood.md](install-upgrade-dogfood.md) | Linux amd64；`v0.1.5→v0.1.6` bridge、正式 TUI 与幂等复装已实跑 |
 | 工具自身发版 | [release.md](release.md) | main CI → tag → Release → 下载验收 |
 | README 与 SVG 视觉验收 | [readme-visual-acceptance.md](readme-visual-acceptance.md) | 语义核对、视觉 token、自动门禁与 900/360 人工检查 |

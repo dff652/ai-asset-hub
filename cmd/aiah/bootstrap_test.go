@@ -43,6 +43,7 @@ func TestRunBootstrapRejectsNonTTYBeforePull(t *testing.T) {
 func TestRunBootstrapPullsThenOpensDeploymentReview(t *testing.T) {
 	resetBootstrapDependencies(t)
 	bootstrapInteractive = func(io.Reader, io.Writer) bool { return true }
+	const packageSHA256 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	channelDir, out, home, project := t.TempDir(), t.TempDir(), t.TempDir(), t.TempDir()
 	pkg := buildBootstrapPackage(t)
 
@@ -55,10 +56,12 @@ func TestRunBootstrapPullsThenOpensDeploymentReview(t *testing.T) {
 		}
 		return channel.PullReport{
 			Ok: true, Name: "personal", Version: "1", Profile: "work", Package: pkg,
+			SHA256: packageSHA256,
 		}, nil
 	}
 	bootstrapDeployment = func(options tui.Options) (tui.DeploymentResult, error) {
 		if options.Package != pkg || options.Home != home || options.Project != project ||
+			options.ExpectedSHA256 != packageSHA256 ||
 			!reflect.DeepEqual(options.Targets, []string{"claude", "codex"}) {
 			t.Fatalf("deployment options = %#v", options)
 		}

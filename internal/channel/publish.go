@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -80,14 +81,24 @@ func Publish(options PublishOptions) (PublishReport, error) {
 
 	relative := releasePath(name, releaseVersion, profile)
 	report.Path = relative
-	destination := filepath.Join(channelRoot, filepath.FromSlash(relative))
 
 	index, err := loadIndex(channelRoot)
 	if err != nil {
 		return report, err
 	}
+	parent, err := secureChannelDirectory(channelRoot, path.Dir(relative), true)
+	if err != nil {
+		return report, err
+	}
+	destination := filepath.Join(parent, profile)
 
-	if _, err := os.Stat(destination); err == nil {
+	if info, err := os.Lstat(destination); err == nil {
+		if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
+			return report, fmt.Errorf(
+				"%w: the release destination is not a safe directory",
+				ErrChannelBlocked,
+			)
+		}
 		identical, err := releaseMatches(sourceDir, destination, artifacts)
 		if err != nil {
 			return report, err
@@ -195,9 +206,6 @@ func releaseMatches(sourceDir, destination string, artifacts artifactSet) (bool,
 // it into place, so a failure never leaves half a version in the channel.
 func stageRelease(sourceDir, destination string, artifacts artifactSet) error {
 	parent := filepath.Dir(destination)
-	if err := os.MkdirAll(parent, 0o755); err != nil {
-		return fmt.Errorf("%w: cannot create the release directory", ErrChannelBlocked)
-	}
 	staging, err := os.MkdirTemp(parent, ".aiah-publish-*")
 	if err != nil {
 		return fmt.Errorf("%w: cannot stage the release", ErrChannelBlocked)

@@ -1,0 +1,15 @@
+aiah · About and updates                                                                       0.1.2
+
+Current program
+Version      0.1.2
+Commit       1234567890ab
+Build date   2026-07-29T00:00:00Z
+
+Current asset install
+Status       No current install
+
+Release update
+Status       Not checked
+Hint         Press c to check manually; opening the TUI never goes online
+
+c Check for updates (network only after keypress) · h Install check · m Home · ? Help · q Quit

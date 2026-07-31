@@ -304,6 +304,40 @@ func TestBuildDoesNotModifySource(t *testing.T) {
 	}
 }
 
+func TestPrepareResolvesTheBuildInputWithoutWriting(t *testing.T) {
+	manifest := fixtureManifest(t)
+	root := filepath.Dir(manifest)
+	before, err := os.ReadDir(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	prepared, report, err := Prepare(PrepareOptions{
+		Manifest: manifest,
+		Root:     root,
+		Profile:  "personal",
+	})
+	if err != nil || !report.Ok {
+		t.Fatalf("prepare: err=%v report=%#v", err, report)
+	}
+	if prepared.Manifest.Name != "fixture-personal" ||
+		prepared.Manifest.Profile != "personal" ||
+		len(prepared.Manifest.Assets) != 2 ||
+		len(prepared.Files) != 2 {
+		t.Fatalf("prepared=%#v", prepared)
+	}
+	after, err := os.ReadDir(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(before, after) {
+		t.Fatalf("prepare changed workspace entries: before=%#v after=%#v", before, after)
+	}
+	if _, err := os.Stat(filepath.Join(root, "dist")); !os.IsNotExist(err) {
+		t.Fatalf("prepare created dist: %v", err)
+	}
+}
+
 func TestBuildUsesSingleInspectPassForPackaging(t *testing.T) {
 	// Smoke: workspace.Inspect with bodies is what build uses; ensure fixture packs.
 	manifest := fixtureManifest(t)

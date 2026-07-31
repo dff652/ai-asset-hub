@@ -1,0 +1,26 @@
+aiah · 迁移到其他设备                                                                                 版本对齐
+状态读取保持只读；只有明确选择“发布”或“取回”才写通道/输出目录。
+
+资产库
+  路径      /srv/ai-assets
+  名称/版本 personal / 1.2.3
+  资产/组合 4 / 1（personal）
+  状态      正常
+
+当前安装
+  名称/版本 personal / 1.2.3
+  资产组合  personal
+  目标工具  claude、codex
+  状态      正常
+
+分发通道
+  路径      /mnt/team-channel
+  相关版本  2
+  最近发布  1.2.3 / personal
+  SHA256    bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+版本对齐
+  当前安装  与资产库版本一致
+  分发通道  与资产库版本一致
+
+e 换机检查 · p 发布当前版本 · v 查看/取回版本 · c 选择通道 · r 刷新 · m 首页 · ? 帮助

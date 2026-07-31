@@ -68,7 +68,8 @@ func runBootstrap(args []string, stdout, stderr io.Writer) int {
 
 	result, err := bootstrapDeployment(tui.Options{
 		Home: *home, Project: *project, Package: pulled.Package,
-		Targets: splitCSV(*targets), Input: stdin, Output: stdout,
+		ExpectedSHA256: pulled.SHA256, Targets: splitCSV(*targets),
+		Input: stdin, Output: stdout,
 	})
 	if err != nil {
 		_, _ = io.WriteString(stderr, "aiah: deployment review failed\n")

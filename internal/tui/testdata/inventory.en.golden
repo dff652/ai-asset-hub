@@ -1,0 +1,14 @@
+aiah · Local AI assets                                 Available 3 · Excluded 1 · Risks and issues 1
+Asset library  Not selected · Editable source of truth across tools · Next: press w
+/ Filter by path, type, or risk and issue
+▾ claude                                      │ home/.codex/skills/review
+  ▾ rules                                     │ Type          skill
+      home/.claude/CLAUDE.md                  │ Source tool   codex
+▾ codex                                       │ Scope         global
+  ▾ skill                                     │ Portability   adapter-required
+      home/.codex/skills/review               │ Sensitivity   private
+▾ grok (1)                                    │ Status        candidate
+  ▾ config (1)                                │ Files         1
+    ⚠ home/.grok/config.toml                  │   home/.codex/skills/review/SKILL.md
+▾ shared                                      │ Risks/issues  —
+↑↓/jk Navigate · w Choose library · / Search · f Risks · r Rescan · m Home · ? Help · q Quit

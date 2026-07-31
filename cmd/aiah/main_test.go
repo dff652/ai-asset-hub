@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -193,6 +194,55 @@ func TestRunUIAcceptsTargetsForGuidedBuild(t *testing.T) {
 	code := run([]string{"ui", "--home", t.TempDir(), "--targets", "claude"}, &stdout, &stderr)
 	if code != 1 || !strings.Contains(stderr.String(), "interactive TTY") {
 		t.Fatalf("exit code=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+}
+
+func TestRunUIPreferenceOverridesAreValidatedAndPassedToTUI(t *testing.T) {
+	previousLaunch := launchUI
+	defer func() { launchUI = previousLaunch }()
+
+	var received tui.Options
+	launchUI = func(options tui.Options) error {
+		received = options
+		return nil
+	}
+	var stdout, stderr bytes.Buffer
+	if code := run(
+		[]string{"ui", "--language", "en", "--density", "detailed"},
+		&stdout,
+		&stderr,
+	); code != 0 {
+		t.Fatalf("exit code = %d, stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	if received.Language != "en" || received.Density != "detailed" {
+		t.Fatalf(
+			"preference overrides = language %q density %q",
+			received.Language,
+			received.Density,
+		)
+	}
+
+	called := false
+	launchUI = func(tui.Options) error {
+		called = true
+		return nil
+	}
+	stdout.Reset()
+	stderr.Reset()
+	if code := run([]string{"ui", "--language", "fr"}, &stdout, &stderr); code != 2 {
+		t.Fatalf("invalid language exit code = %d, want 2", code)
+	}
+	if called || !strings.Contains(stderr.String(), "unsupported interface language") {
+		t.Fatalf("invalid language called TUI=%v stderr=%q", called, stderr.String())
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	if code := run([]string{"ui", "--density", "compact"}, &stdout, &stderr); code != 2 {
+		t.Fatalf("invalid density exit code = %d, want 2", code)
+	}
+	if called || !strings.Contains(stderr.String(), "unsupported information density") {
+		t.Fatalf("invalid density called TUI=%v stderr=%q", called, stderr.String())
 	}
 }
 
@@ -485,9 +535,56 @@ func TestRunMCPServesReadOnlyToolsOverStdio(t *testing.T) {
 		names = append(names, tool.Name)
 	}
 	// The CLI must not widen the surface the server package defines.
-	want := "aiah_diff,aiah_doctor,aiah_scan,aiah_validate,aiah_version"
+	want := "aiah_asset_status,aiah_diff,aiah_doctor,aiah_migration_status," +
+		"aiah_scan,aiah_validate,aiah_version"
 	if strings.Join(names, ",") != want {
 		t.Fatalf("tools = %v, want %s", names, want)
+	}
+}
+
+func TestRunMCPCallsAssetStatusOverStdio(t *testing.T) {
+	original := stdin
+	t.Cleanup(func() { stdin = original })
+	workspaceRoot, err := filepath.Abs(filepath.Join("..", "..", "testdata", "workspace-valid"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	home, err := filepath.Abs(filepath.Join("..", "..", "testdata", "home-basic"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	stdin = strings.NewReader(fmt.Sprintf(
+		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"aiah_asset_status","arguments":{"workspace":%q,"home":%q}}}`,
+		workspaceRoot, home,
+	) + "\n")
+
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"mcp"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("mcp exit=%d stderr=%q", code, stderr.String())
+	}
+	var response struct {
+		Result struct {
+			IsError bool `json:"isError"`
+			Content []struct {
+				Text string `json:"text"`
+			} `json:"content"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &response); err != nil {
+		t.Fatalf("mcp response: %v (%q)", err, stdout.String())
+	}
+	if response.Result.IsError || len(response.Result.Content) != 1 {
+		t.Fatalf("asset status response = %#v", response.Result)
+	}
+	var report struct {
+		Kind string `json:"kind"`
+		Ok   bool   `json:"ok"`
+	}
+	if err := json.Unmarshal([]byte(response.Result.Content[0].Text), &report); err != nil {
+		t.Fatalf("asset status report: %v", err)
+	}
+	if report.Kind != "asset-catalog" || !report.Ok {
+		t.Fatalf("asset status report = %#v", report)
 	}
 }
 
