@@ -66,7 +66,7 @@ func (m Model) View() string {
 	if m.workspace != "" {
 		workspaceLine = m.text(msgInventoryWorkspaceSelected, m.workspace)
 	}
-	workspaceLine = style.muted.Render(truncate(workspaceLine, max(20, m.width)))
+	workspaceLine = style.muted.Render(workspaceLine)
 
 	filterLine := ""
 	if m.filtering || m.filterInput.Value() != "" {
@@ -121,11 +121,18 @@ func (m Model) inventoryBody(style styles) string {
 	if len(rows) == 0 {
 		return m.text(msgInventoryEmpty)
 	}
+	if m.width < 80 {
+		return m.narrowInventoryBody(rows, style)
+	}
 
 	bodyHeight := max(4, m.height-6)
 	start, end := visibleRange(len(rows), m.cursor, bodyHeight)
 	leftWidth := max(28, min(52, m.width*45/100))
 	rightWidth := max(24, m.width-leftWidth-3)
+	detailLines := m.detailLines(rows, 1<<20, bodyHeight, style)
+	if !linesFitWidth(detailLines, rightWidth) {
+		return m.narrowInventoryBody(rows, style)
+	}
 
 	leftLines := make([]string, 0, end-start)
 	for index := start; index < end; index++ {
@@ -135,7 +142,6 @@ func (m Model) inventoryBody(style styles) string {
 		leftLines = append(leftLines, "")
 	}
 
-	detailLines := m.detailLines(rows, rightWidth, bodyHeight, style)
 	for len(detailLines) < bodyHeight {
 		detailLines = append(detailLines, "")
 	}
@@ -151,6 +157,24 @@ func (m Model) inventoryBody(style styles) string {
 		combined = append(combined, line)
 	}
 	return strings.Join(combined, "\n")
+}
+
+func (m Model) narrowInventoryBody(rows []treeRow, style styles) string {
+	listHeight := max(3, min(6, m.height/3))
+	start, end := visibleRange(len(rows), m.cursor, listHeight)
+	lines := make([]string, 0, listHeight+10)
+	for index := start; index < end; index++ {
+		lines = append(lines, m.renderTreeRow(
+			rows[index],
+			index == m.cursor,
+			max(20, m.width),
+			style,
+		))
+	}
+	lines = append(lines, style.border.Render(strings.Repeat("─", max(20, m.width))))
+	detailHeight := max(5, m.height-listHeight-7)
+	lines = append(lines, m.detailLines(rows, 1<<20, detailHeight, style)...)
+	return strings.Join(lines, "\n")
 }
 
 func (m Model) renderTreeRow(row treeRow, selected bool, width int, style styles) string {
@@ -546,6 +570,15 @@ func padRight(value string, width int) string {
 		return value
 	}
 	return value + strings.Repeat(" ", padding)
+}
+
+func linesFitWidth(lines []string, width int) bool {
+	for _, line := range lines {
+		if lipgloss.Width(line) > width {
+			return false
+		}
+	}
+	return true
 }
 
 func joinEdges(left, right string, width int) string {

@@ -410,6 +410,16 @@ func (m Model) settingsView(style styles) string {
 		}
 		lines = append(lines, line)
 	}
+	if m.settingsDraft.PreferredAssetLibrary != "" {
+		lines = append(
+			lines,
+			"",
+			style.muted.Render(m.text(
+				msgSettingsLibraryCurrent,
+				m.settingsDraft.PreferredAssetLibrary,
+			)),
+		)
+	}
 	lines = append(lines, "", m.text(msgSettingsPath, m.preferencePath))
 	if m.languageOverride != "" {
 		lines = append(

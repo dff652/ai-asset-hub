@@ -121,7 +121,19 @@ func (m Model) migrationView(style styles) string {
 		}
 		lines = append(lines, noticeStyle.Render(m.notice))
 	}
+	latestSHA := ""
+	if report.Channel.Latest != nil {
+		latestSHA = report.Channel.Latest.SHA256
+	}
 	for index := range lines {
+		if containsNonEmptyValue(
+			lines[index],
+			report.Library.Root,
+			report.Channel.Path,
+			latestSHA,
+		) {
+			continue
+		}
 		lines[index] = truncate(lines[index], max(20, m.width))
 	}
 	return strings.Join(lines, "\n")
@@ -298,6 +310,18 @@ func (m Model) preflightView(style styles) string {
 	if cursor < 0 || cursor >= len(rows) {
 		cursor = 0
 	}
+	if m.width < 80 || !linesFitWidth(rows[cursor].details, max(24, m.width-min(60, m.width*48/100)-3)) {
+		return m.narrowPreflightView(
+			header,
+			intro,
+			resultStyle.Render(result),
+			summary,
+			footer,
+			rows,
+			cursor,
+			style,
+		)
+	}
 	bodyHeight := max(5, m.height-9)
 	start, end := visibleRange(len(rows), cursor, bodyHeight)
 	leftWidth := max(32, min(60, m.width*48/100))
@@ -347,6 +371,45 @@ func (m Model) preflightView(style styles) string {
 		strings.Join(combined, "\n"),
 		style.muted.Render(footer),
 	}
+	if m.notice != "" {
+		noticeStyle := style.muted
+		if m.noticeIsWarn {
+			noticeStyle = style.warning
+		}
+		lines = append(lines, noticeStyle.Render(m.notice))
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m Model) narrowPreflightView(
+	header, intro, result, summary, footer string,
+	rows []preflightRow,
+	cursor int,
+	style styles,
+) string {
+	listHeight := max(3, min(6, m.height/3))
+	start, end := visibleRange(len(rows), cursor, listHeight)
+	lines := []string{
+		header,
+		style.muted.Render(intro),
+		result,
+		summary,
+	}
+	for index := start; index < end; index++ {
+		prefix := "  "
+		if index == cursor {
+			prefix = "> "
+		}
+		line := fmt.Sprintf("%s%s [%s]", prefix, rows[index].label, rows[index].status)
+		line = truncate(line, max(20, m.width))
+		if index == cursor {
+			line = style.selected.Render(line)
+		}
+		lines = append(lines, line)
+	}
+	lines = append(lines, style.border.Render(strings.Repeat("─", max(20, m.width))))
+	lines = append(lines, rows[cursor].details...)
+	lines = append(lines, style.muted.Render(footer))
 	if m.notice != "" {
 		noticeStyle := style.muted
 		if m.noticeIsWarn {
@@ -437,10 +500,17 @@ func (m Model) versionsView(style styles) string {
 		lines = append(lines, line)
 	}
 	selected := m.migrationFlow.versionsReport.Releases[m.migrationFlow.versionsCursor]
+	selectedLine := m.text(
+		msgVersionsSelected,
+		selected.Name,
+		selected.Version,
+		selected.Profile,
+	)
+	shaLine := m.text(msgVersionsSHA, selected.SHA256)
 	lines = append(lines,
 		"",
-		m.text(msgVersionsSelected, selected.Name, selected.Version, selected.Profile),
-		m.text(msgVersionsSHA, selected.SHA256),
+		selectedLine,
+		shaLine,
 		"",
 		style.muted.Render(m.text(msgVersionsFooter)),
 	)
@@ -452,9 +522,21 @@ func (m Model) versionsView(style styles) string {
 		lines = append(lines, noticeStyle.Render(m.notice))
 	}
 	for index := range lines {
+		if lines[index] == selectedLine || lines[index] == shaLine {
+			continue
+		}
 		lines[index] = truncate(lines[index], max(20, m.width))
 	}
 	return strings.Join(lines, "\n")
+}
+
+func containsNonEmptyValue(line string, values ...string) bool {
+	for _, value := range values {
+		if value != "" && strings.Contains(line, value) {
+			return true
+		}
+	}
+	return false
 }
 
 func (m Model) pullOutputView(style styles) string {

@@ -186,13 +186,16 @@ func (m Model) manageNotice(message manageMsg) (string, bool) {
 func (m Model) manageConfirmationView(style styles) string {
 	action := m.text(msgManageUpdateAction)
 	warning := m.text(msgManageUpdateWarning)
+	selected := len(m.selectedUpdateAssets())
 	if m.manageAction == manageRemove {
 		action = m.text(msgManageRemoveAction)
 		warning = m.text(msgManageRemoveWarning)
+		selected = len(m.selectedRemoveIDs())
 	}
 	return strings.Join([]string{
 		style.header.Render(m.text(msgManageConfirmationTitle)),
 		"",
+		m.text(msgManageConfirmationScope, m.workspace, selected),
 		action,
 		warning,
 		"",

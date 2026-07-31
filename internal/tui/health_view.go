@@ -107,12 +107,24 @@ func (m Model) rollbackResultBanner(style styles) string {
 func (m Model) rollbackConfirmationView(style styles) string {
 	deployment := m.doctorReport.Deployment
 	backupID := "—"
+	packageName := "—"
+	version := "—"
+	profile := "—"
 	if deployment != nil {
 		backupID = deployment.BackupID
+		packageName = valueOrDash(deployment.Package)
+		version = valueOrDash(deployment.Version)
+		profile = valueOrDash(deployment.Profile)
 	}
 	lines := []string{
 		"",
 		style.error.Render(m.text(msgHealthConfirmWarning)),
+		m.text(
+			msgHealthConfirmDeployment,
+			packageName,
+			version,
+			profile,
+		),
 		m.text(msgHealthConfirmBackup, backupID),
 		"",
 		m.text(msgHealthConfirmAction),
@@ -132,10 +144,17 @@ func (m Model) healthBody(style styles) string {
 	if len(rows) == 0 {
 		return m.text(msgHealthEmpty)
 	}
+	if m.width < 80 {
+		return m.narrowHealthBody(rows, style)
+	}
 	bodyHeight := max(4, m.height-6)
 	start, end := visibleRange(len(rows), m.healthCursor, bodyHeight)
 	leftWidth := max(28, min(52, m.width*45/100))
 	rightWidth := max(24, m.width-leftWidth-3)
+	details := m.healthDetailLines(rows, style)
+	if !linesFitWidth(details, rightWidth) {
+		return m.narrowHealthBody(rows, style)
+	}
 	leftLines := make([]string, 0, bodyHeight)
 	for index := start; index < end; index++ {
 		label := truncate(rows[index].label, leftWidth)
@@ -147,7 +166,6 @@ func (m Model) healthBody(style styles) string {
 	for len(leftLines) < bodyHeight {
 		leftLines = append(leftLines, "")
 	}
-	details := m.healthDetailLines(rows, style)
 	for len(details) < bodyHeight {
 		details = append(details, "")
 	}
@@ -162,6 +180,22 @@ func (m Model) healthBody(style styles) string {
 		combined = append(combined, line)
 	}
 	return strings.Join(combined, "\n")
+}
+
+func (m Model) narrowHealthBody(rows []healthRow, style styles) string {
+	listHeight := max(3, min(6, m.height/3))
+	start, end := visibleRange(len(rows), m.healthCursor, listHeight)
+	lines := make([]string, 0, listHeight+8)
+	for index := start; index < end; index++ {
+		label := truncate(rows[index].label, max(20, m.width))
+		if index == m.healthCursor {
+			label = style.selected.Render(label)
+		}
+		lines = append(lines, label)
+	}
+	lines = append(lines, style.border.Render(strings.Repeat("─", max(20, m.width))))
+	lines = append(lines, m.healthDetailLines(rows, style)...)
+	return strings.Join(lines, "\n")
 }
 
 func (m Model) healthRows() []healthRow {

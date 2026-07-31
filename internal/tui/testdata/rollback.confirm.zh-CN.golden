@@ -1,6 +1,7 @@
 aiah · 安装检查                                                                                 正常
 
 即将撤销当前安装
+当前安装  personal.tar 1.2.3（资产组合 personal）
 备份 ID (backupId)  backup-123
 
 撤销会恢复被更新的文件，并删除本次应用创建的文件。

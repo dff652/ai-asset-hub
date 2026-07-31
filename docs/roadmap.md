@@ -424,7 +424,7 @@ E4 设置/i18n。
 | N4 | P1 | ✅ **E3.3 换机前置检查** | PR #25 已合入 `dev@e3fa372`；device-private、secret、目标与 adapter 完整只读报告、零写入门禁、变异验证、TTY 和合并后 CI 已通过 |
 | N5 | P1 | ✅ **E3.4 发布包绑定、双设备与失败恢复验收** | PR #26 已合入 `dev@0a7171b`；选定 name/version/profile/SHA 包级检查和连续引导、同版本幂等、不同内容拒绝、显式旧版本恢复、发布中断恢复、索引越界和目录软链均已验收；合并后主线 CI 9/9 全绿 |
 | N6 | P1 | ✅ **MCP 只读状态补齐与客户端验收** | PR #27 已 squash 合入 `dev@9eedd7b`；最终候选 push/pull_request CI 18/18、合并后 CI 9/9 全绿；7 工具零写入、Core 复用、annotations、直接协议及 Codex/Grok 模型调用通过，Claude 模型请求被组织策略 403 阻止并如实保留为外部补测 |
-| N7 | P2 | 🚧 **E4 设置与 i18n** | N7.0–N7.4 源码候选已完成：完整双语目录、安全偏好 Core、三项设置、临时 override、显式原子保存、必要信息矩阵及真实 PTY 保存/重启/预填验收；下一步 N7.5 做窄屏、fake HOME/config 和正式包验收 |
+| N7 | P2 | 🚧 **E4 设置与 i18n** | N7.0–N7.5 源码候选已完成：完整双语目录、安全偏好 Core、三项设置、100/60 列核心页与五类写入确认、fake HOME/config、release-style 真 PTY 均通过；只剩正式 Release 安装包复验及通过后更新用户文档 |
 | N8 | P2 | **规模化资产管理增强评估** | 由真实使用量触发；评估备份就绪/恢复验证、搜索/标签/来源追踪，不提前引入服务端或数据库事实源 |
 
 `v0.1.6` 已从 `main@46e6efccc9ba` 发布：main 与 Release CI、线上
@@ -458,9 +458,13 @@ override/保存值/locale 解析语言，预览、取消、保存失败恢复、
 有双语 golden、零写入测试和变异验证。N7.4 已加入 `standard` / `detailed`、
 `--density` 和首选资产库编辑/提示/预填；密度只改变新 diff 的可选明细默认展开，
 首选路径不创建、不自动选择，显式 `--workspace` 仍优先。必要信息/确认/阻止页
-等价、三项安全变异、完整门禁和隔离真实 PTY 保存/重启/预填均通过。N7.5 的
-窄屏、fake HOME/config 汇总和正式 Linux amd64 安装包验收仍待完成；
-public `v0.1.6` 不含这些本地候选改动。
+等价、三项安全变异、完整门禁和隔离真实 PTY 保存/重启/预填均通过。N7.5 已补齐
+100/60 列动态单栏、核心页与五类写入确认、fake HOME/config 汇总测试，以及本地
+Linux amd64 release-style 候选的 60 列真实 PTY 验收；必要路径、64 位 SHA、
+包/目标/版本/备份/选中数量不再因窄屏或双栏空间不足而隐藏。正式 GitHub Release
+安装包复验及其通过后的 README/上手指南发布声明仍待完成；public `v0.1.6`
+不含这些本地候选改动。证据见
+[N7.5 源码候选验收记录](reviews/2026-07-31-n7-release-candidate-acceptance.md)。
 完整发布收口清单见
 [2026-07-27 Public readiness 评估](reviews/2026-07-27-public-readiness-assessment.md)。
 
@@ -477,7 +481,8 @@ diff/apply 与二次确认目录及 golden ✅ → doctor/rollback 目录及 gol
 migration 全流程目录及 golden ✅ → version 与 N7.1 完整目录出口 ✅ →
 N7.2 偏好 Core、原子保存与安全变异验证 ✅ → N7.3 设置页、语言切换、
 显式保存与源码候选 PTY 重启验收 ✅ → N7.4 密度、首选资产库只预填、
-必要信息矩阵与源码候选 PTY 验收 ✅ → N7.5 正式包验收待实施。
+必要信息矩阵与源码候选 PTY 验收 ✅ → N7.5 100/60 列、fake config 与
+release-style 候选验收 ✅ → 正式 Release 安装包复验及用户文档发布声明待实施。
 **首次真机 dogfood 已完成，工具已从「工程演示」变为「自用工具」**（2026-07-25）；
 private `v0.1.0` 已完成流水线验收（2026-07-26）；public `v0.1.1`–`v0.1.6`
 已发布（2026-07-28 至 2026-07-30），其中 v0.1.5 的推荐升级命令限制已通过

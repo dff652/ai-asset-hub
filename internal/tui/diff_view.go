@@ -69,6 +69,7 @@ func (m Model) deploymentView(style styles) string {
 			report.Summary.Skipped,
 		)
 	}
+	context := m.deploymentContext(report)
 
 	body := m.deploymentBody(style, report)
 	footer := style.muted.Render(m.text(msgDiffFooterPreview))
@@ -88,14 +89,37 @@ func (m Model) deploymentView(style styles) string {
 		}
 		footer = noticeStyle.Render(m.notice) + "\n" + footer
 	}
-	return header + "\n" + banner + "\n" + body + "\n" + footer
+	return header + "\n" + context + "\n" + banner + "\n" + body + "\n" + footer
+}
+
+func (m Model) deploymentContext(report apply.Report) string {
+	targets := report.Targets
+	if len(targets) == 0 {
+		targets = m.deployOptions.Targets
+	}
+	return strings.Join([]string{
+		m.text(msgDiffPreviewPackage, m.deployOptions.Package),
+		m.text(
+			msgDiffPreviewTargets,
+			valueOrDash(strings.Join(targets, m.text(msgCommonListSeparator))),
+		),
+	}, "\n")
 }
 
 func (m Model) confirmationView(style styles) string {
 	report := m.diffReport
+	targets := report.Targets
+	if len(targets) == 0 {
+		targets = m.deployOptions.Targets
+	}
 	lines := []string{
 		"",
 		style.error.Render(m.text(msgDiffConfirmWarning)),
+		m.text(msgDiffConfirmPackage, m.deployOptions.Package),
+		m.text(
+			msgDiffConfirmTargets,
+			valueOrDash(strings.Join(targets, m.text(msgCommonListSeparator))),
+		),
 		m.text(
 			msgDiffConfirmSummary,
 			report.Summary.Create,
@@ -165,10 +189,17 @@ func (m Model) deploymentBody(style styles, report apply.Report) string {
 	if len(rows) == 0 {
 		return m.text(msgDiffNoChanges)
 	}
+	if m.width < 80 {
+		return m.narrowDeploymentBody(rows, style)
+	}
 	bodyHeight := max(4, m.height-7)
 	start, end := visibleRange(len(rows), m.diffCursor, bodyHeight)
 	leftWidth := max(28, min(56, m.width*55/100))
 	rightWidth := max(24, m.width-leftWidth-3)
+	detailLines := m.deploymentDetailLines(rows, style)
+	if !linesFitWidth(detailLines, rightWidth) {
+		return m.narrowDeploymentBody(rows, style)
+	}
 	leftLines := make([]string, 0, bodyHeight)
 	for index := start; index < end; index++ {
 		leftLines = append(leftLines, m.renderDeploymentRow(
@@ -181,7 +212,6 @@ func (m Model) deploymentBody(style styles, report apply.Report) string {
 	for len(leftLines) < bodyHeight {
 		leftLines = append(leftLines, "")
 	}
-	detailLines := m.deploymentDetailLines(rows, style)
 	for len(detailLines) < bodyHeight {
 		detailLines = append(detailLines, "")
 	}
@@ -196,6 +226,23 @@ func (m Model) deploymentBody(style styles, report apply.Report) string {
 		combined = append(combined, line)
 	}
 	return strings.Join(combined, "\n")
+}
+
+func (m Model) narrowDeploymentBody(rows []deploymentRow, style styles) string {
+	listHeight := max(3, min(6, m.height/3))
+	start, end := visibleRange(len(rows), m.diffCursor, listHeight)
+	lines := make([]string, 0, listHeight+5)
+	for index := start; index < end; index++ {
+		lines = append(lines, m.renderDeploymentRow(
+			rows[index],
+			index == m.diffCursor,
+			max(20, m.width),
+			style,
+		))
+	}
+	lines = append(lines, style.border.Render(strings.Repeat("─", max(20, m.width))))
+	lines = append(lines, m.deploymentDetailLines(rows, style)...)
+	return strings.Join(lines, "\n")
 }
 
 func (m Model) failureBody(style styles, report apply.Report) string {
