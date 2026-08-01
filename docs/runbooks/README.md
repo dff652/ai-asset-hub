@@ -12,7 +12,7 @@ review；尚未实现的能力只列缺口，不先写一份无法验证的“�
 | 真实 HOME 安全预演 | [real-home-dry-run.md](real-home-dry-run.md) | 默认只读；真写有人工门槛 |
 | 跨设备资产分发 | [cross-device-transfer.md](cross-device-transfer.md) | publish/pull/bootstrap 与校验闭环 |
 | MCP 客户端接入与只读验收 | [mcp-client-acceptance.md](mcp-client-acceptance.md) | 7 工具协议、Claude/Codex/Grok 握手、模型调用与零写入边界 |
-| 工具安装、升级与 TUI dogfood | [install-upgrade-dogfood.md](install-upgrade-dogfood.md) | Linux amd64；`v0.1.6→v0.1.7`、完整偏好生命周期、MCP 零写入和双设备闭环已实跑 |
+| 工具安装、升级与 TUI dogfood | [install-upgrade-dogfood.md](install-upgrade-dogfood.md) | Linux amd64；`v0.1.8→v0.1.9` 严格升级/init/TTY/MCP 回归通过；完整偏好与双设备闭环最近在 v0.1.7 实跑 |
 | 工具自身发版 | [release.md](release.md) | main CI → tag → Release → 下载验收 |
 | README 与 SVG 视觉验收 | [readme-visual-acceptance.md](readme-visual-acceptance.md) | 语义核对、视觉 token、自动门禁与 900/360 人工检查 |
 | 首次 public 切换 | [public-launch.md](public-launch.md) | 一次性历史流程，已完成；保留作取证 |

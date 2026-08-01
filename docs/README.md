@@ -64,6 +64,7 @@
 
 ## 评审
 
+- [2026-08-01 v0.1.9 发布与正式安装包验收](reviews/2026-08-01-v0.1.9-release-acceptance.md)
 - [2026-08-01 v0.1.9 发布候选就绪检查点](reviews/2026-08-01-v0.1.9-candidate-readiness.md)
 - [2026-08-01 v0.1.8 发布后代码、功能与流程审计](reviews/2026-08-01-v0.1.8-post-release-audit.md)
 - [2026-08-01 v0.1.7 发布与正式安装包验收](reviews/2026-08-01-v0.1.7-release-acceptance.md)

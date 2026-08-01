@@ -48,10 +48,10 @@ aiah init ~/ai-assets --name team-shared --version 2026.08.1 --output json
 | fail-closed | 路径被非目录、软链或受管工具目录占用时拒绝，且一个字节都不写 |
 
 资产库不能位于 `.agents`、`.claude`、`.codex`、`.grok` 及其子目录；请选择
-`~/ai-assets` 这类独立路径。public `v0.1.8` 的 `init` 尚未执行这项受管目录检查，
-虽然 TUI/compose 会拒绝当前 HOME/project 的该类路径；不要用它在这些目录中初始化。
-修复已进入下一补丁版候选，准确状态见
-[v0.1.8 发布后审计](reviews/2026-08-01-v0.1.8-post-release-audit.md)。
+`~/ai-assets` 这类独立路径。`v0.1.9` 起，`init` 与 TUI/compose 复用同一 Core，
+会在写入前拒绝精确路径组件和解析后落入受管目录的软链接别名；安全同名前缀不误伤。
+`v0.1.8` 的历史缺口见
+[发布后审计](reviews/2026-08-01-v0.1.8-post-release-audit.md)。
 
 `--name` 默认由目录名归一（`My AI Assets` → `my-ai-assets`）。归一不出合法名时
 **要求你显式传** `--name` 而不是猜——这个值会进 manifest 和包文件名，猜错是永久的。
@@ -270,8 +270,8 @@ aiah update --check [--output text|json]
 `AIAH_VERSION`。从这些版本升级到当前版请使用：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.8/scripts/install.sh |
-  AIAH_VERSION=0.1.8 sh
+curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.9/scripts/install.sh |
+  AIAH_VERSION=0.1.9 sh
 ```
 
 `v0.1.6` 二进制已把生成格式修复为：

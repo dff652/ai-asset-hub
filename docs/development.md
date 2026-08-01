@@ -12,7 +12,7 @@
 |---|---|---|
 | 做什么 | 把资产包装进 `~/.claude` / `~/.codex` / `~/.grok` | 把 `aiah` 二进制交付给用户 |
 | 链路 | `build → diff/dry-run → apply → rollback` | tag → Linux amd64 二进制与许可材料 → 校验和 → Release |
-| 状态 | **已固化，且 2026-07-25 真机验证** | public `v0.1.8` 已发布；线上产物与新增 happy path 通过发布后审计，完整正式包业务闭环仍引用 v0.1.7，见 §5 |
+| 状态 | **已固化，且 2026-07-25 真机验证** | public `v0.1.9` 已从受保护 main 发布；线上资产、严格升级、init 正反路径、真 TTY 与 MCP 回归通过，完整偏好/双设备闭环仍引用 v0.1.7，见 §5 |
 | SOP | [真机 dry-run runbook](runbooks/real-home-dry-run.md)、[假 HOME 闭环](runbooks/fake-home-loop.md) | [发版 runbook](runbooks/release.md)、[安装/升级 dogfood](runbooks/install-upgrade-dogfood.md) |
 
 ## 1. 开发
@@ -200,11 +200,13 @@ PR 的两组检查和合并后的
 
 由于 `v0.1.5` 自身不能追溯修复，`v0.1.6` 是一次性 bridge release；当时的
 源码安装器默认 pin 已在发布后收口到验收完成的 `v0.1.6`。随后
-`v0.1.6 → v0.1.7` 首次证明推荐命令端到端闭环。当前默认 pin 已在 `v0.1.8`
-发布并完成线上产物验收后收口到 `v0.1.8`；该版本修复的正是安装器自身在运行时
-加载校验函数的问题。`v0.1.8` 同时新增 `aiah init` 并发布 N8.1，但发布后审计发现
-init 受管目录边界与 tag 来源 main 两项流程缺口；不能把线上 SHA 验收写成完整正式包
-dogfood。证据见
+`v0.1.6 → v0.1.7` 首次证明推荐命令端到端闭环。默认 pin 随后收口到 `v0.1.8`；
+该版本修复安装器运行时加载校验函数的问题，同时新增 `aiah init` 并发布 N8.1。
+发布后审计发现 init 受管目录边界与 tag 来源 main 两项缺口。`v0.1.9` 已从受保护
+`main@3523d75` 发布，关闭两个缺口，并通过线上资产、严格 v0.1.8 → v0.1.9 升级、
+幂等复装、init 正反路径、真 TTY 首页和 MCP 只读回归；当前默认 pin 因而收口到
+`v0.1.9`。证据见
+[v0.1.9 发布与正式验收](reviews/2026-08-01-v0.1.9-release-acceptance.md)、
 [v0.1.8 发布后审计](reviews/2026-08-01-v0.1.8-post-release-audit.md)、
 [v0.1.6 bridge 检查点](reviews/2026-07-30-v0.1.6-bridge-candidate-readiness.md)和
 [v0.1.5 检查点 §5](reviews/2026-07-30-v0.1.5-candidate-readiness.md#5-发布结果与已知问题)。
