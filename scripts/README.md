@@ -10,7 +10,7 @@
 | `test-release-checksums.sh` | 验证许可精确项与 Linux-only Release 产物边界 | `check-local.sh` |
 | `install.sh` | 校验 Release SHA256 后原子安装 Linux amd64 二进制 | 人、`curl \| sh` |
 | `test-install.sh` | fake 下载验证 Linux 安装器校验、幂等、旧版本保护与平台拒绝 | `check-local.sh`、`ci.yml` |
-| `_sha256.sh` | Unix SHA256 兼容函数 | 被 bootstrap、release、install 脚本 source |
+| `_sha256.sh` | Unix SHA256 兼容函数 | 被 bootstrap、release、校验脚本 source；**`install.sh` 不 source 它**——它以 `curl \| sh` 发布，运行时加载校验器会让校验器自身可被替换，故内联 |
 | `check-release-checksums.sh` | 用主机可用的 SHA256 工具复验发布产物 | 人 |
 | `_stamp.sh` | **版本戳单一事实源**：算 VERSION / COMMIT / DATE 与 ldflags | 被 `build.sh`、`release-build.sh` source |
 | `build.sh` | 本机构建带版本戳的 `build/aiah` | 人、`demo-apply-scan-loop.sh` |

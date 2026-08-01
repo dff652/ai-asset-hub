@@ -16,24 +16,26 @@ less /tmp/aiah-install.sh
 sh /tmp/aiah-install.sh
 ```
 
-当前源码中的安装器默认 pin 是已经完成线上产物和正式 TUI/MCP 验收的 `0.1.7`。
-要固定不可变 tag、安装目录或版本，显式设置：
+当前源码中的安装器默认 pin 是 `0.1.8`。它在 `v0.1.7`（已完成线上产物与正式
+TUI/MCP 验收）之上修复了安装器自身的校验缺陷——旧版在运行时加载校验函数，可被
+当前工作目录下的同名文件或一次未校验的网络下载替换。要固定不可变 tag、安装目录
+或版本，显式设置：
 
 ```bash
-curl -fsSLo /tmp/aiah-install-v0.1.7.sh \
-  https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.7/scripts/install.sh
-AIAH_VERSION=0.1.7 AIAH_INSTALL_DIR="$HOME/.local/bin" \
-  sh /tmp/aiah-install-v0.1.7.sh
+curl -fsSLo /tmp/aiah-install-v0.1.8.sh \
+  https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.8/scripts/install.sh
+AIAH_VERSION=0.1.8 AIAH_INSTALL_DIR="$HOME/.local/bin" \
+  sh /tmp/aiah-install-v0.1.8.sh
 ```
 
-从 [Release](https://github.com/dff652/ai-asset-hub/releases/tag/v0.1.7)
+从 [Release](https://github.com/dff652/ai-asset-hub/releases/tag/v0.1.8)
 手动下载时，必须同时下载 `SHA256SUMS`。Linux amd64 示例：
 
 ```bash
 sha256sum -c SHA256SUMS --ignore-missing
-chmod +x aiah_0.1.7_linux_amd64
+chmod +x aiah_0.1.8_linux_amd64
 mkdir -p "$HOME/.local/bin"
-install -m 0755 aiah_0.1.7_linux_amd64 "$HOME/.local/bin/aiah"
+install -m 0755 aiah_0.1.8_linux_amd64 "$HOME/.local/bin/aiah"
 aiah version
 ```
 
@@ -41,12 +43,15 @@ aiah version
 
 ### 升级
 
-当前升级到 `v0.1.7` 使用显式版本命令：
+当前升级到 `v0.1.8` 使用显式版本命令：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.7/scripts/install.sh |
-  AIAH_VERSION=0.1.7 sh
+curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.8/scripts/install.sh |
+  AIAH_VERSION=0.1.8 sh
 ```
+
+**从 `v0.1.7` 或更早升级时请用上面这条命令，不要用旧版安装脚本。** 修复位于
+安装器本身，只有 `v0.1.8` 的脚本才带上它。
 
 脚本不是不受控的“永远取 latest”：仓库中的默认版本只在对应 Release 产物和
 `SHA256SUMS` 验证完成后更新。本机版本较旧时，安装器校验下载内容并原子替换
@@ -54,7 +59,7 @@ curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.7/scripts/
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh |
-  AIAH_VERSION=0.1.7 sh
+  AIAH_VERSION=0.1.8 sh
 ```
 
 aiah 没有后台自动更新器，升级始终是显式操作。升级后用 `aiah version` 核对版本。
@@ -69,7 +74,7 @@ aiah update --check --output json
 检查只在命令执行时请求 GitHub latest release 元数据，不下载、不替换当前二进制。
 `v0.1.6 → v0.1.7` 已验证旧版实际生成的命令逐字等于安全模板，并完成真实升级、
 同版本幂等复装和版本/commit/SHA256 对账。只有 `v0.1.4` / `v0.1.5` 的旧命令仍
-缺少显式 `AIAH_VERSION`；从这些版本升级时直接使用本节上方的 `v0.1.7` 命令。
+缺少显式 `AIAH_VERSION`；从这些版本升级时直接使用本节上方的 `v0.1.8` 命令。
 `aiah --update` 不存在；不带 `--check` 的 `aiah update` 也会拒绝执行。
 
 `v0.1.1` 中现存的 macOS、Windows 和 arm64 文件是发布范围收口前生成的历史
@@ -264,9 +269,22 @@ Codex/Grok 使用同一 stdio 进程：`command = "aiah"`、`args = ["mcp"]`。�
 需要脚本化时：
 
 ```bash
+aiah init ~/ai-assets --output json          # 建空工作区（可跳过，手工建也行）
 aiah scan --home "$HOME" --output json > /tmp/aiah-scan.json
 aiah ui --home "$HOME" --workspace ~/ai-assets
 ```
+
+`init` 建出 `manifest.yaml` 和 `assets/{agents,hooks,mcp,rules,skills}`。它是
+create-only 的：已存在的 manifest 永不改写，重跑只补缺失目录，所以拿不准时重跑
+是安全的。建完即可 `validate`；`build` 要等你加入第一个资产。
+
+资产库应放在 `~/ai-assets` 这类独立路径，不能位于 `.agents`、`.claude`、`.codex`、
+`.grok` 及其子目录。public `v0.1.8` 的 `init` 尚未拦截这项误用；该版本用户必须自行
+遵守，TUI/compose 仍会拒绝当前 HOME/project 的重叠路径。下一补丁版候选已补上
+Core 级 fail-closed。
+
+`init` **不会**让后续命令自动找到这个工作区——`--manifest` / `--workspace` 始终
+显式传，避免隐藏状态决定命令作用在哪个资产库上。
 
 `scan` 不写 HOME/project、不执行 hook，也不跟随逃逸软链接。TUI 把选中资产复制进
 资产库并登记到 `manifest.yaml`；已有文件 create-only，不覆盖。校验失败会回滚

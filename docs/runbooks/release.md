@@ -41,6 +41,27 @@ print(collections.Counter(f['code'] for f in r['findings']).most_common())"
 [开发环境搭建 SOP §4](development-environment.md) 先建立该设备的只读基线；
 不要拿另一台设备的绝对数量直接判回归。
 
+### 本设备只读基线
+
+| 日期 | 候选资产 | findings | 说明 |
+|---|---|---|---|
+| 2026-07-26 | 15 | 0 | TUI Phase A dogfood 时的记录 |
+| 2026-08-01 | 29 | `symlinked_asset`×3、`suspected_secret`×1 | 见下 |
+
+2026-08-01 的差值经**同机差分**确认不是分类回归：用改动前的树（`3d1078c`）与改动后
+分别构建扫描，两者**逐字相同**（29 候选、同样 4 条 findings），且
+`internal/inventory/` 自 technical preview 发布以来未被改动。
+
+四条 findings 都是文档记录过的预期类别，不是新问题：
+
+- `suspected_secret` on `home/.claude.json` —— 设备本地 native MCP config 必须含真值，
+  [资产模型 §7](../asset-model.md) 明确规定 inventory 将其作为 `suspected_secret` 排除；
+- `symlinked_asset` ×3 —— 同一个软链 skill 在 `.agents` / `.claude` / `.codex` 三个根下，
+  正是 4b 补 warning 时要让它「不再静默消失」的那一组。
+
+增长来自 codex（12）/ grok（9）/ claude（5）/ shared（3）的日常使用。下次发版拿
+**2026-08-01 这一行**做比较基准，不要再用 15。
+
 ## 2. 本地预演发布产物
 
 安装器默认版本必须始终指向一个实际存在且已验收的 Release，不能提前指向尚未发布
@@ -84,15 +105,28 @@ CI 的跨平台目标只证明**可构建**，不代表在那些平台上验证�
 
 先把 `dev` 通过 PR 提升到 `main`，并等 `main` 上同一 commit 的 CI 全绿，再创建
 和推送 tag。tag push 会直接触发 Release，不能拿 Release job 代替主分支门禁。
+Release 页面里的 `targetCommitish=main` 只是元数据，不能证明 tag 来自 main；
+`v0.1.8` 曾在 main 仍停留于上一版时从 dev 打 tag，必须由 SHA 门禁阻止再次发生。
 
 ```bash
-gh run list --branch main --limit 1
-gh run watch <run-id> --exit-status
+git fetch --prune origin
 RELEASE_TAG=v0.1.7
-git tag -a "$RELEASE_TAG" -m "aiah $RELEASE_TAG"
-git rev-parse "${RELEASE_TAG}^{}"    # 必须等于刚通过 CI 的 main commit
+RELEASE_COMMIT="$(git rev-parse origin/main)"
+MAIN_RUN_ID="$(gh run list --branch main --workflow ci.yml --limit 1 \
+  --json databaseId --jq '.[0].databaseId')"
+gh run watch "$MAIN_RUN_ID" --exit-status
+test "$(gh run view "$MAIN_RUN_ID" --json headSha,conclusion \
+  --jq '.headSha + " " + .conclusion')" = "$RELEASE_COMMIT success"
+git tag -a "$RELEASE_TAG" -m "aiah $RELEASE_TAG" "$RELEASE_COMMIT"
+test "$(git rev-parse "${RELEASE_TAG}^{}")" = "$RELEASE_COMMIT"
+git branch -r --contains "${RELEASE_TAG}^{}" | grep -q 'origin/main'
 git push origin "$RELEASE_TAG"       # 这一步触发 Release
 ```
+
+在 `v0.1.8` 之后的第一个修复版中，上一 tag 与 main 可能因历史 squash 仍显示
+diverged；Release notes 不得直接把 GitHub 自动生成的 Full Changelog 当准确范围，
+应以 tag 间文件树 diff 和已合入 PR 清单人工整理。连续两个 tag 都重新从 main 发布后，
+再恢复祖先式 compare 链接。
 
 ## 4. 发布后验收
 

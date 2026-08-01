@@ -111,8 +111,19 @@
      P3、hash、mode、backup payload、journal/stage、MCP 空 args 与软链边界均完成
      变异验证。真实 HOME 只读 dogfood：2 个 backup 完整、0 journal、0 stage；
      旧部署 7 个文件如实记为 `unchecked`，检查前后 `.aiah` 内容 hash/mode 不变。
-6. `aiah init <directory>`：脚手架 `ai-assets/` 目录与 manifest 模板；首版
-   继续显式传 `--manifest`，不加入隐式默认发现。
+6. ✅ **`aiah init <directory>` 已完成（2026-08-01）**：脚手架 `manifest.yaml`
+   与 adapter 实际读取的五个资产目录（`agents`/`hooks`/`mcp`/`rules`/`skills`），
+   不建任何没有消费者的目录。
+   - **create-only**：已存在的 manifest 永不改写——它是用户整个资产库的事实源，
+     脚手架没有值得拿它冒险的东西。重跑幂等，只补缺失目录。
+   - **确定性**：默认版本是固定的 `0.1.0` 而非当天日期，两次 init 产物逐字节一致，
+     不会变成莫名其妙的 diff，也不依赖时钟。
+   - manifest 名默认由目录名归一（`My AI Assets` → `my-ai-assets`），归一不出
+     合法名时**要求显式 `--name`**而不是猜——它会进 manifest 和包文件名，猜错是永久的。
+   - 产物**零手改直接通过 `validate`**；`build` 需先加入第一个资产
+     （空 profile 报 `empty_selection`，是既有的正确行为）。
+   - 路径被非目录/软链占用时 fail-closed 且一个字节都不写。
+   - **仍不加入隐式工作区发现**：`--manifest` 保持显式。
 7. ✅ **`aiah bootstrap` 最小闭环已实现（2026-07-28）**：pull 前要求真实 TTY，
    取回后复用 TUI Phase C，必须完整输入 `apply`；取消不写 HOME、包保留在显式
    `--out`，成功持久展示 backup/rollback。边界固化为 ADR-0008。
@@ -183,14 +194,19 @@
       dev CI 8 个 job 全绿且 annotations 为 0；Release-only 的 action-gh-release
       已随 public `v0.1.1` 正常 tag 实跑通过。
     - ✅ **Linux amd64 安装脚本 `scripts/install.sh`**（ADR-0003 §3 分发顺序
-      第 4 项）。当前源码默认固定 `v0.1.7`；校验 Release `SHA256SUMS` 后才安装，同目录
+      第 4 项）。当前源码默认固定 `v0.1.8`；校验 Release `SHA256SUMS` 后才安装，同目录
       stage 后原子替换，不先删旧版本，不用 sudo、不改 profile，同版本零下载。
       校验复用 `scripts/_sha256.sh`；网络隔离测试覆盖校验失败保旧、重复 checksum、
       幂等、原子替换，以及 macOS/arm64 在下载前被拒绝。Windows/macOS/arm64
       安装入口须在对应平台完成原生验收后再提供。已发布 `v0.1.4` / `v0.1.5`
       二进制仍生成缺少 `AIAH_VERSION` 的命令；`v0.1.6` 已完成 bridge Release，
       `v0.1.6 → v0.1.7` 又首次完成修复后推荐命令的严格端到端证明。当前源码 pin
-      随发布后收口更新到 `v0.1.7`。
+      随发布后收口更新到 `v0.1.8`。
+      校验函数原先在运行时加载（`scripts/_sha256.sh`），在 `curl | sh` 形态下
+      `$0` 不是真实路径，helper 会落到**当前工作目录**，取不到时再从网络下载并
+      source——校验器自身既可被本地同名文件替换，也经由它本该校验的通道取得。
+      `v0.1.8` 改为内联，运行时不加载任何东西；三个变异（完整漏洞 / 仅网络回退 /
+      仅 CWD source）分别由显式断言按名字抬红。
     - ⬜ 包格式兼容矩阵：旧包被新 aiah 读到什么程度（同时是 ADR-0003 UI 门槛
       第 2 条的前置）。
 
@@ -379,7 +395,7 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 
 | # | 决策 | 现状与影响 | 出处 |
 |---|---|---|---|
-| D1 | MCP create-only 的 fail-closed 是否放宽 | 已有原生配置是软链 / 0 字节 / 写成 `"args": []` 时**整单 apply 失败**。放宽会移动 ADR-0004 §3 边界。其中 `"args": []` 属比较逻辑没规范化空值，**建议无论如何单独修** | [复审 §2](reviews/2026-07-25-mcp-create-only-strict-review.md) |
+| D1 | MCP create-only 的 fail-closed 是否放宽 | 已有原生配置是软链 / 0 字节 / 写成 `"args": []` 时**整单 apply 失败**。放宽会移动 ADR-0004 §3 边界。其中 `"args": []` 属比较逻辑没规范化空值，**建议无论如何单独修** **2026-08-01 补注：该决策的范围不止 native config 冲突**——`${ENV:...}` / `${secret:...}` 解析失败走的是同一条整单 fail-closed 路径（`internal/apply/mcp_policy.go`），放宽时两处必须一起改，否则同一套策略的两半会互相矛盾。 | [复审 §2](reviews/2026-07-25-mcp-create-only-strict-review.md) |
 | D2 | `targets` 要不要**完全字面** | 现在是「`portable` 的 skill/rules 可扩散到 Grok 且记 `Degraded`」。若要一点都不扩散，是删 `shouldIncludeAsset` 一个分支的事，代价是共享技能要显式列全 target | P7 |
 | D3 | apply 要不要支持**替换软链** | 现在遇到软链目标整单失败并提示手工替换。加 opt-in 等于删用户建的东西，与「不删除未知文件」冲突 | P9 |
 | D4 | 包内 manifest 要不要带 `producedBy` | 要带就得抬 `schemaVersion`（`DisallowUnknownFields` 会让旧二进制读不了新包）。同时是包格式兼容矩阵的前置 | [development.md §4](development.md) |
@@ -424,7 +440,15 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | N5 | P1 | ✅ **E3.4 发布包绑定、双设备与失败恢复验收** | PR #26 合入；v0.1.7 正式包的源/目标设备 apply/doctor/rollback 与包 SHA 绑定通过 |
 | N6 | P1 | ✅ **MCP 只读状态补齐与客户端验收** | PR #27 合入；v0.1.7 正式包 7 工具直接协议与四目录零写入通过；Claude 模型请求被组织策略 403 阻止仍保留为外部补测 |
 | N7 | P2 | ✅ **E4 设置与 i18n** | PR #28 合入；v0.1.7 正式包完成首启、显式保存、重启、双语/密度、首选路径只预填、CLI 覆盖和损坏配置恢复 |
-| N8 | P2 | **规模化资产管理增强评估** | 由真实使用量触发；评估备份就绪/恢复验证、搜索/标签/来源追踪，不提前引入服务端或数据库事实源 |
+| N8 | P2 | ✅ **规模化资产管理增强评估** | N8.0 已完成真实规模/边界评估；N8.1 统一筛选与 manifest v1 来源读取已通过 PR #34 合入并随 `v0.1.8` 发布。Release notes 曾遗漏该范围；N8.2–N8.4 继续按真实需求触发，见[方案](designs/scalable-asset-management.md) |
+| N9 | P1 | 🟡 **v0.1.8 发布后修复与分支收口** | 共享 Core 边界、回归测试、发版 SHA 门禁和审计已通过 PR #38 合入 `dev@89b4492`，合并后 CI 9/9 全绿；当前进入 v0.1.9 main 候选。剩余出口是候选/main CI、main 精确 SHA tag、正式升级/TUI/MCP/init 验收、默认 pin 更新及 main/dev tree 收口；见[审计](reviews/2026-08-01-v0.1.8-post-release-audit.md)与[候选检查点](reviews/2026-08-01-v0.1.9-candidate-readiness.md) |
+
+`v0.1.8` 已从 `dev@21ef3fc0d753` 发布，Release/CI、线上六项资产、固定 tag 隔离安装、
+`init → validate` 与预期 `empty_selection` 均通过；N8.1 也实际包含在 tag 中。但 tag
+不包含于当时仍为 `05aadab` 的 `origin/main`，main one-liner 仍默认安装 v0.1.7，且
+public v0.1.8 `init` 可在受管工具目录内创建随后被 TUI/compose 拒绝的资产库。
+这些结果是“发布产物可用但治理/边界未收口”，不是完整正式包验收；准确证据见
+[v0.1.8 发布后审计](reviews/2026-08-01-v0.1.8-post-release-audit.md)。
 
 `v0.1.7` 已从 `main@b6779193c3ac` 发布：main/Release CI、线上六项资产、
 `v0.1.6 → v0.1.7` 严格升级命令、真实升级、幂等复装、正式 TUI/MCP 和双设备
@@ -455,10 +479,12 @@ TUI dogfood ✅ → doctor ✅ → MCP ✅ / TUI Phase B ✅ → 跨设备分发
 Secret Provider ✅ → TUI Phase C ✅ → bootstrap ✅。
 当前再向后是 TUI D1 引导式本地闭环 ✅ → D2 Doctor/当前回滚 ✅ →
 D3 版本/只读更新检查 ✅ → `v0.1.6` bridge ✅ → E3.2–E3.4 ✅ → N6 统一状态
-MCP ✅ → N7 设置/i18n ✅ → `v0.1.7` Release 与正式包验收 ✅ → N8 规模化增强评估。
+MCP ✅ → N7 设置/i18n ✅ → `v0.1.7` Release 与正式包验收 ✅ → N8.0 规模与
+边界评估 ✅ → N8.1 统一筛选与来源读取随 `v0.1.8` 发布 ✅ → N9 发布后边界与分支
+收口 🟡。
 **首次真机 dogfood 已完成，工具已从「工程演示」变为「自用工具」**（2026-07-25）；
-private `v0.1.0` 已完成流水线验收（2026-07-26）；public `v0.1.1`–`v0.1.7`
-已发布（2026-07-28 至 2026-07-31）。v0.1.5 的历史升级命令限制由 v0.1.6 bridge
+private `v0.1.0` 已完成流水线验收（2026-07-26）；public `v0.1.1`–`v0.1.8`
+已发布（2026-07-28 至 2026-08-01）。v0.1.5 的历史升级命令限制由 v0.1.6 bridge
 公开处理；v0.1.7 已首次完成修复后命令的严格 Release → Release 证明。
 
 ## Phase 0：资产盘点与契约
