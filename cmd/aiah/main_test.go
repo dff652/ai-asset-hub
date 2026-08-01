@@ -625,8 +625,8 @@ func TestRunMCPServesReadOnlyToolsOverStdio(t *testing.T) {
 		names = append(names, tool.Name)
 	}
 	// The CLI must not widen the surface the server package defines.
-	want := "aiah_asset_status,aiah_diff,aiah_doctor,aiah_migration_status," +
-		"aiah_scan,aiah_validate,aiah_version"
+	want := "aiah_asset_status,aiah_diff,aiah_doctor,aiah_migration_readiness," +
+		"aiah_migration_status,aiah_scan,aiah_validate,aiah_version"
 	if strings.Join(names, ",") != want {
 		t.Fatalf("tools = %v, want %s", names, want)
 	}
