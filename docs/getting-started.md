@@ -1,9 +1,26 @@
 # 上手指南
 
-这是完整的用户教程。日常本地使用优先走一条 TUI 主线；CLI 留给自动化、假 HOME
-演练和跨设备分发。本指南从整理本机资产走到可审计、可撤销的首次应用。命令参数总表见
-[使用流程总览](usage-flows.md)和[命令参考](cli-reference.md)；真实 HOME 的逐项检查见
+这是完整的用户教程。aiah 解决的是：**在 Claude / Codex / Grok 之间统一 AI 编程
+资产，并安全地改目标工具配置**（diff → apply → doctor → rollback）。跨设备分发
+是后续能力，不是入门主线。日常本地使用优先 TUI；CLI 留给自动化、假 HOME 演练
+和脚本。命令参数总表见 [使用流程总览](usage-flows.md)和
+[命令参考](cli-reference.md)；真实 HOME 的逐项检查见
 [真机 dry-run runbook](runbooks/real-home-dry-run.md)。
+
+定位与路线取舍见
+[产品定位与后续方向](research/product-positioning-and-direction.md)。
+
+## 0. 零承诺入口：只读盘点
+
+若已经安装 `aiah`，可先只读扫描，不创建资产库、不写任何工具目录：
+
+```bash
+aiah scan
+aiah scan --output json
+```
+
+用途：先看见本机攒了多少 skill/rules/MCP 相关文件、有哪些 findings（疑似 secret、
+软链资产等），再决定是否进入下面的安装与五步安全应用。
 
 ## 安装
 
