@@ -106,8 +106,6 @@
 - [TUI 界面评估（参考 grok-build）](research/tui-surface-assessment.md)
 - [产品形态与分发边界评估](research/product-form-and-distribution-assessment.md)
   （服务端 docker / 内网多用户 / curl 安装 / MCP server 四问收口；结论未冻结为 ADR）
-- [产品定位与后续方向评估](research/product-positioning-and-direction.md)
-  （市场对标、真正解决的问题、用户小众怎么办、macOS 范围与验证方式）
 - [beautify-github-readme 适用性评估](research/beautify-github-readme-assessment.md)
   （asset-only 与 README mode 已进入 `v0.1.5` 默认分支；主 SVG 只承担首次使用
   流程，其它任务由 README 任务表和[使用流程总览](usage-flows.md)覆盖）
