@@ -3,10 +3,12 @@
 ## 用户指南
 
 - [上手指南](getting-started.md)
-  （发现资产 → 整理资产库 → 检查并准备 → 预览变化 → 人工确认）
+  （零承诺 `scan` → 发现资产 → 整理资产库 → 检查并准备 → 预览变化 → 人工确认）
 - [使用流程总览](usage-flows.md)
   （首次使用、日常维护、撤销、跨设备、MCP/自动化与工具升级）
 - [CLI 命令参考](cli-reference.md)
+- [产品定位与后续方向](research/product-positioning-and-direction.md)
+  （pitch、零承诺入口、团队场景与投入顺序；非 ADR）
 - [跨设备迁移 runbook](runbooks/cross-device-transfer.md)（发布 → 搬运 → 取回 → 安装）
 - [MCP 客户端接入与只读验收](runbooks/mcp-client-acceptance.md)
   （Claude Code / Codex / Grok 握手、工具调用与零写入对账）
@@ -25,7 +27,7 @@
 - [工程流程：开发 / 测试 / 构建 / 部署 / 发布](development.md)
 - [开发环境搭建 SOP](runbooks/development-environment.md)
 - [发版 runbook](runbooks/release.md)
-- [MVP 路线图](roadmap.md)（当前能力矩阵、发布边界与后续任务 N0–N10）
+- [MVP 路线图](roadmap.md)（当前能力矩阵、发布边界、v0.1.10 后 dogfood 优先与 N10.4 延期）
 - [假 HOME 闭环 runbook](runbooks/fake-home-loop.md)
 - [Public 发布 runbook](runbooks/public-launch.md)
 - [漏洞报告政策](../SECURITY.md)
@@ -66,6 +68,8 @@
 
 ## 评审
 
+- [2026-08-02 N10 收尾审计](reviews/2026-08-02-n10-closeout-audit.md)
+- [2026-08-02 v0.1.10 发布与正式安装包验收](reviews/2026-08-02-v0.1.10-release-acceptance.md)
 - [2026-08-01 N10.1 迁移准备 Core/CLI 检查点](reviews/2026-08-01-n10-1-readiness-core-cli-checkpoint.md)
 - [2026-08-01 v0.1.9 发布与正式安装包验收](reviews/2026-08-01-v0.1.9-release-acceptance.md)
 - [2026-08-01 v0.1.9 发布候选就绪检查点](reviews/2026-08-01-v0.1.9-candidate-readiness.md)
