@@ -102,7 +102,7 @@ TUI/CLI 与 MCP 调用同一 Core，但权限不同：
 - TUI 是人工操作台，可以在明确路径、diff 和 typed confirmation 后写资产库或
   目标工具目录；
 - CLI 是完整自动化接口，写操作由调用方显式承担路径、确认、错误恢复和审计；
-- `aiah mcp` 是 AI 工具的**只读查询面**。当前源码候选注册 7 个工具，覆盖盘点、
+- `aiah mcp` 是 AI 工具的**只读查询面**。public `v0.1.7` 注册 7 个工具，覆盖盘点、
   统一资产状态、校验、包 diff、安装检查、迁移状态和版本；
 - MCP 不注册 build、资产库纳入/更新/移出、publish/pull、apply/rollback。MCP
   handler 只做参数解码和 Core 报告转发，不复制分类、版本对齐或路径规则。

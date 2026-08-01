@@ -125,11 +125,10 @@ bootstrap 含解析值。后续 inventory 会把这个 native config 识别为
 只读取 GitHub latest release 元数据，不下载、不替换二进制。返回的升级命令绑定
 精确 tag；真正安装仍由用户显式执行，并继续经过安装器的 SHA256 与原子替换门禁。
 但 tag URL 不能单独证明目标版本已绑定：`v0.1.4` / `v0.1.5` 的生成命令缺少显式
-`AIAH_VERSION`，配合 staged installer pin 会停留在旧版。`v0.1.6` Release 已公开
-bridge workaround，并完成 legacy no-op 与显式版本升级验收；具体命令见
-[上手指南](getting-started.md)。`v0.1.6` 二进制已让后续升级命令显式绑定
-`AIAH_VERSION` 并加入精确字符串回归；该修复不追溯改变旧二进制。下一版本仍须执行
-程序实际生成的命令，并核对安装后的版本、commit 和 SHA256。
+`AIAH_VERSION`，配合 staged installer pin 会停留在旧版。`v0.1.6` bridge 已公开
+workaround；`v0.1.6 → v0.1.7` 又首次验证修复后的实际命令逐字等于安全模板，并
+完成版本、commit、SHA256、mode、无残留和幂等复装对账。具体命令见
+[上手指南](getting-started.md)。该修复不追溯改变旧二进制。
 
 ## 7. 许可证
 
