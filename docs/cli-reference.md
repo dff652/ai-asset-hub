@@ -136,7 +136,7 @@ MCP 原生配置前置状态。新格式部署按记录的 SHA256 和 mode 报�
 
 `scripts/dev-doctor.sh` 检查开发工具链，与面向用户资产状态的 `aiah doctor` 不同。
 
-## `readiness`（N10.1 源码候选）
+## `readiness`（v0.1.10）
 
 ```bash
 aiah readiness --workspace <asset-library> --profile <name> \
