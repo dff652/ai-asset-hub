@@ -145,7 +145,7 @@ aiah ui --density detailed                      # 仅本次展开全部可选技
 
 - 首页按用户任务组织为“整理本机资产”“预览并应用资产库”“安装检查与撤销”
   “迁移到其他设备”“关于与更新”和“偏好设置”，不要求先理解内部阶段。
-- 当前 `dev` 的偏好设置支持语言、显示密度和首选资产库预填。语言可选
+- `v0.1.7` 的偏好设置支持语言、显示密度和首选资产库预填。语言可选
   `auto` / `zh-CN` / `en`，密度可选 `standard` / `detailed`；密度只改变可选
   技术明细的默认展开状态，不隐藏路径、版本、目标、风险、确认或恢复信息。
 - 首选资产库只接受已存在的安全目录，并只用于首页提示和路径框预填；每次会话仍须
@@ -155,13 +155,13 @@ aiah ui --density detailed                      # 仅本次展开全部可选技
   损坏或权限不安全时使用安全默认值并在首页/设置页告警。
 - 设置页选择语言只预览；`Esc` / `m` 放弃。只有明确选择“保存偏好”才以
   `0700` 目录、`0600` 文件原子保存。`--language` / `--density` 只覆盖本次
-  进程，永不反写。public `v0.1.6` 不包含本项 `dev` 候选。
-- “迁移到其他设备”先只读比较资产库、当前安装和通道；当前 `dev` 可按 `p`
+  进程，永不反写。
+- “迁移到其他设备”先只读比较资产库、当前安装和通道；可按 `p`
   选择资产组合并 typed `publish`，按 `v` 查看全部发布坐标并明确选择版本/profile
   与已有输出目录；按 `e` 选择资产组合并零写入检查本机排除项、secret 和 adapter
-  兼容性。当前 `dev` 的 E3.4 在取回后先按 name/version/profile/SHA256 检查确切发布包和
+  兼容性。取回后先按 name/version/profile/SHA256 检查确切发布包和
   目标设备，通过后由用户按 Enter 进入同一 diff/typed `apply`；不会直接写目标
-  工具目录。`v0.1.6` 公开版仍只包含 E3.1 只读状态页。
+  工具目录。
 - 用户界面把 workspace 称为“资产库”：它是跨工具资产的可编辑事实源。CLI flag、
   manifest schema 和 API 仍保留 `workspace`，避免破坏兼容性。
 - 没有 `--workspace` 时初始只读；进入需要资产库的任务后，必须明确输入并确认路径
@@ -230,25 +230,23 @@ aiah update --check [--output text|json]
 该命令不下载、不替换二进制。`aiah --update` 不存在；`aiah update` 必须显式带
 `--check`。真正升级仍由用户执行报告中的校验安装命令。
 
-已知问题：`v0.1.4` / `v0.1.5` 输出的命令虽然绑定 tag，却没有给安装器显式传入
-`AIAH_VERSION`。`v0.1.6` tag 内的安装器按 staged-pin 规则仍默认 `v0.1.5`，
-因此从旧版复制 legacy 命令会保持在旧版。升级到 `v0.1.6` 请使用：
+历史问题：`v0.1.4` / `v0.1.5` 输出的命令虽然绑定 tag，却没有给安装器显式传入
+`AIAH_VERSION`。从这些版本升级到当前版请使用：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.6/scripts/install.sh |
-  AIAH_VERSION=0.1.6 sh
+curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.7/scripts/install.sh |
+  AIAH_VERSION=0.1.7 sh
 ```
 
-该命令已完成 `v0.1.5 → v0.1.6` 隔离升级验收，legacy 命令的 no-op 证据也已记录
-在 `v0.1.6` Release。`v0.1.6` 二进制已把生成格式修复为：
+`v0.1.6` 二进制已把生成格式修复为：
 
 ```text
 .../v<version>/scripts/install.sh | AIAH_VERSION=<version> sh
 ```
 
-并增加精确字符串与 TUI 窄屏可复制性回归。该修复不能追溯改变
-`v0.1.4` / `v0.1.5`；从 `v0.1.6` 升级到下一版本时，才是修复后推荐命令的首次
-完整 Release → Release 证明。
+并增加精确字符串与 TUI 窄屏可复制性回归。`v0.1.6 → v0.1.7` 已首次完成旧版
+实际命令逐字断言、真实升级、幂等复装及版本/commit/SHA256 对账。该修复不能追溯
+改变 `v0.1.4` / `v0.1.5`。
 
 ## `version`
 

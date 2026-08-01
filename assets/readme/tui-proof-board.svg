@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1000" viewBox="0 0 1200 1000" role="img" aria-labelledby="title desc">
   <title id="title">AI Asset Hub 真实 TTY 状态证明板</title>
-  <desc id="desc">v0.1.6 正式安装包在隔离 TTY 中验证过的三段状态：统一资产状态、安全应用结果和跨设备迁移只读检查。</desc>
+  <desc id="desc">v0.1.7 正式安装包在隔离 TTY 中验证过的任务首页、统一资产状态、安全应用结果和跨设备连续迁移。</desc>
 
   <rect width="1200" height="1000" rx="24" fill="#0D1117"/>
-  <text x="60" y="54" fill="#58A6FF" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18" font-weight="700" letter-spacing="2">REAL TTY PROOF · v0.1.6</text>
+  <text x="60" y="54" fill="#58A6FF" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18" font-weight="700" letter-spacing="2">REAL TTY PROOF · v0.1.7</text>
   <text x="60" y="104" fill="#E6EDF3" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="42" font-weight="700">从整理资产到迁移检查，一条可审阅的主流程</text>
-  <text x="60" y="135" fill="#8B949E" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="19">v0.1.6 正式安装包的隔离 TTY 状态摘录 · E1 / E2 / E3.1</text>
+  <text x="60" y="135" fill="#8B949E" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="19">v0.1.7 正式安装包的隔离 TTY 状态摘录 · 资产管理 / 应用 / 跨设备</text>
 
   <rect x="60" y="170" width="1080" height="230" rx="18" fill="#E6EDF3" fill-opacity=".035" stroke="#8B949E" stroke-opacity=".65"/>
   <circle cx="88" cy="198" r="6" fill="#8B949E"/>
@@ -30,16 +30,16 @@
 
   <rect x="60" y="670" width="1080" height="260" rx="18" fill="#E6EDF3" fill-opacity=".035" stroke="#58A6FF" stroke-width="2"/>
   <circle cx="88" cy="698" r="6" fill="#58A6FF"/>
-  <text x="112" y="706" fill="#E6EDF3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="22" font-weight="700">aiah · 迁移到其他设备 · 只读状态</text>
+  <text x="112" y="706" fill="#E6EDF3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="22" font-weight="700">aiah · 迁移到其他设备 · 连续向导</text>
   <line x1="60" y1="724" x2="1140" y2="724" stroke="#58A6FF" stroke-opacity=".35"/>
   <text x="88" y="766" fill="#8B949E" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="19">资产库</text>
   <text x="265" y="766" fill="#E6EDF3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="21">fixture-personal / 2026.07.1</text>
   <text x="88" y="806" fill="#8B949E" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="19">当前安装</text>
-  <text x="265" y="806" fill="#E6EDF3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="21">尚未安装</text>
+  <text x="265" y="806" fill="#E6EDF3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="21">fixture-personal / 2026.07.1 · healthy</text>
   <text x="88" y="846" fill="#8B949E" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="19">分发通道</text>
   <text x="265" y="846" fill="#E6EDF3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="21">1 个发布 · 包内容与当前资产库一致</text>
-  <text x="88" y="891" fill="#58A6FF" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="19">c 选择通道   r 刷新</text>
-  <text x="1112" y="891" text-anchor="end" fill="#3FB950" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="700">本页不执行 publish / pull / apply</text>
+  <text x="88" y="891" fill="#58A6FF" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="19">e 换机检查   c 通道   p 发布   v 取回</text>
+  <text x="1112" y="891" text-anchor="end" fill="#3FB950" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="700">pull 后仍需检查 · diff · typed apply</text>
 
-  <text x="60" y="968" fill="#8B949E" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17">证据边界：E1 / E2 / E3.1 正式安装包已验证；跨设备发布与取回仍使用 CLI。</text>
+  <text x="60" y="968" fill="#8B949E" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17">证据边界：E1–E4 正式安装包已验证；通道字节传输仍由 Git / NAS / rsync / U 盘负责。</text>
 </svg>
