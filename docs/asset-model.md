@@ -10,8 +10,9 @@
 | 资产工作区（本节 `ai-assets/`） | 个人全局与跨项目复用资产的事实源；由用户经 `--manifest <path>` 指定，workspace root 默认 = manifest 所在目录（`--root` 可覆盖）；建议放独立私有 Git 仓库 |
 | `--home` / `--project` | 部署目标（写 `~/.claude` 等）或扫描对象；`--project` 指接收 project-scope 资产的目标工程，项目专属资产仍可随该项目 Git 管理 |
 
-正式个人资产不放在 aiah 工具仓库内。资产工作区与部署目标是逻辑角色，不要求
-物理目录永不重合；项目专属规则仍以项目仓库为事实源，默认只读盘点或显式导入。
+正式个人资产不放在 aiah 工具仓库内。资产工作区可以位于独立私有仓库或普通项目
+目录，但不能放进 `.agents`、`.claude`、`.codex`、`.grok` 及其子目录；这些是扫描或
+部署目标，不是资产库。项目专属规则仍以项目仓库为事实源，默认只读盘点或显式导入。
 `aiah init <directory>` 会脚手架出这个布局：`manifest.yaml` 加上 adapter 实际读取的
 五个资产目录。它是 create-only 的——已存在的 manifest 永不改写，重跑只补缺失目录。
 **它建工作区，但不让工作区「被找到」**：manifest 发现始终显式（`--manifest`），

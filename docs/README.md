@@ -25,7 +25,7 @@
 - [工程流程：开发 / 测试 / 构建 / 部署 / 发布](development.md)
 - [开发环境搭建 SOP](runbooks/development-environment.md)
 - [发版 runbook](runbooks/release.md)
-- [MVP 路线图](roadmap.md)（当前能力矩阵、发布边界与后续任务 N0–N8）
+- [MVP 路线图](roadmap.md)（当前能力矩阵、发布边界与后续任务 N0–N9）
 - [假 HOME 闭环 runbook](runbooks/fake-home-loop.md)
 - [Public 发布 runbook](runbooks/public-launch.md)
 - [漏洞报告政策](../SECURITY.md)
@@ -64,6 +64,7 @@
 
 ## 评审
 
+- [2026-08-01 v0.1.8 发布后代码、功能与流程审计](reviews/2026-08-01-v0.1.8-post-release-audit.md)
 - [2026-08-01 v0.1.7 发布与正式安装包验收](reviews/2026-08-01-v0.1.7-release-acceptance.md)
 - [2026-07-31 v0.1.7 发布候选就绪检查点](reviews/2026-07-31-v0.1.7-candidate-readiness.md)
 - [2026-07-31 N7.5 发布候选验收](reviews/2026-07-31-n7-release-candidate-acceptance.md)

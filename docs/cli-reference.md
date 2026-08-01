@@ -45,7 +45,13 @@ aiah init ~/ai-assets --name team-shared --version 2026.08.1 --output json
 | create-only | **已存在的 manifest 永不改写。** 重跑只补缺失目录，报告里列进 `existing` |
 | 幂等 | 第二次运行 `created` 为空 |
 | 确定性 | 默认版本是固定的 `0.1.0`，不是当天日期；两次 init 产物逐字节一致 |
-| fail-closed | 路径被非目录或软链占用时拒绝，且一个字节都不写 |
+| fail-closed | 路径被非目录、软链或受管工具目录占用时拒绝，且一个字节都不写 |
+
+资产库不能位于 `.agents`、`.claude`、`.codex`、`.grok` 及其子目录；请选择
+`~/ai-assets` 这类独立路径。public `v0.1.8` 的 `init` 尚未执行这项受管目录检查，
+虽然 TUI/compose 会拒绝当前 HOME/project 的该类路径；不要用它在这些目录中初始化。
+修复已进入下一补丁版候选，准确状态见
+[v0.1.8 发布后审计](reviews/2026-08-01-v0.1.8-post-release-audit.md)。
 
 `--name` 默认由目录名归一（`My AI Assets` → `my-ai-assets`）。归一不出合法名时
 **要求你显式传** `--name` 而不是猜——这个值会进 manifest 和包文件名，猜错是永久的。
