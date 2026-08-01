@@ -219,8 +219,7 @@
     [ADR-0005](decisions/0005-read-only-mcp-server-surface.md)。
     - `v0.1.7` 暴露 7 个工具；除 `aiah_scan` / `aiah_validate` / `aiah_diff` /
       `aiah_doctor` / `aiah_version` 外，包含统一资产状态和迁移状态。
-      N10.3 在 `dev` 源码中增加第 8 个只读工具 `aiah_migration_readiness`（尚未
-      随正式版发布）。
+      public `v0.1.10` 增加第 8 个只读工具 `aiah_migration_readiness`（N10.3）。
     - **不暴露 `apply` 与 `rollback`**：二者写 HOME，而 Claude Code 自身在读
       `~/.claude`——让 agent 改自己的运行时配置，harness 可能中途重载，行为
       不可预测。这是实际风险不是理论风险。
@@ -377,22 +376,24 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 
 结论：aiah 已形成“发现 → 资产库 → 校验/组包 → 预览/应用 → 检查/撤销 →
 不可变分发”的资产生命周期 MVP。`v0.1.7` 首次把 E3.2–E3.4 跨设备连续向导、N6
-统一状态 MCP 和 N7 双语偏好带入公开 Release；`v0.1.8` 增加 N8.1 与 init，
-`v0.1.9` 修复初始化安全边界并从受保护 main 完成正式验收。当前优先级转向 N10
-迁移准备检查，不再继续做发布候选收口。
+统一状态 MCP 和 N7 双语偏好带入公开 Release；`v0.1.8`/`v0.1.9` 收口 init 与
+发版治理；`v0.1.10` 交付 N10.1–N10.3 迁移准备检查。当前剩余主项是 N10.4（明确
+延期）以及按真实需求触发的 N8.3/N8.4。
 
 | 层面 | 已完成 | 当前边界 |
 |---|---|---|
-| 公开版 `v0.1.9` | v0.1.8 安全安装器、init、N8.1，加受管目录 init 边界修复 | 从受保护 main 发布；严格 `v0.1.8→v0.1.9` 升级、init 正反路径、真 TTY 首页和 MCP 回归通过；完整偏好/双设备闭环引用 v0.1.7 |
+| 公开版 `v0.1.10` | N10.1 Core/CLI、N10.2 TUI「换机与备份」、N10.3 `aiah_migration_readiness`（8 工具 MCP） | 从受保护 main 发布；严格 `v0.1.9→v0.1.10` 升级、安装包 CLI/TUI/MCP 验收通过；N10.4 延期 |
+| 公开版 `v0.1.9` | v0.1.8 安全安装器、init、N8.1，加受管目录 init 边界修复 | 从受保护 main 发布；严格 `v0.1.8→v0.1.9` 升级、init 正反路径、真 TTY 首页和 MCP 回归通过 |
 | 公开版 `v0.1.7` | CLI/Core、任务首页、统一资产状态、连续应用、Doctor/rollback、E3.2–E3.4、7 工具只读 MCP、双语与三项本机 UI 偏好 | Linux amd64 线上产物、严格 `v0.1.6→v0.1.7` 升级、正式 TUI/MCP、双设备闭环与幂等复装通过 |
-| `v0.1.9` 发布基线 | tag 精确指向受保护 main 发布提交，线上六项资产与严格升级通过 | 发布后默认 installer pin 已收口到 v0.1.9，main/dev 最终文件树一致；实时分支状态仍以 GitHub 为准 |
+| 发布基线 | tag 精确指向受保护 main 发布提交，线上六项资产与严格升级通过 | 默认 installer pin 收口到当前已验收版；main/dev 最终文件树一致 |
 | `main` / `dev` 同步规则 | squash 历史下以最终文件树一致为目标 | 每次发布后按发版 SOP 经 PR 同步并用 `git diff origin/main origin/dev` 验证，不以祖先关系代替内容证明 |
-| 人工操作入口 | TUI 覆盖本机资产、迁移和本机偏好；CLI 保留全部高级、脚本和 CI 能力 | 写操作继续要求显式路径、diff 和 typed confirmation |
-| AI 接入入口 | `v0.1.9` 提供 7 个只读工具 | v0.1.9 正式包协议、schema、两项状态调用与零写入回归通过；Codex/Grok 模型调用矩阵仍引用 v0.1.7，Claude 模型调用仍被组织策略 403 阻止；不开放写操作 |
+| 人工操作入口 | TUI 覆盖本机资产、换机与备份、迁移和本机偏好；CLI 保留全部高级、脚本和 CI 能力 | 写操作继续要求显式路径、diff 和 typed confirmation |
+| AI 接入入口 | `v0.1.10` 提供 8 个只读工具（含 `aiah_migration_readiness`） | 正式包协议、schema、状态/准备调用与零写入通过；Codex/Grok 模型调用矩阵仍引用 v0.1.7，Claude 模型调用仍被组织策略 403 阻止；不开放写操作 |
 | README 视觉 | README mode、规范化主入口和视觉门禁已发布 | 证明板同步到 v0.1.7；一张主流程图表达首次成功，其它流程由任务表和详细文档覆盖 |
 
-资产库备份就绪与恢复验证已进入 N10；搜索/标签/描述、来源与许可证追踪仍由真实
-需求触发，不是当前发布阻塞项。aiah 仍不实现网络传输、后台双向同步或云端账户体系。
+N10.1–N10.3 已发布；N10.4 自动证据记录与隔离演练编排明确延期。搜索/标签/描述、
+来源与许可证追踪仍由真实需求触发，不是当前发布阻塞项。aiah 仍不实现网络传输、
+后台双向同步或云端账户体系。
 
 ## 待决策（阻塞在产品判断，不是缺代码）
 
@@ -448,15 +449,14 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | N8 | P2 | ✅ **规模化资产管理增强评估** | N8.0 已完成真实规模/边界评估；N8.1 统一筛选与 manifest v1 来源读取已通过 PR #34 合入并随 `v0.1.8` 发布。Release notes 曾遗漏该范围；N8.2 需求已确认并转入 N10，N8.3–N8.4 继续按真实需求触发，见[方案](designs/scalable-asset-management.md) |
 | N9 | P1 | ✅ **v0.1.8 发布后修复与分支收口** | PR #38 修复、PR #39 main 候选、v0.1.9 main/tag/Release 与正式验收均完成；PR #40 收口默认 pin/用户文档，PR #41 按最终文件树同步 dev。main/dev 的 squash 历史不伪装为祖先关系，最终门禁是 tree diff 为空。见[审计](reviews/2026-08-01-v0.1.8-post-release-audit.md)、[候选检查点](reviews/2026-08-01-v0.1.9-candidate-readiness.md)与[正式验收](reviews/2026-08-01-v0.1.9-release-acceptance.md) |
 
-### `v0.1.9` 后下一阶段
+### `v0.1.10` 与后续
 
 | 顺序 | 优先级 | 任务 | 当前边界与验收出口 |
 |---|---|---|---|
-| N10 | P1 | ✅ **迁移准备检查（N10.1–N10.3）** | public `v0.1.10`：Core/CLI、TUI「换机与备份」、MCP `aiah_migration_readiness`（8 工具）。N10.4 自动证据记录与隔离演练编排明确延期。不自动上传、不后台同步、不把安装恢复点冒充换机备份。见[方案](designs/migration-readiness.md) |
+| N10 | P1 | ✅ **迁移准备检查（N10.1–N10.3）** | public `v0.1.10`：Core/CLI、TUI「换机与备份」、MCP `aiah_migration_readiness`（8 工具）。N10.4 自动证据记录与隔离演练编排明确延期。不自动上传、不后台同步、不把安装恢复点冒充换机备份。见[方案](designs/migration-readiness.md)与[正式验收](reviews/2026-08-02-v0.1.10-release-acceptance.md) |
 
-N10.1 当前处于本地源码候选门禁阶段；通过 review/CI 并进入正式发布前，不写成
-v0.1.9 已有能力。后续先评估 N10.2，而 N8.3 描述/标签/许可证与 N8.4 索引/数据库
-继续按真实需求触发；新增工具 target 时再评估完整 Probe 插件接口。
+N10.1–N10.3 已随 `v0.1.10` 正式发布。N10.4 仍延期；N8.3 描述/标签/许可证与
+N8.4 索引/数据库继续按真实需求触发；新增工具 target 时再评估完整 Probe 插件接口。
 
 `v0.1.8` 已从 `dev@21ef3fc0d753` 发布，Release/CI、线上六项资产、固定 tag 隔离安装、
 `init → validate` 与预期 `empty_selection` 均通过；N8.1 也实际包含在 tag 中。但 tag

@@ -292,9 +292,10 @@ N10.4 不允许：
 任一阶段若需要改变 manifest schema、写入资产库、访问网络或把 MCP 扩成写操作，
 必须停止并另做 ADR；不能借“迁移准备”顺带扩大权限。
 
-## 9. N10.1 源码候选检查点（2026-08-01）
+## 9. N10.1 检查点（2026-08-01，历史）
 
-Core、schema、CLI、零写入/安全测试和六项变异验证已完成，完整本地门禁通过。
-实现过程中把构建就绪与 Secret/target 前置条件拆开，补入 `shared` 机器 target，并让
-恢复证据精确匹配当前 target 集合。当前仍是未发布源码候选；详细证据、限制和未完成
-范围见 [N10.1 检查点](../reviews/2026-08-01-n10-1-readiness-core-cli-checkpoint.md)。
+Core、schema、CLI、零写入/安全测试和六项变异验证在 2026-08-01 完成。实现过程中把
+构建就绪与 Secret/target 前置条件拆开，补入 `shared` 机器 target，并让恢复证据
+精确匹配当前 target 集合。本节记录当时的源码候选门禁；公开版 `v0.1.10` 已发布
+N10.1–N10.3（含 TUI 与 MCP），详见 [N10.1 检查点](../reviews/2026-08-01-n10-1-readiness-core-cli-checkpoint.md)
+与 [v0.1.10 正式验收](../reviews/2026-08-02-v0.1.10-release-acceptance.md)。
