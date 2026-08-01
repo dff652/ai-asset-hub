@@ -443,7 +443,7 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | N6 | P1 | ✅ **MCP 只读状态补齐与客户端验收** | PR #27 合入；v0.1.7 正式包 7 工具直接协议与四目录零写入通过；Claude 模型请求被组织策略 403 阻止仍保留为外部补测 |
 | N7 | P2 | ✅ **E4 设置与 i18n** | PR #28 合入；v0.1.7 正式包完成首启、显式保存、重启、双语/密度、首选路径只预填、CLI 覆盖和损坏配置恢复 |
 | N8 | P2 | ✅ **规模化资产管理增强评估** | N8.0 已完成真实规模/边界评估；N8.1 统一筛选与 manifest v1 来源读取已通过 PR #34 合入并随 `v0.1.8` 发布。Release notes 曾遗漏该范围；N8.2–N8.4 继续按真实需求触发，见[方案](designs/scalable-asset-management.md) |
-| N9 | P1 | 🟡 **v0.1.8 发布后修复与分支收口** | PR #38 修复已提升到 `main@3523d75`；v0.1.9 main/tag/Release、线上资产、严格升级、init 正反路径、真 TTY 和 MCP 回归均通过。当前发布后 PR 正在把默认 pin/用户文档收口到 v0.1.9；最后只剩 main/dev 最终 tree 同步。见[审计](reviews/2026-08-01-v0.1.8-post-release-audit.md)、[候选检查点](reviews/2026-08-01-v0.1.9-candidate-readiness.md)与[正式验收](reviews/2026-08-01-v0.1.9-release-acceptance.md) |
+| N9 | P1 | ✅ **v0.1.8 发布后修复与分支收口** | PR #38 修复、PR #39 main 候选、v0.1.9 main/tag/Release 与正式验收均完成；PR #40 收口默认 pin/用户文档，PR #41 按最终文件树同步 dev。main/dev 的 squash 历史不伪装为祖先关系，最终门禁是 tree diff 为空。见[审计](reviews/2026-08-01-v0.1.8-post-release-audit.md)、[候选检查点](reviews/2026-08-01-v0.1.9-candidate-readiness.md)与[正式验收](reviews/2026-08-01-v0.1.9-release-acceptance.md) |
 
 `v0.1.8` 已从 `dev@21ef3fc0d753` 发布，Release/CI、线上六项资产、固定 tag 隔离安装、
 `init → validate` 与预期 `empty_selection` 均通过；N8.1 也实际包含在 tag 中。但 tag
@@ -455,7 +455,7 @@ public v0.1.8 `init` 可在受管工具目录内创建随后被 TUI/compose 拒�
 `v0.1.9` 已从受保护 `main@3523d75acd90` 发布：tag 精确指向并包含于该 main SHA，
 main/tag/Release CI、线上六项资产、v0.1.8 → v0.1.9 严格升级、幂等复装、init 正反
 路径、裸/显式真 TTY 首页和 MCP 只读零写入回归均通过。发布后收口把默认 installer
-pin 和用户文档更新到 v0.1.9；最终 main/dev tree 同步完成前，N9 仍保持进行中。
+pin 和用户文档更新到 v0.1.9；PR #41 把同一最终文件树同步到 dev，N9 至此完成。
 证据见 [v0.1.9 发布与正式验收](reviews/2026-08-01-v0.1.9-release-acceptance.md)。
 
 `v0.1.7` 已从 `main@b6779193c3ac` 发布：main/Release CI、线上六项资产、
@@ -489,7 +489,7 @@ Secret Provider ✅ → TUI Phase C ✅ → bootstrap ✅。
 D3 版本/只读更新检查 ✅ → `v0.1.6` bridge ✅ → E3.2–E3.4 ✅ → N6 统一状态
 MCP ✅ → N7 设置/i18n ✅ → `v0.1.7` Release 与正式包验收 ✅ → N8.0 规模与
 边界评估 ✅ → N8.1 统一筛选与来源读取随 `v0.1.8` 发布 ✅ → v0.1.9 边界修复与
-正式验收 ✅ → N9 最终 main/dev tree 收口 🟡。
+正式验收 ✅ → N9 最终 main/dev tree 收口 ✅。
 **首次真机 dogfood 已完成，工具已从「工程演示」变为「自用工具」**（2026-07-25）；
 private `v0.1.0` 已完成流水线验收（2026-07-26）；public `v0.1.1`–`v0.1.9`
 已发布（2026-07-28 至 2026-08-01）。v0.1.5 的历史升级命令限制由 v0.1.6 bridge
