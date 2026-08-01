@@ -57,7 +57,8 @@ cp -a "$AIAH_MCP_REPO/testdata/workspace-valid" "$AIAH_MCP_TEST_ROOT/workspace"
 通过标准：
 
 - protocol 为 server 支持的正式修订；
-- tools/list 恰好列出当前 ADR-0005 的 7 个工具；
+- tools/list 恰好列出当前 ADR-0005 的工具数（public `v0.1.9` 为 7；含 N10.3 的
+  源码/`dev` 为 8，含 `aiah_migration_readiness`）；
 - 每个工具带只读 annotations，schema 禁止额外参数；
 - 两次调用分别返回 `asset-catalog`、`migration-status`，无 `isError=true`。
 

@@ -219,6 +219,8 @@
     [ADR-0005](decisions/0005-read-only-mcp-server-surface.md)。
     - `v0.1.7` 暴露 7 个工具；除 `aiah_scan` / `aiah_validate` / `aiah_diff` /
       `aiah_doctor` / `aiah_version` 外，包含统一资产状态和迁移状态。
+      N10.3 在 `dev` 源码中增加第 8 个只读工具 `aiah_migration_readiness`（尚未
+      随正式版发布）。
     - **不暴露 `apply` 与 `rollback`**：二者写 HOME，而 Claude Code 自身在读
       `~/.claude`——让 agent 改自己的运行时配置，harness 可能中途重载，行为
       不可预测。这是实际风险不是理论风险。
@@ -242,13 +244,14 @@ ADR-0005 实现的两类只读 Core 接入 MCP：
 - `aiah_asset_status`：资产库中的“未纳管 / 已纳管 / 源端有更新 / 仅库内 / 阻止”；
 - `aiah_migration_status`：资产库、当前安装和可选分发通道的版本对齐结果。
 
-ADR-0005 已修订为 7 工具；`TestToolCallsWriteNothing` 已扩大到 HOME、project、
-资产库、通道和包目录。Codex、Grok 已完成模型级调用；Claude Code 客户端握手
-Connected，但模型请求被组织策略在工具调用前以 403 阻止，必须在策略解除后补测，
-不能伪报三客户端模型调用全部通过。
+ADR-0005 已修订为 8 工具（含 N10.3 `aiah_migration_readiness`）；
+`TestToolCallsWriteNothing` 覆盖 HOME、project、资产库、通道、包目录和证据目录。
+Codex、Grok 已完成模型级调用；Claude Code 客户端握手 Connected，但模型请求被
+组织策略在工具调用前以 403 阻止，必须在策略解除后补测，不能伪报三客户端模型调用
+全部通过。
 
-`build`、资产库纳入/更新/移出、`publish/pull`、`apply/rollback` 仍不进入 MCP：
-AI 负责发现、解释和提出建议，创建文件或改变机器状态继续由用户在 TUI/CLI 审阅
+`build`、资产库纳入/更新/移出、`publish/pull`、`apply/rollback` 与证据创建仍不进入
+MCP：AI 负责发现、解释和提出建议，创建文件或改变机器状态继续由用户在 TUI/CLI 审阅
 确认。
 
 ### 界面：TUI（取代原 Phase 3.5 Web UI）
@@ -449,7 +452,7 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 
 | 顺序 | 优先级 | 任务 | 当前边界与验收出口 |
 |---|---|---|---|
-| N10 | P1 | 🟡 **迁移准备检查** | N10.1 Go Core、JSON schema 与 `aiah readiness` CLI 已合入 `dev`（尚未正式发布）。N10.2 TUI「换机与备份」源码候选已实现（共享 Core、三态状态卡、零隐式写入）；N10.3 MCP 只读与 N10.4 隔离演练尚未实现。不自动上传、不后台同步、不把安装恢复点冒充换机备份。见[方案](designs/migration-readiness.md)与[检查点](reviews/2026-08-01-n10-1-readiness-core-cli-checkpoint.md) |
+| N10 | P1 | 🟡 **迁移准备检查** | N10.1 Core/CLI 与 N10.2 TUI 已合入 `dev`（尚未正式发布）。N10.3 `aiah_migration_readiness` 只读 MCP 源码候选已实现（8 工具、write-nothing、ADR-0005 同步）；N10.4 隔离演练尚未实现。不自动上传、不后台同步、不把安装恢复点冒充换机备份。见[方案](designs/migration-readiness.md) |
 
 N10.1 当前处于本地源码候选门禁阶段；通过 review/CI 并进入正式发布前，不写成
 v0.1.9 已有能力。后续先评估 N10.2，而 N8.3 描述/标签/许可证与 N8.4 索引/数据库

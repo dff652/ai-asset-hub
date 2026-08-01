@@ -1,6 +1,6 @@
 # N10：迁移准备检查
 
-- 状态：N10.1 Core/CLI 已合入 `dev`；N10.2 TUI 源码候选已实现；N10.3–N10.4 尚未实现
+- 状态：N10.1 Core/CLI 与 N10.2 TUI 已合入 `dev`；N10.3 只读 MCP 源码候选已实现；N10.4 尚未实现
 - 日期：2026-08-02
 - 来源：N8.2「资产库备份就绪与恢复演练报告」
 - 关联：[跨设备迁移方案](cross-device-migration-and-version-sync.md)、
