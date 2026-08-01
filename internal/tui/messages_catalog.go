@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"bytes"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -35,10 +34,12 @@ func mustLoadCatalog(name string) map[messageID]string {
 	if err != nil {
 		panic(fmt.Sprintf("tui: embedded catalog %s is missing: %v", name, err))
 	}
+	// No DisallowUnknownFields here: it only applies to structs, so on a map it
+	// would read as a guard while doing nothing. An undeclared key is caught by
+	// TestEveryDeclaredMessageIDHasCatalogEntries, which compares catalog size
+	// against the IDs declared in messages.go.
 	var plain map[string]string
-	decoder := json.NewDecoder(bytes.NewReader(body))
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&plain); err != nil {
+	if err := json.Unmarshal(body, &plain); err != nil {
 		panic(fmt.Sprintf("tui: embedded catalog %s does not parse: %v", name, err))
 	}
 	catalog := make(map[messageID]string, len(plain))

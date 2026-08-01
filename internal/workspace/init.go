@@ -30,6 +30,17 @@ var assetContainers = []string{"agents", "hooks", "mcp", "rules", "skills"}
 // namePattern mirrors manifest.schema.json's constraint on `name`.
 var namePattern = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]*$`)
 
+// versionPattern is stricter than the schema, which only requires a non-empty
+// string. Two reasons. The value is emitted into a double-quoted YAML scalar,
+// so a quote or newline would produce a manifest that does not parse -- and a
+// scaffold whose output fails the next command is worse than no scaffold. It
+// also becomes a path segment and a filename component downstream
+// (packages/<name>/<version>/<profile>/), where internal/channel already
+// enforces exactly this character set; rejecting it here fails fast instead of
+// three commands later at publish. The pattern is duplicated rather than
+// imported because channel depends on build, which depends on this package.
+var versionPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
+
 // InitOptions describes one scaffold request.
 type InitOptions struct {
 	// Directory is the workspace root. It is created if missing.
@@ -104,6 +115,10 @@ func Init(options InitOptions) (InitReport, error) {
 	manifestVersion := strings.TrimSpace(options.Version)
 	if manifestVersion == "" {
 		manifestVersion = DefaultInitVersion
+	}
+	if !versionPattern.MatchString(manifestVersion) {
+		return report, fmt.Errorf(
+			"%w: version %q must match %s", ErrInitBlocked, manifestVersion, versionPattern.String())
 	}
 	report.Version = manifestVersion
 	report.Profile = DefaultInitProfile
