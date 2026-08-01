@@ -201,6 +201,32 @@ func TestInitRejectsUnusableNames(t *testing.T) {
 	}
 }
 
+func TestInitRejectsVersionsThatCannotBeEmittedOrPublished(t *testing.T) {
+	// The version is written into a double-quoted YAML scalar and later becomes
+	// a path segment under packages/<name>/<version>/<profile>/. An unchecked
+	// value produced a manifest that would not parse while init still reported
+	// success, which is the one thing a scaffold must never do.
+	for _, bad := range []string{`a"b`, "x\nname: hijacked", "has space", "-leading", "sla/sh"} {
+		root := filepath.Join(t.TempDir(), "ws")
+		_, err := Init(InitOptions{Directory: root, Version: bad})
+		if !errors.Is(err, ErrInitBlocked) {
+			t.Fatalf("version %q was accepted (err=%v)", bad, err)
+		}
+		if _, statErr := os.Stat(filepath.Join(root, "manifest.yaml")); statErr == nil {
+			t.Fatalf("version %q was refused but a manifest was still written", bad)
+		}
+	}
+	// A realistic dated version must still be accepted.
+	root := filepath.Join(t.TempDir(), "ws")
+	report, err := Init(InitOptions{Directory: root, Version: "2026.08.1"})
+	if err != nil || report.Version != "2026.08.1" {
+		t.Fatalf("report=%#v err=%v", report, err)
+	}
+	if _, _, err := LoadManifest(filepath.Join(root, "manifest.yaml")); err != nil {
+		t.Fatalf("dated version produced an unparseable manifest: %v", err)
+	}
+}
+
 func TestInitIsDeterministic(t *testing.T) {
 	// Two runs must produce identical bytes, so the scaffold never shows up as a
 	// spurious diff and never depends on the clock.

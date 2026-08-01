@@ -50,7 +50,8 @@ func TestMessageCatalogsHaveParity(t *testing.T) {
 	}
 }
 
-func TestEveryDeclaredMessageIDHasCatalogEntries(t *testing.T) {
+func declaredMessageIDs(t *testing.T) map[messageID]bool {
+	t.Helper()
 	file, err := parser.ParseFile(token.NewFileSet(), "messages.go", nil, 0)
 	if err != nil {
 		t.Fatalf("parse messages.go: %v", err)
@@ -78,6 +79,12 @@ func TestEveryDeclaredMessageIDHasCatalogEntries(t *testing.T) {
 	if len(declared) == 0 {
 		t.Fatal("no message IDs found in messages.go")
 	}
+	return declared
+}
+
+func TestEveryDeclaredMessageIDHasCatalogEntries(t *testing.T) {
+	declared := declaredMessageIDs(t)
+
 	for id := range declared {
 		if _, ok := messagesZhCN[id]; !ok {
 			t.Errorf("declared message %q is missing from zh-CN", id)
@@ -93,6 +100,22 @@ func TestEveryDeclaredMessageIDHasCatalogEntries(t *testing.T) {
 			len(messagesZhCN),
 			len(messagesEnglish),
 		)
+	}
+}
+
+func TestCatalogsRejectUndeclaredKeys(t *testing.T) {
+	// The loader cannot reject these itself -- DisallowUnknownFields only applies
+	// to structs, so on a map[string]string it silently accepts anything. Catalog
+	// size against the declared IDs is the actual guard.
+	declared := declaredMessageIDs(t)
+	for name, catalog := range map[string]map[messageID]string{
+		"en": messagesEnglish, "zh-CN": messagesZhCN,
+	} {
+		for id := range catalog {
+			if !declared[id] {
+				t.Errorf("%s catalog has undeclared key %q", name, id)
+			}
+		}
 	}
 }
 
