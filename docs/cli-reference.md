@@ -7,6 +7,7 @@
 
 ```bash
 aiah
+aiah init <directory> [--name <name>] [--version <version>] --output json
 aiah scan --home <path> [--project <path>] --output json
 aiah validate --manifest <path> [--root <path>] --output json
 aiah build --manifest <path> --profile <name> --out <dir> [--root <path>] --output json
@@ -25,6 +26,41 @@ aiah version [--output text|json]
 ```
 
 所有 JSON 报告与部署记录都带 `producedBy`，用于追踪生成它的二进制版本。
+
+## `init`
+
+```bash
+aiah init ~/ai-assets --output json
+aiah init ~/ai-assets --name team-shared --version 2026.08.1 --output json
+```
+
+脚手架一个资产工作区：`manifest.yaml` 加上 adapter 实际读取的五个目录
+（`assets/{agents,hooks,mcp,rules,skills}`）。不创建任何没有消费者的目录。
+
+这是唯一带位置参数的子命令（其余全部只用 flag），因为 `init <directory>` 是同类
+工具的通用形态。flag 放在目录前后都可以。
+
+| 行为 | 说明 |
+|---|---|
+| create-only | **已存在的 manifest 永不改写。** 重跑只补缺失目录，报告里列进 `existing` |
+| 幂等 | 第二次运行 `created` 为空 |
+| 确定性 | 默认版本是固定的 `0.1.0`，不是当天日期；两次 init 产物逐字节一致 |
+| fail-closed | 路径被非目录、软链或受管工具目录占用时拒绝，且一个字节都不写 |
+
+资产库不能位于 `.agents`、`.claude`、`.codex`、`.grok` 及其子目录；请选择
+`~/ai-assets` 这类独立路径。public `v0.1.8` 的 `init` 尚未执行这项受管目录检查，
+虽然 TUI/compose 会拒绝当前 HOME/project 的该类路径；不要用它在这些目录中初始化。
+修复已进入下一补丁版候选，准确状态见
+[v0.1.8 发布后审计](reviews/2026-08-01-v0.1.8-post-release-audit.md)。
+
+`--name` 默认由目录名归一（`My AI Assets` → `my-ai-assets`）。归一不出合法名时
+**要求你显式传** `--name` 而不是猜——这个值会进 manifest 和包文件名，猜错是永久的。
+
+产物零手改即可通过 `validate`。`build` 需要先加入第一个资产：空 profile 会报
+`empty_selection`，打一个空包没有意义。
+
+**init 只是建工作区，不让它「被找到」。** 后续命令仍须显式 `--manifest`，不存在
+隐藏状态决定某条命令作用在哪个资产库上。
 
 ## `scan`
 
@@ -234,8 +270,8 @@ aiah update --check [--output text|json]
 `AIAH_VERSION`。从这些版本升级到当前版请使用：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.7/scripts/install.sh |
-  AIAH_VERSION=0.1.7 sh
+curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.8/scripts/install.sh |
+  AIAH_VERSION=0.1.8 sh
 ```
 
 `v0.1.6` 二进制已把生成格式修复为：

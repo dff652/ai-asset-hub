@@ -67,6 +67,37 @@ func TestPrepareRootRejectsManagedToolDirectories(t *testing.T) {
 	}
 }
 
+func TestPrepareRootRejectsManagedDirectoryComponentsOutsideKnownRoots(t *testing.T) {
+	home := t.TempDir()
+	outside := t.TempDir()
+	for _, name := range managedToolDirectories {
+		candidate := filepath.Join(outside, name, "workspace")
+		if _, _, err := PrepareRoot(candidate, home, ""); !errors.Is(err, ErrInvalidOptions) {
+			t.Fatalf("%s outside known roots error = %v, want ErrInvalidOptions", name, err)
+		}
+		if _, err := os.Stat(filepath.Join(outside, name)); !os.IsNotExist(err) {
+			t.Fatalf("rejected managed directory %s was created: %v", name, err)
+		}
+	}
+}
+
+func TestPrepareRootRejectsNamedManagedSymlinkOutsideKnownRoots(t *testing.T) {
+	home := t.TempDir()
+	outside := t.TempDir()
+	target := t.TempDir()
+	managedLink := filepath.Join(outside, ".claude")
+	if err := os.Symlink(target, managedLink); err != nil {
+		t.Fatal(err)
+	}
+	candidate := filepath.Join(managedLink, "workspace")
+	if _, _, err := PrepareRoot(candidate, home, ""); !errors.Is(err, ErrInvalidOptions) {
+		t.Fatalf("named managed symlink error = %v, want ErrInvalidOptions", err)
+	}
+	if _, err := os.Stat(filepath.Join(target, "workspace")); !os.IsNotExist(err) {
+		t.Fatalf("rejected named symlink wrote into its target: %v", err)
+	}
+}
+
 func TestPrepareRootRejectsSymlinkIntoManagedToolDirectory(t *testing.T) {
 	home := t.TempDir()
 	managed := filepath.Join(home, ".claude")

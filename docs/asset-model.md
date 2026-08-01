@@ -10,10 +10,13 @@
 | 资产工作区（本节 `ai-assets/`） | 个人全局与跨项目复用资产的事实源；由用户经 `--manifest <path>` 指定，workspace root 默认 = manifest 所在目录（`--root` 可覆盖）；建议放独立私有 Git 仓库 |
 | `--home` / `--project` | 部署目标（写 `~/.claude` 等）或扫描对象；`--project` 指接收 project-scope 资产的目标工程，项目专属资产仍可随该项目 Git 管理 |
 
-正式个人资产不放在 aiah 工具仓库内。资产工作区与部署目标是逻辑角色，不要求
-物理目录永不重合；项目专属规则仍以项目仓库为事实源，默认只读盘点或显式导入。
-已知便利性缺口：尚无 `aiah init <directory>` 脚手架（见 roadmap
-「当前优先级」）；首版继续显式传入 `--manifest`，不做隐式工作区发现。
+正式个人资产不放在 aiah 工具仓库内。资产工作区可以位于独立私有仓库或普通项目
+目录，但不能放进 `.agents`、`.claude`、`.codex`、`.grok` 及其子目录；这些是扫描或
+部署目标，不是资产库。项目专属规则仍以项目仓库为事实源，默认只读盘点或显式导入。
+`aiah init <directory>` 会脚手架出这个布局：`manifest.yaml` 加上 adapter 实际读取的
+五个资产目录。它是 create-only 的——已存在的 manifest 永不改写，重跑只补缺失目录。
+**它建工作区，但不让工作区「被找到」**：manifest 发现始终显式（`--manifest`），
+没有隐藏状态决定某条命令作用在哪个资产库上。
 
 ## 1. 建议目录
 
@@ -71,17 +74,20 @@ profiles:
       - rules.personal-defaults
 ```
 
-正式 schema 需要进一步定义：
+manifest v1 已定义：
 
 - 稳定资产 ID；
-- 版本和来源；
 - 依赖及冲突；
 - 目标平台；
 - 作用域：global、project、device；
-- 是否显式调用；
 - 安全等级；
-- 平台专属覆盖；
-- 文件哈希。
+- 可选来源 `source.url/revision/importedAt`；
+- 可选文件清单与 SHA-256。
+
+来源字段是资产库作者声明的追踪信息，不是可信、签名或许可证证明；inventory 的
+Claude/Codex/Grok“来源工具”与 manifest 的上游 URL 也不是同一概念。描述、标签、
+许可证和平台专属覆盖尚未进入 v1；增加这些字段前必须先设计版本兼容，详见
+[N8 规模化资产管理增强方案](designs/scalable-asset-management.md)。
 
 ## 3. 盘点模型
 

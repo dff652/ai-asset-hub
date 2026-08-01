@@ -63,6 +63,13 @@ func applyScopeMCPPolicy(staged []adapter.StagedFile, root, scope string) ([]ada
 		// planInstall owns missing-root findings for all staged assets.
 		return nil, nil
 	}
+	// An unresolvable reference fails the whole apply, so an unrelated skill is
+	// held back by a missing token. That blast radius is deliberate and matches
+	// ADR-0004's create-only conflict handling, but it is the same over-broad
+	// fail-closed that roadmap decision D1 is still weighing. D1 covers this
+	// branch too: if native-config conflicts are ever narrowed to "skip MCP,
+	// keep the sidecar, install everything else", secret resolution has to be
+	// narrowed with them, or the two halves of one policy will disagree.
 	if err := resolveMCPSecretReferences(byTarget); err != nil {
 		return nil, []workspace.Finding{{
 			Code:     codeMCPNativeFailed,

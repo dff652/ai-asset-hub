@@ -25,7 +25,7 @@
 - [工程流程：开发 / 测试 / 构建 / 部署 / 发布](development.md)
 - [开发环境搭建 SOP](runbooks/development-environment.md)
 - [发版 runbook](runbooks/release.md)
-- [MVP 路线图](roadmap.md)（当前能力矩阵、发布边界与后续任务 N0–N8）
+- [MVP 路线图](roadmap.md)（当前能力矩阵、发布边界与后续任务 N0–N9）
 - [假 HOME 闭环 runbook](runbooks/fake-home-loop.md)
 - [Public 发布 runbook](runbooks/public-launch.md)
 - [漏洞报告政策](../SECURITY.md)
@@ -57,11 +57,15 @@
   （任务首页、友好术语、默认启动、CLI/TUI 边界与设置/i18n 分期）
 - [N7：偏好设置与中英文支持方案](designs/settings-and-i18n.md)
   （语言目录、首选资产库预填、显示密度、偏好文件安全与分阶段验收）
+- [N8：规模化资产管理增强方案](designs/scalable-asset-management.md)
+  （真实规模证据、统一筛选、来源读取、备份/恢复边界与触发式后续）
 - [跨设备迁移与受控版本对齐方案](designs/cross-device-migration-and-version-sync.md)
   （换机迁移、不可变分发、E3 状态模型与未来同步准入条件）
 
 ## 评审
 
+- [2026-08-01 v0.1.9 发布候选就绪检查点](reviews/2026-08-01-v0.1.9-candidate-readiness.md)
+- [2026-08-01 v0.1.8 发布后代码、功能与流程审计](reviews/2026-08-01-v0.1.8-post-release-audit.md)
 - [2026-08-01 v0.1.7 发布与正式安装包验收](reviews/2026-08-01-v0.1.7-release-acceptance.md)
 - [2026-07-31 v0.1.7 发布候选就绪检查点](reviews/2026-07-31-v0.1.7-candidate-readiness.md)
 - [2026-07-31 N7.5 发布候选验收](reviews/2026-07-31-n7-release-candidate-acceptance.md)

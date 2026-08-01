@@ -140,13 +140,13 @@ func (m Model) visibleRows() []treeRow {
 		if item.LogicalPath != "" {
 			catalogByPath[item.LogicalPath] = item
 		}
-		if item.State == workspace.LibraryOnly {
+		if item.State == workspace.LibraryOnly && m.catalogItemMatches(*item) {
 			libraryOnly = append(libraryOnly, *item)
 		}
 	}
 	for index := range m.report.Assets {
 		asset := m.report.Assets[index]
-		if !m.assetMatches(asset) {
+		if !m.assetMatches(asset, catalogByPath[asset.LogicalPath]) {
 			continue
 		}
 		group := groups[asset.Source]
@@ -261,21 +261,99 @@ func (m Model) visibleRows() []treeRow {
 	return rows
 }
 
-func (m Model) assetMatches(asset inventory.Asset) bool {
+func (m Model) assetMatches(asset inventory.Asset, catalogItem *workspace.CatalogItem) bool {
 	findings := m.findingsFor(asset)
-	if m.findingsOnly && len(findings) == 0 {
+	if m.findingsOnly && len(findings) == 0 &&
+		(catalogItem == nil || len(catalogItem.Findings) == 0) {
 		return false
 	}
 	query := strings.ToLower(strings.TrimSpace(m.filterInput.Value()))
 	if query == "" {
 		return true
 	}
-	if strings.Contains(strings.ToLower(asset.LogicalPath), query) ||
-		strings.Contains(strings.ToLower(string(asset.Type)), query) {
+	values := []string{
+		asset.LogicalPath,
+		string(asset.Source),
+		string(asset.Scope),
+		string(asset.Type),
+		string(asset.Portability),
+		string(asset.Sensitivity),
+		string(asset.Status),
+		string(asset.ConfigState),
+	}
+	for _, feature := range asset.Features {
+		values = append(values, string(feature))
+	}
+	values = append(values, asset.Files...)
+	if containsQuery(query, values...) {
 		return true
 	}
-	for _, file := range asset.Files {
-		if strings.Contains(strings.ToLower(file), query) {
+	for _, finding := range findings {
+		if findingContainsQuery(finding, query) {
+			return true
+		}
+	}
+	return catalogItem != nil && m.catalogItemContainsQuery(*catalogItem, query)
+}
+
+func (m Model) catalogItemMatches(item workspace.CatalogItem) bool {
+	if m.findingsOnly && len(item.Findings) == 0 {
+		return false
+	}
+	query := strings.ToLower(strings.TrimSpace(m.filterInput.Value()))
+	return query == "" || m.catalogItemContainsQuery(item, query)
+}
+
+func (m Model) catalogItemContainsQuery(item workspace.CatalogItem, query string) bool {
+	values := []string{
+		item.ID,
+		item.LogicalPath,
+		item.LibraryPath,
+		item.Type,
+		string(item.Source),
+		string(item.State),
+		m.libraryStateLabel(item.State),
+	}
+	switch item.State {
+	case workspace.LibrarySourceChanged:
+		values = append(values, m.text(msgInventorySearchUpdates))
+	case workspace.LibraryOnly:
+		values = append(values, m.text(msgInventorySearchLibraryOnly))
+	}
+	values = append(values, item.Targets...)
+	if item.Manifest != nil {
+		values = append(values,
+			item.Manifest.Scope,
+			item.Manifest.Portability,
+			item.Manifest.Sensitivity,
+		)
+		values = append(values, item.Manifest.Dependencies...)
+		values = append(values, item.Manifest.Conflicts...)
+		if item.Manifest.Source != nil {
+			values = append(values,
+				item.Manifest.Source.URL,
+				item.Manifest.Source.Revision,
+				item.Manifest.Source.ImportedAt,
+			)
+		}
+		for _, file := range item.Manifest.Files {
+			values = append(values, file.Path, file.SHA256)
+		}
+	}
+	if containsQuery(query, values...) {
+		return true
+	}
+	for _, finding := range item.Findings {
+		if containsQuery(query, finding.Code, finding.Path, finding.Message) {
+			return true
+		}
+	}
+	return false
+}
+
+func containsQuery(query string, values ...string) bool {
+	for _, value := range values {
+		if strings.Contains(strings.ToLower(value), query) {
 			return true
 		}
 	}
@@ -317,17 +395,13 @@ func (m Model) findingMatches(finding inventory.Finding) bool {
 	if query == "" {
 		return true
 	}
-	if strings.Contains(strings.ToLower(string(finding.Code)), query) ||
-		strings.Contains(strings.ToLower(string(finding.Severity)), query) ||
-		strings.Contains(strings.ToLower(finding.Message), query) {
-		return true
-	}
-	for _, path := range finding.Paths {
-		if strings.Contains(strings.ToLower(path), query) {
-			return true
-		}
-	}
-	return false
+	return findingContainsQuery(finding, query)
+}
+
+func findingContainsQuery(finding inventory.Finding, query string) bool {
+	values := []string{string(finding.Code), string(finding.Severity), finding.Message}
+	values = append(values, finding.Paths...)
+	return containsQuery(query, values...)
 }
 
 func findingAppliesToAsset(finding inventory.Finding, asset inventory.Asset) bool {

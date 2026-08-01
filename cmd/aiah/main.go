@@ -19,10 +19,12 @@ import (
 	updater "github.com/dff652/ai-asset-hub/internal/update"
 	"github.com/dff652/ai-asset-hub/internal/validate"
 	"github.com/dff652/ai-asset-hub/internal/version"
+	"github.com/dff652/ai-asset-hub/internal/workspace"
 )
 
 const usage = `usage:
   aiah
+  aiah init DIRECTORY [--name NAME] [--version VERSION] [--output json]
   aiah scan [--home PATH] [--project PATH] [--output json]
   aiah validate --manifest PATH [--root PATH] [--output json]
   aiah build --manifest PATH --profile NAME --out DIR [--root PATH] [--output json]
@@ -69,6 +71,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return 0
 	case "version", "--version", "-v":
 		return runVersion(args[1:], stdout, stderr)
+	case "init":
+		return runInit(args[1:], stdout, stderr)
 	case "scan":
 		return runScan(args[1:], stdout, stderr)
 	case "validate":
@@ -233,6 +237,76 @@ func runMCP(args []string, stdout, stderr io.Writer) int {
 	}
 	if err := mcp.Run(mcp.Options{In: stdin, Out: stdout, ErrOut: stderr}); err != nil {
 		_, _ = io.WriteString(stderr, "aiah: mcp server failed\n")
+		return 1
+	}
+	return 0
+}
+
+// runInit scaffolds an asset workspace. It takes the directory as an operand
+// rather than a flag -- the whole CLI is otherwise flag-only, but `init <dir>`
+// is the shape every comparable tool uses and both asset-model.md and the
+// roadmap specify it that way.
+//
+// It creates a workspace; it does not make one findable. Manifest discovery
+// stays explicit so no hidden state decides which library a later command acts
+// on.
+func runInit(args []string, stdout, stderr io.Writer) int {
+	flags := flag.NewFlagSet("init", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	name := flags.String("name", "", "manifest name (default: normalized directory name)")
+	manifestVersion := flags.String("version", "", "manifest version (default: "+workspace.DefaultInitVersion+")")
+	output := flags.String("output", "json", "output format (json)")
+
+	// flag stops parsing at the first operand, so `init DIR --output json` would
+	// otherwise leave the flags unparsed and look like surplus operands. Lifting
+	// a leading operand out first makes both orders behave the same, which is
+	// what anyone who has run `git init` expects.
+	directory := ""
+	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		directory, args = args[0], args[1:]
+	}
+	if ok, code := parseFlagSet(flags, args); !ok {
+		return code
+	}
+	if directory == "" {
+		if flags.NArg() != 1 {
+			_, _ = io.WriteString(stderr, usage)
+			return 2
+		}
+		directory = flags.Arg(0)
+	} else if flags.NArg() != 0 {
+		_, _ = io.WriteString(stderr, usage)
+		return 2
+	}
+	if *output != "json" {
+		_, _ = io.WriteString(stderr, "aiah: only --output json is supported\n")
+		return 2
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		_, _ = io.WriteString(stderr, "aiah: cannot determine home directory\n")
+		return 1
+	}
+	project, err := os.Getwd()
+	if err != nil {
+		_, _ = io.WriteString(stderr, "aiah: cannot determine current project directory\n")
+		return 1
+	}
+	report, err := workspace.Init(workspace.InitOptions{
+		Directory: directory,
+		Home:      home,
+		Project:   project,
+		Name:      *name,
+		Version:   *manifestVersion,
+	})
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "aiah: %s\n", err.Error())
+		return 1
+	}
+	if code := writeJSON(stdout, stderr, report); code != 0 {
+		return code
+	}
+	if !report.Ok {
 		return 1
 	}
 	return 0

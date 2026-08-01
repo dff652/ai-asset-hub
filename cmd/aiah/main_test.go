@@ -510,6 +510,95 @@ func TestRunChannelCommandsRequireTheirFlags(t *testing.T) {
 	}
 }
 
+func TestRunInitAcceptsTheDirectoryInEitherPosition(t *testing.T) {
+	// flag stops parsing at the first operand, so `init DIR --output json` would
+	// silently lose the flags without the operand being lifted out first.
+	for _, args := range [][]string{
+		{"init", "", "--output", "json"},
+		{"init", "--output", "json", ""},
+	} {
+		root := filepath.Join(t.TempDir(), "ai-assets")
+		positioned := append([]string(nil), args...)
+		for index, value := range positioned {
+			if value == "" {
+				positioned[index] = root
+			}
+		}
+		var stdout, stderr bytes.Buffer
+		if code := run(positioned, &stdout, &stderr); code != 0 {
+			t.Fatalf("run(%v) exit=%d stderr=%q", positioned, code, stderr.String())
+		}
+		var report struct {
+			SchemaVersion int    `json:"schemaVersion"`
+			Kind          string `json:"kind"`
+			ProducedBy    string `json:"producedBy"`
+			Ok            bool   `json:"ok"`
+			Name          string `json:"name"`
+		}
+		if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
+			t.Fatalf("init json: %v (%q)", err, stdout.String())
+		}
+		if report.SchemaVersion != 1 || report.Kind != "init" ||
+			report.ProducedBy != version.ProducedBy() || !report.Ok || report.Name != "ai-assets" {
+			t.Fatalf("report = %#v", report)
+		}
+	}
+}
+
+func TestRunInitRequiresExactlyOneDirectory(t *testing.T) {
+	for _, args := range [][]string{
+		{"init"},
+		{"init", "one", "two"},
+	} {
+		var stdout, stderr bytes.Buffer
+		if code := run(args, &stdout, &stderr); code != 2 {
+			t.Fatalf("run(%v) exit=%d, want 2", args, code)
+		}
+		if stdout.Len() != 0 {
+			t.Fatalf("run(%v) wrote to stdout: %q", args, stdout.String())
+		}
+	}
+}
+
+func TestRunInitRejectsManagedHomeAndProjectDirectories(t *testing.T) {
+	home := t.TempDir()
+	project := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Chdir(project)
+	homeTarget := t.TempDir()
+	projectTarget := t.TempDir()
+	if err := os.Symlink(homeTarget, filepath.Join(home, ".codex")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(projectTarget, filepath.Join(project, ".grok")); err != nil {
+		t.Fatal(err)
+	}
+	homeAlias := filepath.Join(t.TempDir(), "home-managed-alias")
+	projectAlias := filepath.Join(t.TempDir(), "project-managed-alias")
+	if err := os.Symlink(homeTarget, homeAlias); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(projectTarget, projectAlias); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, candidate := range []string{
+		filepath.Join(homeAlias, "library"),
+		filepath.Join(projectAlias, "library"),
+	} {
+		var stdout, stderr bytes.Buffer
+		if code := run([]string{"init", candidate}, &stdout, &stderr); code != 1 {
+			t.Fatalf("init %s exit=%d, want 1", candidate, code)
+		}
+		if stdout.Len() != 0 || !strings.Contains(stderr.String(), "overlaps a managed tool directory") {
+			t.Fatalf("init %s stdout=%q stderr=%q", candidate, stdout.String(), stderr.String())
+		}
+		if _, err := os.Stat(candidate); !os.IsNotExist(err) {
+			t.Fatalf("rejected init created %s: %v", candidate, err)
+		}
+	}
+}
+
 func TestRunMCPServesReadOnlyToolsOverStdio(t *testing.T) {
 	original := stdin
 	t.Cleanup(func() { stdin = original })

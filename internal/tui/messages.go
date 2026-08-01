@@ -107,6 +107,8 @@ const (
 	msgInventoryStateSourceChanged messageID = "inventory.state.source_changed"
 	msgInventoryStateLibraryOnly   messageID = "inventory.state.library_only"
 	msgInventoryStateBlocked       messageID = "inventory.state.blocked"
+	msgInventorySearchUpdates      messageID = "inventory.search.updates"
+	msgInventorySearchLibraryOnly  messageID = "inventory.search.library_only"
 	msgInventoryLibraryOnlyGroup   messageID = "inventory.library_only_group"
 	msgInventoryUnattachedGroup    messageID = "inventory.unattached_group"
 	msgInventoryNotSelectable      messageID = "inventory.not_selectable"
