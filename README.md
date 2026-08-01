@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/readme/hero.svg" width="100%" alt="AI Asset Hub：在 Claude、Codex、Grok 与版本化资产库之间安全管理 AI 编程资产">
+  <img src="assets/readme/hero.svg" width="100%" alt="AI Asset Hub：在 Claude、Codex、Grok 之间安全地统一与应用 AI 编程资产">
 </p>
 
 <p align="center">
@@ -9,15 +9,34 @@
   <a href="LICENSE"><img alt="License Apache 2.0" src="https://img.shields.io/badge/license-Apache--2.0-8B949E"></a>
 </p>
 
-AI Asset Hub（`aiah`）是面向个人与小团队的 **AI 编程资产管理器**。它把分散在
-Claude、Codex、Grok 中的 Skills、Rules、Memory、Agents、Hooks 与 MCP 模板整理成
-一份可版本管理的资产库，并提供写入前预览、安装检查、撤销和跨设备迁移。
+AI Asset Hub（`aiah`）帮你**安全地改 AI 工具配置**，并在 Claude、Codex、Grok
+之间统一 Skills、Rules、Agents、Hooks 与 MCP 模板。
+
+它不是又一个把文件铺到 `$HOME` 的通用 dotfile 工具：它理解各工具目录语义，
+在写入前给出 diff，写入后可 doctor / rollback，并避免把 token 打进包。个人可先
+盘点与安全应用；小团队可把同一份规范做成不可变包再分发。跨设备迁移是能力之一，
+**不是**主打卖点。
+
+定位与后续取舍见
+[产品定位与后续方向](docs/research/product-positioning-and-direction.md)。
 
 > **当前边界：Technical Preview。** 最新公开版是 `v0.1.10`，安装与端到端验收范围
-> 为 **Linux amd64**。任务首页、资产管理、连续应用、跨设备迁移、双语偏好和只读
-> MCP 的完整业务闭环已在 `v0.1.7` 起正式验收；`v0.1.10` 交付 N10.1–N10.3 迁移
-> 准备检查（`aiah readiness`、TUI「换机与备份」、`aiah_migration_readiness` 共
-> 8 个只读 MCP 工具）。N10.4 自动证据记录器明确延期。
+> 为 **Linux amd64**（macOS/Windows 未做原生写入验收）。N10.1–N10.3 迁移准备检查
+> 已发布；N10.4 自动证据记录器明确延期。当前优先真实使用与反馈，而不是继续扩
+> 功能清单。
+
+## 先看问题：零承诺只读盘点
+
+已安装时，先只读扫描本机 AI 资产（不写盘、不执行 hook、不改任何工具目录）：
+
+```bash
+aiah scan
+aiah scan --output json
+```
+
+输出会列出候选资产与 findings（例如疑似 secret、软链资产）。**先看到问题，再决定
+是否整理资产库。** 完整安装与五步安全应用见下节与
+[上手指南](docs/getting-started.md)。
 
 ## 立即开始
 
@@ -25,13 +44,13 @@ Linux amd64 一行安装：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh | sh
+aiah scan
 aiah
 ```
 
-日常启动只需 `aiah`。`aiah ui` 仅作为兼容入口和高级参数入口保留，不需要新用户
-记忆。安装器校验 Release SHA256 后原子替换到
-`~/.local/bin`，不用 sudo，也不修改 shell profile；同版本复装零下载、零写入。
-当前源码中的安装器默认固定为已验收的 `v0.1.10`。也可以固定版本和安装目录：
+日常交互入口是 `aiah`（任务首页）。`aiah ui` 仅作兼容与高级参数入口。安装器校验
+Release SHA256 后原子替换到 `~/.local/bin`，不用 sudo，也不改 shell profile；
+同版本复装零下载、零写入。源码默认 pin 为已验收的 `v0.1.10`。也可固定版本：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.10/scripts/install.sh |
@@ -90,9 +109,12 @@ Linux amd64 已完成端到端行为验证。`v0.1.1` 中现存的 macOS、Windo
 
 | 你要做什么 | 简化流程 | 入口 |
 |---|---|---|
+| 只想先摸清本机 | `scan` 只读盘点 | CLI |
+| 安全改配置 | 整理资产库 → 预览 → typed `apply` → doctor | TUI |
 | 日常维护 | 查看统一状态 → 更新/移出 → 预览 → 应用 | TUI |
 | 检查与撤销 | 安装检查 → 判断漂移 → typed `rollback` | TUI / CLI |
-| 跨设备迁移 | build/publish → 外部搬运 → pull → 目标检查 → diff/apply | TUI / CLI |
+| 换机前对账 | `readiness` / TUI「换机与备份」 | CLI / TUI / MCP |
+| 跨设备分发 | build/publish → 外部搬运 → pull → diff/apply | TUI / CLI |
 | AI 与自动化 | MCP 只读查询，或 CLI JSON 编排 | `aiah mcp` / CLI |
 | 升级 aiah | 只读检查 → 指定 Release → 校验并原子替换 | installer |
 

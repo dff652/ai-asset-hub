@@ -1,18 +1,21 @@
 # 使用流程总览
 
-本页回答“aiah 可以完成哪些任务、应该从哪里进入、哪些步骤会写文件”。第一次使用
-优先走本地五步主线；日常维护、安装恢复、跨设备、AI 接入和 aiah 自身升级是独立
-流程，不应全部塞进一张图。
+本页回答“aiah 可以完成哪些任务、应该从哪里进入、哪些步骤会写文件”。产品主价值是
+**多工具语义下的安全配置变更**；跨设备分发是独立流程。第一次使用优先零承诺
+`scan`，再走本地五步主线。日常维护、安装恢复、跨设备、AI 接入和 aiah 自身升级
+不应全部塞进一张图。
 
 ## 0. 先按任务选择流程
 
 | 用户任务 | 简化流程 | 推荐入口 | 当前边界 |
 |---|---|---|---|
+| 先摸清本机 | 只读 `scan` | CLI | 零写入、不执行 hook |
 | 第一次整理并应用 | 发现 → 整理 → 准备 → 预览 → 人工确认 | `aiah` | TUI 已覆盖；前四步不写目标工具目录 |
 | 日常维护资产 | 查看统一状态 → 更新/移出 → 预览 → 应用 | `aiah` | `update/remove/apply` 都是显式操作，不做后台同步 |
 | 检查或撤销安装 | 安装检查 → 判断漂移 → typed `rollback` | `aiah` 或 CLI | 恢复点只在本机使用，不等于资产库备份 |
-| 迁移到其他设备 | 换机检查 → build/publish → 外部搬运 → versions/pull → 取回版本检查 → diff/apply | TUI / CLI | E3.2–E3.4 已随 `v0.1.7` 发布；网络传输不归 aiah |
-| AI 或自动化接入 | MCP 只读查询，或 CLI JSON 编排 | `aiah mcp` / CLI | MCP 不开放 build/apply/rollback |
+| 换机前对账 | `readiness` /「换机与备份」 | CLI / TUI / MCP | 不创建证据；N10.4 延期 |
+| 迁移到其他设备 | 换机检查 → build/publish → 外部搬运 → versions/pull → 取回版本检查 → diff/apply | TUI / CLI | 网络传输不归 aiah |
+| AI 或自动化接入 | MCP 只读查询，或 CLI JSON 编排 | `aiah mcp` / CLI | MCP 不开放 build/apply/rollback/证据写入 |
 | 安装或升级 aiah | 检查版本 → 显式安装指定 Release → 复核版本 | installer / `update --check` | 不后台自更新；这不是用户资产生命周期 |
 
 ## 1. 第一次整理并应用
