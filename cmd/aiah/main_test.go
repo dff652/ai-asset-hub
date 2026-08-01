@@ -26,6 +26,7 @@ func TestRunHelpExitsZero(t *testing.T) {
 		{"apply", "--help"},
 		{"rollback", "--help"},
 		{"doctor", "--help"},
+		{"readiness", "--help"},
 		{"ui", "--help"},
 		{"mcp", "--help"},
 		{"publish", "--help"},

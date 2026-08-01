@@ -25,13 +25,13 @@
 - [工程流程：开发 / 测试 / 构建 / 部署 / 发布](development.md)
 - [开发环境搭建 SOP](runbooks/development-environment.md)
 - [发版 runbook](runbooks/release.md)
-- [MVP 路线图](roadmap.md)（当前能力矩阵、发布边界与后续任务 N0–N9）
+- [MVP 路线图](roadmap.md)（当前能力矩阵、发布边界与后续任务 N0–N10）
 - [假 HOME 闭环 runbook](runbooks/fake-home-loop.md)
 - [Public 发布 runbook](runbooks/public-launch.md)
 - [漏洞报告政策](../SECURITY.md)
 
 契约 schema：`spec/inventory.schema.json`、`manifest.schema.json`、
-`validation.schema.json`、`build.schema.json`。
+`validation.schema.json`、`build.schema.json`、`migration-readiness.schema.json`。
 
 ## 架构决策
 
@@ -59,11 +59,14 @@
   （语言目录、首选资产库预填、显示密度、偏好文件安全与分阶段验收）
 - [N8：规模化资产管理增强方案](designs/scalable-asset-management.md)
   （真实规模证据、统一筛选、来源读取、备份/恢复边界与触发式后续）
+- [N10：迁移准备检查方案](designs/migration-readiness.md)
+  （可以打包、已记录外部副本、恢复已验证三个独立状态及 CLI/TUI/MCP 分期）
 - [跨设备迁移与受控版本对齐方案](designs/cross-device-migration-and-version-sync.md)
   （换机迁移、不可变分发、E3 状态模型与未来同步准入条件）
 
 ## 评审
 
+- [2026-08-01 N10.1 迁移准备 Core/CLI 检查点](reviews/2026-08-01-n10-1-readiness-core-cli-checkpoint.md)
 - [2026-08-01 v0.1.9 发布与正式安装包验收](reviews/2026-08-01-v0.1.9-release-acceptance.md)
 - [2026-08-01 v0.1.9 发布候选就绪检查点](reviews/2026-08-01-v0.1.9-candidate-readiness.md)
 - [2026-08-01 v0.1.8 发布后代码、功能与流程审计](reviews/2026-08-01-v0.1.8-post-release-audit.md)
