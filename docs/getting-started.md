@@ -149,6 +149,7 @@ aiah
 - 跨设备字节传输本身，以及需要 JSON 的 publish / pull / versions 自动化；
 - 选择并回滚某个历史 backup；
 - JSON 自动化、CI、假 HOME 批量演练和 MCP server；
+- N10.1 源码候选的迁移准备聚合报告（尚未进入 v0.1.9、TUI 或 MCP）；
 - secret provider 环境准备，以及直接编辑资产正文或 manifest 的高级字段。
 
 TUI 是资产管理操作台；可审计的 `manifest.yaml` 仍是资产业务配置的事实源。
@@ -219,6 +220,17 @@ name/version/profile/SHA256，逐项展示目标、secret、本机排除项与�
 - **资产库备份**：保留可编辑事实源的历史并可独立恢复；当前由 Git/NAS/备份工具负责。
 - **安装恢复点**：apply 覆盖目标文件前保存的本机材料，只用于 `rollback`。
 - **跨设备分发**：发布、搬运和取回不可变包；不做双向同步或冲突合并。
+
+N10.1 源码候选增加一条只读汇总命令，帮助在换机前把这些边界对账：
+
+```bash
+aiah readiness --workspace ~/ai-assets --profile personal --output text
+```
+
+它把“可以打包”“迁移前置条件”“已记录外部副本”“恢复已验证”分开报告，不会仅因
+存在 `.aiah/backups` 就宣称资产库已备份。可选证据必须放在资产库
+`.aiah/evidence/` 内并显式传入；当前命令不创建证据。该能力尚未进入 v0.1.9，正式
+安装包用户仍以现有换机检查和跨设备流程为准。
 
 盘点结果中的 `candidate` 只是迁移候选，不代表应原样打包。凭据、session、cache、
 数据库和疑似 secret 会被排除或脱敏报告。

@@ -2,8 +2,8 @@
 
 - 状态：Accepted
 - 实施：`internal/mcp` + `aiah mcp`；2026-07-28 首版 5 工具落地，2026-07-30
-  N6 扩展为 7 个只读工具
-- 日期：2026-07-28
+  N6 扩展为 7 个只读工具，2026-08-02 N10.3 扩展为 8 个只读工具
+- 日期：2026-07-28（N10.3 修订 2026-08-02）
 - 关联：[ADR-0003](0003-cli-first-go-core-and-product-surfaces.md)（CLI 是 Agent
   接口）、[ADR-0004](0004-native-mcp-config-ownership.md)（**不同主题**：那份讲
   MCP 模板作为**资产**如何写入原生配置，本份讲 aiah 自己**作为 MCP server**）、
@@ -26,7 +26,7 @@ stdout。
 
 ### 1. 提供 `aiah mcp`，只暴露只读子集
 
-当前注册 7 个工具：
+当前注册 8 个工具：
 
 | 工具 | 对应命令 | 写盘 |
 |---|---|---|
@@ -36,16 +36,20 @@ stdout。
 | `aiah_diff` | `diff` | 无 |
 | `aiah_doctor` | `doctor` | 无 |
 | `aiah_migration_status` | `migration.Inspect` | 无 |
+| `aiah_migration_readiness` | `readiness.Inspect` / `aiah readiness` | 无 |
 | `aiah_version` | `version` | 无 |
 
 不变式：**经此 server 可达的任何工具都不写任何文件。**
 
-两个状态工具要求调用方明确给出资产库路径：
+状态与准备检查工具要求调用方明确给出资产库路径：
 
 - `aiah_asset_status` 返回“未纳管 / 已纳管 / 源端有更新 / 仅库内 / 阻止”统一状态，
   MCP 层不重新实现分类；
 - `aiah_migration_status` 比较资产库、当前受管安装和可选普通目录通道，不构建、
-  发布、取回或应用，也不把“版本不同”解释为某一方较新。
+  发布、取回或应用，也不把“版本不同”解释为某一方较新；
+- `aiah_migration_readiness` 汇总打包条件、迁移前置与可选证据文件（仅
+  `<workspace>/.aiah/evidence/`），不创建证据、不构建、不发布、不取回、不应用、
+  不回滚，也不访问网络。
 
 ### 2. `apply` 与 `rollback` 永不进入该 surface
 

@@ -32,6 +32,7 @@ const usage = `usage:
   aiah apply --package PATH [--home PATH] [--project PATH] [--targets LIST] [--dry-run] [--output json]
   aiah rollback [--home PATH] [--project PATH] [--backup ID] [--output json]
   aiah doctor [--home PATH] [--project PATH] [--output json]
+  aiah readiness --workspace PATH --profile NAME [--manifest PATH] [--home PATH] [--project PATH] [--backup-evidence PATH] [--restore-exercise PATH] [--output text|json]
   aiah publish --package PATH --channel DIR [--output json]
   aiah pull --channel DIR --name NAME [--version V] [--profile P] --out DIR [--output json]
   aiah versions --channel DIR [--name NAME] [--output json]
@@ -87,6 +88,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return runRollback(args[1:], stdout, stderr)
 	case "doctor":
 		return runDoctor(args[1:], stdout, stderr)
+	case "readiness":
+		return runReadiness(args[1:], stdout, stderr)
 	case "publish":
 		return runPublish(args[1:], stdout, stderr)
 	case "pull":

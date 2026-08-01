@@ -19,6 +19,7 @@ aiah pull --channel <dir> --name <name> [--version <v>] [--profile <p>] --out <d
 aiah versions --channel <dir> [--name <name>] --output json
 aiah bootstrap --channel <dir> --name <name> [--version <v>] [--profile <p>] --out <dir> [--home <path>] [--project <path>] [--targets claude,codex,grok]
 aiah doctor [--home <path>] [--project <path>] --output json
+aiah readiness --workspace <path> --profile <name> [--manifest <path>] [--home <path>] [--project <path>] [--backup-evidence <file>] [--restore-exercise <file>] [--output text|json]
 aiah ui [--home <path>] [--project <path>] [--workspace <path>] [--package <tar|dir>] [--targets claude,codex,grok] [--language auto|zh-CN|en] [--density standard|detailed]
 aiah mcp
 aiah update --check [--output text|json]
@@ -134,6 +135,33 @@ MCP 原生配置前置状态。新格式部署按记录的 SHA256 和 mode 报�
 `drift_unavailable`，不会猜测健康。
 
 `scripts/dev-doctor.sh` 检查开发工具链，与面向用户资产状态的 `aiah doctor` 不同。
+
+## `readiness`（N10.1 源码候选）
+
+```bash
+aiah readiness --workspace <asset-library> --profile <name> \
+  [--home <path>] [--project <path>] \
+  [--backup-evidence <file>] [--restore-exercise <file>] \
+  [--output text|json]
+```
+
+只读聚合 `build.Prepare` 与换机前置检查，分别报告：
+
+- `packageReadiness`：当前资产组合是否可以打包；
+- `migrationPreflight`：目标、adapter、Secret 和设备私有项是否阻止迁移；
+- `backupEvidence`：是否有与当前选择摘要绑定的外部副本记录；
+- `restoreExercise`：是否有与明确包 SHA256 绑定的隔离恢复演练记录。
+
+缺少证据返回 `level=attention`，但不会把安全完成的只读检查伪装成失败；资产库或
+迁移前置条件阻止时返回 `level=blocked` 和非零退出码。机器契约见
+`spec/migration-readiness.schema.json`。
+
+证据文件必须位于当前资产库 `.aiah/evidence/` 内，并由用户通过 flag 明确选择。
+命令不创建该目录或证据，不读取目录外路径、不访问网络，也不生成包、发布或应用。
+报告不回显完整外部副本 reference。
+
+该命令当前是 **N10.1 源码候选，不属于已发布的 v0.1.9**；TUI 页面与 MCP 工具仍按
+N10.2/N10.3 分期，不能从本节推断已经存在。
 
 ## `publish`、`pull` 与 `versions`
 

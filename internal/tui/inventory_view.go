@@ -49,6 +49,9 @@ func (m Model) View() string {
 	if m.screen == screenSettings {
 		return m.settingsView(style)
 	}
+	if m.screen == screenReadiness {
+		return m.readinessView(style)
+	}
 
 	header := style.header.Render(m.text(msgInventoryTitle))
 	counts := m.text(msgInventoryCountsScanned,
@@ -354,6 +357,9 @@ func (m Model) helpView(style styles) string {
 	if m.screen == screenSettings {
 		return m.settingsHelpView(style)
 	}
+	if m.screen == screenReadiness {
+		return m.readinessHelpView(style)
+	}
 	lines := []string{
 		style.header.Render(m.text(msgInventoryHelpTitle)),
 		"",
@@ -444,6 +450,9 @@ func (m Model) profileInputView(style styles) string {
 	} else if m.profilePurpose == profileForPreflight {
 		title = m.text(msgProfileInputPreflightTitle)
 		next = m.text(msgProfileInputPreflightNext)
+	} else if m.profilePurpose == profileForReadiness {
+		title = m.text(msgProfileInputReadinessTitle)
+		next = m.text(msgProfileInputReadinessNext)
 	}
 	lines := []string{
 		style.header.Render(title),

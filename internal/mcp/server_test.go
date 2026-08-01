@@ -23,6 +23,7 @@ var readOnlySurface = []string{
 	"aiah_asset_status",
 	"aiah_diff",
 	"aiah_doctor",
+	"aiah_migration_readiness",
 	"aiah_migration_status",
 	"aiah_scan",
 	"aiah_validate",
@@ -66,6 +67,11 @@ func TestToolCallsWriteNothing(t *testing.T) {
 		t.Fatalf("publish fixture package: %v", err)
 	}
 
+	evidenceRoot := filepath.Join(workspaceRoot, ".aiah", "evidence")
+	if err := os.MkdirAll(evidenceRoot, 0o700); err != nil {
+		t.Fatalf("mkdir evidence: %v", err)
+	}
+
 	arguments := map[string]map[string]any{
 		"aiah_asset_status": {
 			"workspace": workspaceRoot, "home": home, "project": project,
@@ -80,6 +86,10 @@ func TestToolCallsWriteNothing(t *testing.T) {
 			"workspace": workspaceRoot, "channel": channelRoot,
 			"home": home, "project": project,
 		},
+		"aiah_migration_readiness": {
+			"workspace": workspaceRoot, "profile": "personal",
+			"home": home, "project": project,
+		},
 		"aiah_version": {},
 	}
 
@@ -89,6 +99,7 @@ func TestToolCallsWriteNothing(t *testing.T) {
 		"workspace": workspaceRoot,
 		"channel":   channelRoot,
 		"package":   filepath.Dir(pkg),
+		"evidence":  evidenceRoot,
 	}
 	before := make(map[string]map[string]string, len(roots))
 	for name, root := range roots {

@@ -1,0 +1,17 @@
+aiah · Backup and device move                                                              ATTENTION
+
+Library  fixture-personal 2026.07.1 · Profile personal
+Selection  aaaaaaaaaaaaaaaa…
+
+Package ready     [ready] ready · 2 assets · 2 files
+Migration preflight [ready] ready · targets claude,codex,shared · missing secrets 0 · degraded 0
+External copy     [missing] missing
+Restore exercise  [missing] missing
+
+Evidence paths (read-only under library .aiah/evidence/)
+  External copy  (not set)
+  Restore exercise  (not set)
+
+Next: store the package off this device and provide an external-copy evidence file.
+- info [package-readiness]: package can be built
+b external-copy evidence · x restore-exercise evidence · r refresh · m home · ? help · q quit
