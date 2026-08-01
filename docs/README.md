@@ -57,6 +57,8 @@
   （任务首页、友好术语、默认启动、CLI/TUI 边界与设置/i18n 分期）
 - [N7：偏好设置与中英文支持方案](designs/settings-and-i18n.md)
   （语言目录、首选资产库预填、显示密度、偏好文件安全与分阶段验收）
+- [N8：规模化资产管理增强方案](designs/scalable-asset-management.md)
+  （真实规模证据、统一筛选、来源读取、备份/恢复边界与触发式后续）
 - [跨设备迁移与受控版本对齐方案](designs/cross-device-migration-and-version-sync.md)
   （换机迁移、不可变分发、E3 状态模型与未来同步准入条件）
 
