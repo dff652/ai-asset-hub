@@ -428,7 +428,10 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 
 `v0.1.7` 已从 `main@b6779193c3ac` 发布：main/Release CI、线上六项资产、
 `v0.1.6 → v0.1.7` 严格升级命令、真实升级、幂等复装、正式 TUI/MCP 和双设备
-业务闭环均通过。本发布后 PR 将 installer 默认 pin 和用户文档收口到 `v0.1.7`。
+业务闭环均通过。发布后 [PR #30](https://github.com/dff652/ai-asset-hub/pull/30)
+已把 installer 默认 pin 和用户文档收口到 `v0.1.7`；
+[PR #31](https://github.com/dff652/ai-asset-hub/pull/31) 已把最终 `main` 文件树同步
+回 `dev`，两分支 tree 均为 `75f8e916696cfd0e8fb7fd48accd5e93353785bf`。
 完整证据、发布与升级步骤分别见
 [v0.1.7 发布与正式验收](reviews/2026-08-01-v0.1.7-release-acceptance.md)、
 [发版 runbook](runbooks/release.md)和
