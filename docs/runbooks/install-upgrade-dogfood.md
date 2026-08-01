@@ -6,9 +6,9 @@
   [真机 dry-run runbook](real-home-dry-run.md)。
 - 默认边界：所有写入都在 `mktemp` 目录，不覆盖 `~/.local/bin/aiah`，不把
   `HOME` 环境变量改指测试目录。
-- 最近一次实跑：2026-07-30，public `v0.1.5 → v0.1.6` bridge 在显式设置
-  `AIAH_VERSION=0.1.6` 时升级通过；同版本幂等复装、裸 `aiah`、Doctor、
-  typed rollback、版本检查和退出后 CLI 对账均通过。
+- 最近一次实跑：2026-07-31，public `v0.1.6 → v0.1.7` 严格升级命令、真实升级、
+  同版本幂等复装、裸 `aiah`、三项偏好生命周期、7 工具 MCP 零写入和双设备
+  应用/撤销闭环均通过。
 - 已知问题：同次验收确认 `v0.1.4` / `v0.1.5` 的 `update --check` 推荐命令缺少
   `AIAH_VERSION`，执行后可能仍停留在旧 pin。Release 说明已提供显式版本命令；
   `v0.1.6` 验收已在第二个隔离目录执行 legacy 命令，确认版本与 SHA256 均保持
@@ -16,6 +16,9 @@
 - `v0.1.6` 已从 `main@46e6efccc9ba` 发布，Release workflow、线上 SHA256、静态
   ELF、版本/commit、许可材料和正式 TTY 均通过；完整证据见
   [bridge 检查点](../reviews/2026-07-30-v0.1.6-bridge-candidate-readiness.md)。
+- `v0.1.7` 已从 `main@b6779193c3ac` 发布，首次完成修复后推荐命令的严格
+  Release → Release 证明；正式包证据见
+  [v0.1.7 发布与正式验收记录](../reviews/2026-08-01-v0.1.7-release-acceptance.md)。
 - E2 候选实跑：2026-07-30，隔离 `0.1.5-dev.e2` 二进制完成统一资产状态、纳入、
   连续 profile/diff、typed apply、成功摘要、Doctor、typed update/remove 与 CLI
   对账。该记录只证明 dev 候选，不代表未发布 Release 的安装器升级已通过。
@@ -60,12 +63,12 @@ test "$DOGFOOD_INSTALL" != "$HOME/.local/bin"
 
 ## 2. Release → Release 真实升级（发布后必跑）
 
-以下示例验证当前 bridge `v0.1.5 → v0.1.6`。两个版本都必须已存在于
+以下示例验证当前 `v0.1.6 → v0.1.7`。两个版本都必须已存在于
 GitHub Releases：
 
 ```bash
-FROM_VERSION=0.1.5
-TO_VERSION=0.1.6
+FROM_VERSION=0.1.6
+TO_VERSION=0.1.7
 
 AIAH_VERSION=$FROM_VERSION AIAH_INSTALL_DIR=$DOGFOOD_INSTALL sh scripts/install.sh
 "$DOGFOOD_INSTALL/aiah" version --output json
@@ -148,7 +151,7 @@ v0.1.4 保持原版本。因此该版本只能记为“显式版本升级通过�
 
 ```bash
 mkdir -p "$DOGFOOD_ROOT/candidate"
-VERSION=0.1.6-dev.1 OUT="$DOGFOOD_ROOT/candidate/aiah" ./scripts/build.sh
+VERSION=0.1.8-dev.1 OUT="$DOGFOOD_ROOT/candidate/aiah" ./scripts/build.sh
 "$DOGFOOD_ROOT/candidate/aiah" version --output json
 ```
 

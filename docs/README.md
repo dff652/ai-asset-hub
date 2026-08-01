@@ -62,6 +62,9 @@
 
 ## 评审
 
+- [2026-08-01 v0.1.7 发布与正式安装包验收](reviews/2026-08-01-v0.1.7-release-acceptance.md)
+- [2026-07-31 v0.1.7 发布候选就绪检查点](reviews/2026-07-31-v0.1.7-candidate-readiness.md)
+- [2026-07-31 N7.5 发布候选验收](reviews/2026-07-31-n7-release-candidate-acceptance.md)
 - [2026-07-31 N7.4 密度与首选资产库预填检查点](reviews/2026-07-31-n7-density-preferred-library-checkpoint.md)
 - [2026-07-31 N7.3 设置页与语言切换检查点](reviews/2026-07-31-n7-settings-language-checkpoint.md)
 - [2026-07-31 N7.2 偏好 Core 检查点](reviews/2026-07-31-n7-preferences-core-checkpoint.md)
