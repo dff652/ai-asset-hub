@@ -160,8 +160,8 @@ aiah readiness --workspace <asset-library> --profile <name> \
 命令不创建该目录或证据，不读取目录外路径、不访问网络，也不生成包、发布或应用。
 报告不回显完整外部副本 reference。
 
-该命令当前是 **N10.1 源码候选，不属于已发布的 v0.1.9**；TUI 页面与 MCP 工具仍按
-N10.2/N10.3 分期，不能从本节推断已经存在。
+该命令已随公开版 `v0.1.10` 发布；TUI「换机与备份」与 MCP
+`aiah_migration_readiness` 共用同一 Core。N10.4 自动证据记录器仍延期。
 
 ## `publish`、`pull` 与 `versions`
 
@@ -298,8 +298,8 @@ aiah update --check [--output text|json]
 `AIAH_VERSION`。从这些版本升级到当前版请使用：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.9/scripts/install.sh |
-  AIAH_VERSION=0.1.9 sh
+curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.10/scripts/install.sh |
+  AIAH_VERSION=0.1.10 sh
 ```
 
 `v0.1.6` 二进制已把生成格式修复为：

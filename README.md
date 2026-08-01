@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/dff652/ai-asset-hub/releases"><img alt="Release v0.1.9" src="https://img.shields.io/badge/release-v0.1.9-238636"></a>
+  <a href="https://github.com/dff652/ai-asset-hub/releases"><img alt="Release v0.1.10" src="https://img.shields.io/badge/release-v0.1.10-238636"></a>
   <img alt="Status Technical Preview" src="https://img.shields.io/badge/status-technical_preview-D29922">
   <img alt="Platform Linux amd64" src="https://img.shields.io/badge/platform-Linux_amd64-58A6FF">
   <a href="LICENSE"><img alt="License Apache 2.0" src="https://img.shields.io/badge/license-Apache--2.0-8B949E"></a>
@@ -13,11 +13,11 @@ AI Asset Hub（`aiah`）是面向个人与小团队的 **AI 编程资产管理�
 Claude、Codex、Grok 中的 Skills、Rules、Memory、Agents、Hooks 与 MCP 模板整理成
 一份可版本管理的资产库，并提供写入前预览、安装检查、撤销和跨设备迁移。
 
-> **当前边界：Technical Preview。** 最新公开版是 `v0.1.9`，安装与端到端验收范围
-> 为 **Linux amd64**。任务首页、资产管理、连续应用、跨设备迁移、双语偏好和
-> 7 个只读 MCP 工具的完整业务闭环已在 `v0.1.7` 正式包验收；`v0.1.9` 在
-> `v0.1.8` 的安全安装器与 `aiah init` 之上修复了受管工具目录初始化边界，并完成
-> Release → Release 升级、正式 TTY 和 MCP 零写入回归。
+> **当前边界：Technical Preview。** 最新公开版是 `v0.1.10`，安装与端到端验收范围
+> 为 **Linux amd64**。任务首页、资产管理、连续应用、跨设备迁移、双语偏好和只读
+> MCP 的完整业务闭环已在 `v0.1.7` 起正式验收；`v0.1.10` 交付 N10.1–N10.3 迁移
+> 准备检查（`aiah readiness`、TUI「换机与备份」、`aiah_migration_readiness` 共
+> 8 个只读 MCP 工具）。N10.4 自动证据记录器明确延期。
 
 ## 立即开始
 
@@ -31,11 +31,11 @@ aiah
 日常启动只需 `aiah`。`aiah ui` 仅作为兼容入口和高级参数入口保留，不需要新用户
 记忆。安装器校验 Release SHA256 后原子替换到
 `~/.local/bin`，不用 sudo，也不修改 shell profile；同版本复装零下载、零写入。
-当前源码中的安装器默认固定为已验收的 `v0.1.9`。也可以固定版本和安装目录：
+当前源码中的安装器默认固定为已验收的 `v0.1.10`。也可以固定版本和安装目录：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.9/scripts/install.sh |
-  AIAH_VERSION=0.1.9 AIAH_INSTALL_DIR="$HOME/.local/bin" sh
+curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.10/scripts/install.sh |
+  AIAH_VERSION=0.1.10 AIAH_INSTALL_DIR="$HOME/.local/bin" sh
 ```
 
 aiah 不在后台升级。固定 tag 的安装器保留 tag 创建时的默认 pin，因此使用固定 tag
@@ -50,7 +50,7 @@ aiah update --check
 它不会下载或替换二进制。`v0.1.6 → v0.1.7` 已首次完整证明程序生成的推荐命令、
 精确 tag、显式 `AIAH_VERSION`、SHA256 校验和原子替换形成闭环。仅 `v0.1.4` /
 `v0.1.5` 的旧二进制仍受历史命令缺陷影响；它们不会被追溯修改，直接按上方
-`v0.1.9` 显式版本命令升级即可。`aiah --update` 和不带 `--check` 的
+`v0.1.10` 显式版本命令升级即可。`aiah --update` 和不带 `--check` 的
 `aiah update` 都不会执行升级。
 
 直接执行远程脚本前，推荐先下载、阅读再运行。Release 裸二进制的手动安装方法见
@@ -116,6 +116,7 @@ Linux amd64 已完成端到端行为验证。`v0.1.1` 中现存的 macOS、Windo
 - **预览并应用资产库**：自动检查资产、准备安装包并展示变化，最终仍需输入
   `apply`；
 - **安装检查与撤销**：显示包版本、目标工具、漂移和恢复点；
+- **换机与备份**：只读汇总能否打包、外部副本证据与恢复演练证据及下一步；
 - **迁移到其他设备**：换机检查、发布、版本选择、取回、目标检查和安全应用；
 - **关于与更新**：默认离线，只有明确触发才检查 GitHub Release；
 - **偏好设置**：选择中文/English、显示密度和只用于提示与预填的首选资产库。
@@ -147,7 +148,7 @@ name/version/profile/SHA256；任一不匹配都阻止进入 diff。
 | `aiah bootstrap` | pull 后进入强制交互 diff 与 typed `apply` |
 | `aiah doctor` | 只读检查 journal、backup、deployment drift 与 MCP 前置状态 |
 | `aiah update --check` | 用户触发的只读 Release 版本检查 |
-| MCP：`aiah mcp` | 供 AI 工具调用的只读盘点、统一资产状态、迁移状态、diff 与安装检查 |
+| MCP：`aiah mcp` | 供 AI 工具调用的只读盘点、统一资产状态、迁移状态/准备、diff 与安装检查 |
 
 `v0.1.9` 起，`aiah init` 会在写入前拒绝 `.agents`、`.claude`、`.codex`、`.grok`
 及其后代，也拒绝解析后落入这些目录的软链接别名；`.claude-workspace` 等安全同名前缀
@@ -155,9 +156,9 @@ name/version/profile/SHA256；任一不匹配都阻止进入 diff。
 [发布后审计](docs/reviews/2026-08-01-v0.1.8-post-release-audit.md)和
 [v0.1.9 正式验收](docs/reviews/2026-08-01-v0.1.9-release-acceptance.md)。
 
-公开版 `v0.1.9` 提供 `aiah_asset_status` 与 `aiah_migration_status` 在内的 7 个
-只读 MCP 工具。MCP 不开放任何写操作。完整参数见[命令参考](docs/cli-reference.md)，
-客户端接入与验收见
+公开版 `v0.1.10` 提供 8 个只读 MCP 工具，含 `aiah_asset_status`、
+`aiah_migration_status` 与 `aiah_migration_readiness`。MCP 不开放任何写操作。
+完整参数见[命令参考](docs/cli-reference.md)，客户端接入与验收见
 [MCP runbook](docs/runbooks/mcp-client-acceptance.md)，跨设备人工操作见
 [迁移 runbook](docs/runbooks/cross-device-transfer.md)。
 
@@ -170,8 +171,8 @@ name/version/profile/SHA256；任一不匹配都阻止进入 diff。
   历史 backup 仍使用 CLI。
 - TUI 发布必须完整输入 `publish`；取回必须明确选择版本/profile 和已有输出目录，
   不覆盖不同或残缺的同名产物，取回成功也不会跳过 diff/typed `apply`。
-- MCP server 只暴露 7 个只读查询工具，不暴露 `build`、资产库写操作、
-  `publish/pull`、`apply` 或 `rollback`。
+- MCP server 只暴露 8 个只读查询工具，不暴露 `build`、资产库写操作、
+  `publish/pull`、`apply`、`rollback` 或证据写入。
 - MCP 原生配置采用 create-only 所有权；冲突时整单 fail-closed。
 - 项目 `CLAUDE.md` / `AGENTS.md` 由项目 Git 管理；aiah 只盘点和报告，不自动对齐。
 
