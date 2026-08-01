@@ -282,8 +282,20 @@ func runInit(args []string, stdout, stderr io.Writer) int {
 		_, _ = io.WriteString(stderr, "aiah: only --output json is supported\n")
 		return 2
 	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		_, _ = io.WriteString(stderr, "aiah: cannot determine home directory\n")
+		return 1
+	}
+	project, err := os.Getwd()
+	if err != nil {
+		_, _ = io.WriteString(stderr, "aiah: cannot determine current project directory\n")
+		return 1
+	}
 	report, err := workspace.Init(workspace.InitOptions{
 		Directory: directory,
+		Home:      home,
+		Project:   project,
 		Name:      *name,
 		Version:   *manifestVersion,
 	})

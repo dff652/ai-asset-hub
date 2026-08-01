@@ -278,6 +278,11 @@ aiah ui --home "$HOME" --workspace ~/ai-assets
 create-only 的：已存在的 manifest 永不改写，重跑只补缺失目录，所以拿不准时重跑
 是安全的。建完即可 `validate`；`build` 要等你加入第一个资产。
 
+资产库应放在 `~/ai-assets` 这类独立路径，不能位于 `.agents`、`.claude`、`.codex`、
+`.grok` 及其子目录。public `v0.1.8` 的 `init` 尚未拦截这项误用；该版本用户必须自行
+遵守，TUI/compose 仍会拒绝当前 HOME/project 的重叠路径。下一补丁版候选已补上
+Core 级 fail-closed。
+
 `init` **不会**让后续命令自动找到这个工作区——`--manifest` / `--workspace` 始终
 显式传，避免隐藏状态决定命令作用在哪个资产库上。
 

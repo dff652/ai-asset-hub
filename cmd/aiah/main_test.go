@@ -560,6 +560,45 @@ func TestRunInitRequiresExactlyOneDirectory(t *testing.T) {
 	}
 }
 
+func TestRunInitRejectsManagedHomeAndProjectDirectories(t *testing.T) {
+	home := t.TempDir()
+	project := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Chdir(project)
+	homeTarget := t.TempDir()
+	projectTarget := t.TempDir()
+	if err := os.Symlink(homeTarget, filepath.Join(home, ".codex")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(projectTarget, filepath.Join(project, ".grok")); err != nil {
+		t.Fatal(err)
+	}
+	homeAlias := filepath.Join(t.TempDir(), "home-managed-alias")
+	projectAlias := filepath.Join(t.TempDir(), "project-managed-alias")
+	if err := os.Symlink(homeTarget, homeAlias); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(projectTarget, projectAlias); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, candidate := range []string{
+		filepath.Join(homeAlias, "library"),
+		filepath.Join(projectAlias, "library"),
+	} {
+		var stdout, stderr bytes.Buffer
+		if code := run([]string{"init", candidate}, &stdout, &stderr); code != 1 {
+			t.Fatalf("init %s exit=%d, want 1", candidate, code)
+		}
+		if stdout.Len() != 0 || !strings.Contains(stderr.String(), "overlaps a managed tool directory") {
+			t.Fatalf("init %s stdout=%q stderr=%q", candidate, stdout.String(), stderr.String())
+		}
+		if _, err := os.Stat(candidate); !os.IsNotExist(err) {
+			t.Fatalf("rejected init created %s: %v", candidate, err)
+		}
+	}
+}
+
 func TestRunMCPServesReadOnlyToolsOverStdio(t *testing.T) {
 	original := stdin
 	t.Cleanup(func() { stdin = original })

@@ -148,6 +148,12 @@ name/version/profile/SHA256；任一不匹配都阻止进入 diff。
 | `aiah update --check` | 用户触发的只读 Release 版本检查 |
 | MCP：`aiah mcp` | 供 AI 工具调用的只读盘点、统一资产状态、迁移状态、diff 与安装检查 |
 
+> **v0.1.8 已知边界：** 请只在 `~/ai-assets` 这类独立路径运行 `aiah init`，不要把
+> 资产库建在 `.agents`、`.claude`、`.codex`、`.grok` 内。该版本的 TUI/compose 会
+> 拒绝当前 HOME/project 的重叠路径，但 `init` 本身尚未拦截；下一补丁版候选已补上
+> Core 级检查。见
+> [发布后审计](docs/reviews/2026-08-01-v0.1.8-post-release-audit.md)。
+
 公开版 `v0.1.7` 提供 `aiah_asset_status` 与 `aiah_migration_status` 在内的 7 个
 只读 MCP 工具。MCP 不开放任何写操作。完整参数见[命令参考](docs/cli-reference.md)，
 客户端接入与验收见
