@@ -137,6 +137,7 @@ name/version/profile/SHA256；任一不匹配都阻止进入 diff。
 | 入口 | 用途 |
 |---|---|
 | TUI：`aiah` | 人工交互主入口；`aiah ui` 继续兼容 |
+| `aiah init` | 脚手架一个资产工作区；create-only、幂等，不做隐式发现 |
 | `aiah scan` | 自动化或 JSON 方式盘点本机资产 |
 | `aiah validate` / `aiah build` | 校验资产库并构建确定性资产包 |
 | `aiah diff` / `apply` / `rollback` | 预览、应用和撤销 |

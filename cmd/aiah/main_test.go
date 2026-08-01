@@ -510,6 +510,56 @@ func TestRunChannelCommandsRequireTheirFlags(t *testing.T) {
 	}
 }
 
+func TestRunInitAcceptsTheDirectoryInEitherPosition(t *testing.T) {
+	// flag stops parsing at the first operand, so `init DIR --output json` would
+	// silently lose the flags without the operand being lifted out first.
+	for _, args := range [][]string{
+		{"init", "", "--output", "json"},
+		{"init", "--output", "json", ""},
+	} {
+		root := filepath.Join(t.TempDir(), "ai-assets")
+		positioned := append([]string(nil), args...)
+		for index, value := range positioned {
+			if value == "" {
+				positioned[index] = root
+			}
+		}
+		var stdout, stderr bytes.Buffer
+		if code := run(positioned, &stdout, &stderr); code != 0 {
+			t.Fatalf("run(%v) exit=%d stderr=%q", positioned, code, stderr.String())
+		}
+		var report struct {
+			SchemaVersion int    `json:"schemaVersion"`
+			Kind          string `json:"kind"`
+			ProducedBy    string `json:"producedBy"`
+			Ok            bool   `json:"ok"`
+			Name          string `json:"name"`
+		}
+		if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
+			t.Fatalf("init json: %v (%q)", err, stdout.String())
+		}
+		if report.SchemaVersion != 1 || report.Kind != "init" ||
+			report.ProducedBy != version.ProducedBy() || !report.Ok || report.Name != "ai-assets" {
+			t.Fatalf("report = %#v", report)
+		}
+	}
+}
+
+func TestRunInitRequiresExactlyOneDirectory(t *testing.T) {
+	for _, args := range [][]string{
+		{"init"},
+		{"init", "one", "two"},
+	} {
+		var stdout, stderr bytes.Buffer
+		if code := run(args, &stdout, &stderr); code != 2 {
+			t.Fatalf("run(%v) exit=%d, want 2", args, code)
+		}
+		if stdout.Len() != 0 {
+			t.Fatalf("run(%v) wrote to stdout: %q", args, stdout.String())
+		}
+	}
+}
+
 func TestRunMCPServesReadOnlyToolsOverStdio(t *testing.T) {
 	original := stdin
 	t.Cleanup(func() { stdin = original })
