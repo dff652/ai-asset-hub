@@ -118,7 +118,7 @@ func TestUnknownLanguageFallsBackToEnglish(t *testing.T) {
 
 func TestLanguageUpdatesLocalizedInputPlaceholders(t *testing.T) {
 	model := NewModel(inventory.Options{}).withLanguage(languageEnglish)
-	if got := model.filterInput.Placeholder; got != "Filter by path, type, or risk" {
+	if got := model.filterInput.Placeholder; got != "Filter asset details, state, or risk" {
 		t.Fatalf("English filter placeholder = %q", got)
 	}
 }

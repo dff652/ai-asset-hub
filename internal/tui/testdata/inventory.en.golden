@@ -1,6 +1,6 @@
 aiah · Local AI assets                                 Available 3 · Excluded 1 · Risks and issues 1
 Asset library  Not selected · Editable source of truth across tools · Next: press w
-/ Filter by path, type, or risk and issue
+/ Filter asset details, library status, or risks and issues
 ▾ claude                                      │ home/.codex/skills/review
   ▾ rules                                     │ Type          skill
       home/.claude/CLAUDE.md                  │ Source tool   codex
