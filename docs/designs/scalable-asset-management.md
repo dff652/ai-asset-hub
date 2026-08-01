@@ -1,6 +1,7 @@
 # N8：规模化资产管理增强方案
 
-- 状态：**N8.0 评估完成；N8.1 已提交 `dev@97ccc3b` 并通过本地验收，尚未发布**
+- 状态：**N8.0 评估完成；N8.1 已通过 [PR #34](https://github.com/dff652/ai-asset-hub/pull/34)
+  合入 `dev` 并通过本地/远端验收，尚未发布**
 - 日期：2026-08-01
 - 关联：[资产模型](../asset-model.md)、
   [TUI 产品体验 V2](tui-product-experience-v2.md)、
@@ -94,7 +95,7 @@ profile。该目录只作为本次评估样本，不把它自动设为任何用�
 - 复核 manifest、TUI、CLI、MCP、build、publish/pull 和本机恢复点边界；
 - 冻结“文件优先、无后台同步、无数据库、无自动网络传输”的当前方案。
 
-### N8.1：统一筛选与来源读取（本地候选已实现）
+### N8.1：统一筛选与来源读取（已合入 `dev`）
 
 - TUI `/` 匹配路径、文件、来源工具、scope、type、portability、sensitivity、
   inventory 状态、feature、资产 ID、资产库路径、目标工具和资产库状态；
@@ -156,8 +157,8 @@ SQLite 或服务端状态变成第二份权威数据。
 
 ## 5. 后续顺序
 
-1. N8.1 实现已提交 `dev@97ccc3b`，完整门禁、严格 diff review 和真 TTY
-   dogfood 已完成；
+1. N8.1 已通过 [PR #34](https://github.com/dff652/ai-asset-hub/pull/34) 合入 `dev`，
+   完整门禁、严格 diff review、真 TTY dogfood 和合并后 CI 已完成；
 2. 提交范围和敏感信息检查已通过，公开文档不含用户私有绝对路径；
 3. 收集实际筛选关键词、资产规模和失败案例，不以假数据推动 schema 膨胀；
 4. 决定是否启动 N8.2 只读报告契约；
