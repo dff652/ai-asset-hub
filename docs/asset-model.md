@@ -71,17 +71,20 @@ profiles:
       - rules.personal-defaults
 ```
 
-正式 schema 需要进一步定义：
+manifest v1 已定义：
 
 - 稳定资产 ID；
-- 版本和来源；
 - 依赖及冲突；
 - 目标平台；
 - 作用域：global、project、device；
-- 是否显式调用；
 - 安全等级；
-- 平台专属覆盖；
-- 文件哈希。
+- 可选来源 `source.url/revision/importedAt`；
+- 可选文件清单与 SHA-256。
+
+来源字段是资产库作者声明的追踪信息，不是可信、签名或许可证证明；inventory 的
+Claude/Codex/Grok“来源工具”与 manifest 的上游 URL 也不是同一概念。描述、标签、
+许可证和平台专属覆盖尚未进入 v1；增加这些字段前必须先设计版本兼容，详见
+[N8 规模化资产管理增强方案](designs/scalable-asset-management.md)。
 
 ## 3. 盘点模型
 

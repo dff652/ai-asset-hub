@@ -13,6 +13,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dff652/ai-asset-hub/internal/inventory"
+	"github.com/dff652/ai-asset-hub/internal/workspace"
 )
 
 func TestUpdateNavigationAndFiltering(t *testing.T) {
@@ -66,6 +67,82 @@ func TestUpdateNavigationAndFiltering(t *testing.T) {
 		want := []string{"home/.codex/skills/review"}
 		if !reflect.DeepEqual(assets, want) {
 			t.Fatalf("assets = %#v, want %#v", assets, want)
+		}
+	})
+
+	t.Run("filter matches asset metadata and attached findings", func(t *testing.T) {
+		model := readyTestModel()
+		asset := inventory.Asset{
+			LogicalPath: "home/assets/example",
+			Source:      inventory.SourceGrok,
+			Scope:       inventory.ScopeProject,
+			Type:        inventory.TypeSkill,
+			Portability: inventory.PortabilityAdapterRequired,
+			Sensitivity: inventory.SensitivitySensitive,
+			Status:      inventory.AssetCandidate,
+			Features:    []inventory.Feature{inventory.FeaturePlugins},
+		}
+		model.report.Assets = []inventory.Asset{asset}
+		model.report.Findings = []inventory.Finding{{
+			Code: inventory.FindingIncompleteSkill, Severity: inventory.SeverityWarning,
+			Message: "missing instructions", Paths: []string{asset.LogicalPath},
+		}}
+		model.ensureGroupsExpanded()
+		for _, query := range []string{
+			"grok", "project", "adapter-required", "sensitive", "plugins", "incomplete_skill",
+		} {
+			model.filterInput.SetValue(query)
+			matched := false
+			for _, row := range model.visibleRows() {
+				matched = matched || row.asset != nil
+			}
+			if !matched {
+				t.Errorf("query %q did not match asset metadata or finding", query)
+			}
+		}
+	})
+
+	t.Run("filter applies to library-only assets and localized state", func(t *testing.T) {
+		model := readyTestModel()
+		model.report.Assets = nil
+		manifest := workspace.ManifestAsset{
+			ID: "skill.archive", Scope: "global", Portability: "portable", Sensitivity: "private",
+			Source: &workspace.ManifestSource{
+				URL: "https://example.com/archive.git", Revision: "abc123",
+			},
+		}
+		model.catalog = workspace.CatalogReport{Items: []workspace.CatalogItem{{
+			ID: "skill.archive", LibraryPath: "assets/skills/archive", Type: "skill",
+			State: workspace.LibraryOnly, Targets: []string{"codex"}, Manifest: &manifest,
+		}}}
+
+		for _, query := range []string{
+			"skill.archive", "codex", "portable", "example.com", "abc123", "仅在资产库", "仅库内",
+		} {
+			model.filterInput.SetValue(query)
+			rows := model.visibleRows()
+			if len(rows) != 2 || rows[1].library == nil || rows[1].library.ID != "skill.archive" {
+				t.Errorf("query %q rows = %#v, want library group and skill.archive", query, rows)
+			}
+		}
+
+		model.filterInput.SetValue("does-not-exist")
+		if rows := model.visibleRows(); len(rows) != 0 {
+			t.Fatalf("unmatched library-only rows = %#v, want none", rows)
+		}
+	})
+
+	t.Run("filter matches the localized updates summary term", func(t *testing.T) {
+		model := readyTestModel()
+		asset := model.report.Assets[0]
+		model.report.Assets = []inventory.Asset{asset}
+		model.catalog = workspace.CatalogReport{Items: []workspace.CatalogItem{{
+			ID: asset.LogicalPath, LogicalPath: asset.LogicalPath, Type: string(asset.Type),
+			State: workspace.LibrarySourceChanged,
+		}}}
+		model.filterInput.SetValue("待更新")
+		if rows := model.visibleRows(); len(rows) == 0 {
+			t.Fatal("localized updates summary term did not match a source-changed asset")
 		}
 	})
 

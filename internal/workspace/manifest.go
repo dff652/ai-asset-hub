@@ -29,15 +29,31 @@ type Document struct {
 }
 
 type ManifestAsset struct {
-	ID           string   `json:"id" yaml:"id"`
-	Type         string   `json:"type" yaml:"type"`
-	Path         string   `json:"path" yaml:"path"`
-	Targets      []string `json:"targets" yaml:"targets"`
-	Scope        string   `json:"scope" yaml:"scope"`
-	Portability  string   `json:"portability" yaml:"portability"`
-	Sensitivity  string   `json:"sensitivity" yaml:"sensitivity"`
-	Dependencies []string `json:"dependencies,omitempty" yaml:"dependencies,omitempty"`
-	Conflicts    []string `json:"conflicts,omitempty" yaml:"conflicts,omitempty"`
+	ID           string          `json:"id" yaml:"id"`
+	Type         string          `json:"type" yaml:"type"`
+	Path         string          `json:"path" yaml:"path"`
+	Targets      []string        `json:"targets" yaml:"targets"`
+	Scope        string          `json:"scope" yaml:"scope"`
+	Portability  string          `json:"portability" yaml:"portability"`
+	Sensitivity  string          `json:"sensitivity" yaml:"sensitivity"`
+	Dependencies []string        `json:"dependencies,omitempty" yaml:"dependencies,omitempty"`
+	Conflicts    []string        `json:"conflicts,omitempty" yaml:"conflicts,omitempty"`
+	Source       *ManifestSource `json:"source,omitempty" yaml:"source,omitempty"`
+	Files        []ManifestFile  `json:"files,omitempty" yaml:"files,omitempty"`
+}
+
+// ManifestSource records declared provenance. It is metadata supplied by the
+// asset-library author, not proof that the source is trusted or licensed.
+type ManifestSource struct {
+	URL        string `json:"url" yaml:"url"`
+	Revision   string `json:"revision" yaml:"revision"`
+	ImportedAt string `json:"importedAt,omitempty" yaml:"importedAt,omitempty"`
+}
+
+// ManifestFile is the optional file inventory declared by manifest v1.
+type ManifestFile struct {
+	Path   string `json:"path" yaml:"path"`
+	SHA256 string `json:"sha256" yaml:"sha256"`
 }
 
 type Profile struct {
