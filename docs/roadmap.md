@@ -194,14 +194,19 @@
       dev CI 8 个 job 全绿且 annotations 为 0；Release-only 的 action-gh-release
       已随 public `v0.1.1` 正常 tag 实跑通过。
     - ✅ **Linux amd64 安装脚本 `scripts/install.sh`**（ADR-0003 §3 分发顺序
-      第 4 项）。当前源码默认固定 `v0.1.7`；校验 Release `SHA256SUMS` 后才安装，同目录
+      第 4 项）。当前源码默认固定 `v0.1.8`；校验 Release `SHA256SUMS` 后才安装，同目录
       stage 后原子替换，不先删旧版本，不用 sudo、不改 profile，同版本零下载。
       校验复用 `scripts/_sha256.sh`；网络隔离测试覆盖校验失败保旧、重复 checksum、
       幂等、原子替换，以及 macOS/arm64 在下载前被拒绝。Windows/macOS/arm64
       安装入口须在对应平台完成原生验收后再提供。已发布 `v0.1.4` / `v0.1.5`
       二进制仍生成缺少 `AIAH_VERSION` 的命令；`v0.1.6` 已完成 bridge Release，
       `v0.1.6 → v0.1.7` 又首次完成修复后推荐命令的严格端到端证明。当前源码 pin
-      随发布后收口更新到 `v0.1.7`。
+      随发布后收口更新到 `v0.1.8`。
+      校验函数原先在运行时加载（`scripts/_sha256.sh`），在 `curl | sh` 形态下
+      `$0` 不是真实路径，helper 会落到**当前工作目录**，取不到时再从网络下载并
+      source——校验器自身既可被本地同名文件替换，也经由它本该校验的通道取得。
+      `v0.1.8` 改为内联，运行时不加载任何东西；三个变异（完整漏洞 / 仅网络回退 /
+      仅 CWD source）分别由显式断言按名字抬红。
     - ⬜ 包格式兼容矩阵：旧包被新 aiah 读到什么程度（同时是 ADR-0003 UI 门槛
       第 2 条的前置）。
 
