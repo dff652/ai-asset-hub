@@ -194,7 +194,7 @@
       dev CI 8 个 job 全绿且 annotations 为 0；Release-only 的 action-gh-release
       已随 public `v0.1.1` 正常 tag 实跑通过。
     - ✅ **Linux amd64 安装脚本 `scripts/install.sh`**（ADR-0003 §3 分发顺序
-      第 4 项）。当前源码默认固定 `v0.1.9`；校验 Release `SHA256SUMS` 后才安装，同目录
+      第 4 项）。当前源码默认固定 `v0.1.10`；校验 Release `SHA256SUMS` 后才安装，同目录
       stage 后原子替换，不先删旧版本，不用 sudo、不改 profile，同版本零下载。
       安装器校验逻辑已内联，不在运行时加载本地或网络 helper；网络隔离测试覆盖
       校验失败保旧、重复 checksum、幂等、原子替换，以及 macOS/arm64 在下载前被
@@ -202,7 +202,7 @@
       安装入口须在对应平台完成原生验收后再提供。已发布 `v0.1.4` / `v0.1.5`
       二进制仍生成缺少 `AIAH_VERSION` 的命令；`v0.1.6` 已完成 bridge Release，
       `v0.1.6 → v0.1.7` 又首次完成修复后推荐命令的严格端到端证明。当前源码 pin
-      随 v0.1.9 正式包验收后的独立 PR 更新到 `v0.1.9`。
+      随 v0.1.10 正式包验收后的独立 PR 更新到 `v0.1.10`。
       校验函数原先在运行时加载（`scripts/_sha256.sh`），在 `curl | sh` 形态下
       `$0` 不是真实路径，helper 会落到**当前工作目录**，取不到时再从网络下载并
       source——校验器自身既可被本地同名文件替换，也经由它本该校验的通道取得。
@@ -452,7 +452,7 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 
 | 顺序 | 优先级 | 任务 | 当前边界与验收出口 |
 |---|---|---|---|
-| N10 | P1 | 🟡 **迁移准备检查** | N10.1 Core/CLI 与 N10.2 TUI 已合入 `dev`（尚未正式发布）。N10.3 `aiah_migration_readiness` 只读 MCP 源码候选已实现（8 工具、write-nothing、ADR-0005 同步）；N10.4 隔离演练尚未实现。不自动上传、不后台同步、不把安装恢复点冒充换机备份。见[方案](designs/migration-readiness.md) |
+| N10 | P1 | ✅ **迁移准备检查（N10.1–N10.3）** | public `v0.1.10`：Core/CLI、TUI「换机与备份」、MCP `aiah_migration_readiness`（8 工具）。N10.4 自动证据记录与隔离演练编排明确延期。不自动上传、不后台同步、不把安装恢复点冒充换机备份。见[方案](designs/migration-readiness.md) |
 
 N10.1 当前处于本地源码候选门禁阶段；通过 review/CI 并进入正式发布前，不写成
 v0.1.9 已有能力。后续先评估 N10.2，而 N8.3 描述/标签/许可证与 N8.4 索引/数据库
