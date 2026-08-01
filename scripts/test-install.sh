@@ -61,7 +61,7 @@ done
 printf '%s\n' "$url" >>"$AIAH_TEST_CURL_LOG"
 case "$url" in
   */SHA256SUMS) cp "$AIAH_TEST_CHECKSUMS" "$out" ;;
-  */_sha256.sh) cp "$AIAH_TEST_SHA_HELPER" "$out" ;;
+  */_sha256.sh) cp "$AIAH_TEST_POISONED_HELPER" "$out" ;;
   */aiah_*) cp "$AIAH_TEST_BINARY" "$out" ;;
   *) exit 22 ;;
 esac
@@ -103,6 +103,16 @@ run_installer() {
     sh "$INSTALLER"
 }
 
+run_installer_piped() {
+  local fake_bin=$1
+  local install_dir=$2
+  AIAH_INSTALL_DIR="$install_dir" \
+    AIAH_TEST_UNAME_S="${AIAH_TEST_UNAME_S:-Linux}" \
+    AIAH_TEST_UNAME_M="${AIAH_TEST_UNAME_M:-x86_64}" \
+    PATH="$fake_bin:$REAL_PATH" \
+    sh <"$INSTALLER"
+}
+
 fixture=$TEST_ROOT/fixture
 fake_bin=$TEST_ROOT/fake-bin
 mkdir -p "$fixture"
@@ -112,7 +122,15 @@ write_checksums "$fixture/binary" \
   "aiah_${EXPECTED_DEFAULT_AIAH_VERSION}_linux_amd64" "$fixture/SHA256SUMS"
 export AIAH_TEST_BINARY=$fixture/binary
 export AIAH_TEST_CHECKSUMS=$fixture/SHA256SUMS
-export AIAH_TEST_SHA_HELPER=$ROOT/scripts/_sha256.sh
+# Behaves correctly on purpose: a verifier that still verifies is the hardest
+# case, because only the fact that it was loaded at all proves the compromise.
+poisoned_helper=$fixture/poisoned_sha256.sh
+cat >"$poisoned_helper" <<'EOF'
+sha256_value() { sha256sum "$1" | awk '{print $1}'; }
+touch "$AIAH_TEST_HOSTILE_MARKER"
+EOF
+export AIAH_TEST_POISONED_HELPER=$poisoned_helper
+export AIAH_TEST_HOSTILE_MARKER=$TEST_ROOT/hostile-executed
 export AIAH_TEST_CURL_LOG=$TEST_ROOT/curl.log
 : >"$AIAH_TEST_CURL_LOG"
 
@@ -196,6 +214,52 @@ if run_installer "$fake_bin" "$TEST_ROOT/unsupported-arch" >/dev/null 2>&1; then
 fi
 [ ! -s "$AIAH_TEST_CURL_LOG" ] || fail "unsupported architecture downloaded files"
 unset AIAH_TEST_UNAME_M
+
+# The verifier must never be loaded at runtime. install.sh is published as
+# `curl ... | sh`, where $0 is not a real path: a sourced helper would resolve
+# to the current directory, and the old network fallback fetched the verifier
+# over the very channel it exists to check.
+: >"$AIAH_TEST_CURL_LOG"
+install_dir=$TEST_ROOT/no-helper-fetch/bin
+run_installer_piped "$fake_bin" "$install_dir" >/dev/null
+if grep -q '_sha256\.sh' "$AIAH_TEST_CURL_LOG"; then
+  fail "install.sh fetched its own checksum verifier over the network"
+fi
+[ ! -e "$AIAH_TEST_HOSTILE_MARKER" ] ||
+  fail "a downloaded checksum verifier was executed"
+assert_same "$fixture/binary" "$install_dir/aiah"
+
+# A hostile _sha256.sh in the working directory must have no effect. Before the
+# fix this file was sourced, which both ran arbitrary code as the installing
+# user and let sha256_value return whatever the attacker chose.
+hostile=$TEST_ROOT/hostile
+mkdir -p "$hostile"
+cat >"$hostile/_sha256.sh" <<'EOF'
+sha256_value() { sha256sum "$1" | awk '{print $1}'; }
+touch "$AIAH_TEST_HOSTILE_MARKER"
+EOF
+install_dir=$TEST_ROOT/hostile-cwd/bin
+( cd "$hostile" && run_installer_piped "$fake_bin" "$install_dir" >/dev/null )
+[ ! -e "$AIAH_TEST_HOSTILE_MARKER" ] ||
+  fail "a _sha256.sh in the working directory was executed"
+assert_same "$fixture/binary" "$install_dir/aiah"
+
+# A masking helper returns exactly what install.sh expects, so a sourced
+# verifier would let any binary through without a visible failure.
+cat >"$hostile/_sha256.sh" <<'EOF'
+sha256_value() { echo "$AIAH_TEST_MASK_DIGEST"; }
+EOF
+export AIAH_TEST_MASK_DIGEST=0000000000000000000000000000000000000000000000000000000000000000
+printf '%s  %s\n' \
+  "0000000000000000000000000000000000000000000000000000000000000000" \
+  "aiah_${EXPECTED_DEFAULT_AIAH_VERSION}_linux_amd64" >"$fixture/SHA256SUMS"
+install_dir=$TEST_ROOT/hostile-mismatch/bin
+if ( cd "$hostile" && run_installer_piped "$fake_bin" "$install_dir" >/dev/null 2>&1 ); then
+  fail "a working-directory helper masked a checksum mismatch"
+fi
+[ ! -e "$install_dir/aiah" ] || fail "masked mismatch still installed a binary"
+write_checksums "$fixture/binary" \
+  "aiah_${EXPECTED_DEFAULT_AIAH_VERSION}_linux_amd64" "$fixture/SHA256SUMS"
 
 sh_default=$(awk -F= '$1 == "DEFAULT_AIAH_VERSION" { print $2 }' \
   "$ROOT/scripts/install.sh")
