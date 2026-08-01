@@ -45,6 +45,10 @@ var versionPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
 type InitOptions struct {
 	// Directory is the workspace root. It is created if missing.
 	Directory string
+	// Home and Project identify managed AI-tool directories that the workspace
+	// must not overlap. The CLI supplies both from the current environment.
+	Home    string
+	Project string
 	// Name defaults to the directory's base name, normalized.
 	Name string
 	// Version defaults to DefaultInitVersion.
@@ -91,9 +95,9 @@ func Init(options InitOptions) (InitReport, error) {
 	if strings.TrimSpace(options.Directory) == "" {
 		return report, fmt.Errorf("%w: a workspace directory is required", ErrInitBlocked)
 	}
-	root, err := filepath.Abs(options.Directory)
+	root, err := validateRootCandidate(options.Directory, options.Home, options.Project)
 	if err != nil {
-		return report, fmt.Errorf("%w: cannot resolve the workspace directory", ErrInitBlocked)
+		return report, fmt.Errorf("%w: %v", ErrInitBlocked, err)
 	}
 	report.Root = root
 

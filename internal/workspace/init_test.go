@@ -159,6 +159,70 @@ func TestInitRefusesOccupiedPathsAndWritesNothing(t *testing.T) {
 	}
 }
 
+func TestInitRejectsManagedToolDirectoriesAndWritesNothing(t *testing.T) {
+	home := t.TempDir()
+	project := t.TempDir()
+	for _, boundary := range []string{home, project, t.TempDir()} {
+		for _, name := range managedToolDirectories {
+			candidate := filepath.Join(boundary, name, "library")
+			_, err := Init(InitOptions{
+				Directory: candidate,
+				Home:      home,
+				Project:   project,
+			})
+			if !errors.Is(err, ErrInitBlocked) {
+				t.Fatalf("%s under %s error = %v, want ErrInitBlocked", name, boundary, err)
+			}
+			if !strings.Contains(err.Error(), "overlaps a managed tool directory") {
+				t.Fatalf("managed directory error = %q", err)
+			}
+			if _, statErr := os.Stat(filepath.Join(boundary, name)); !os.IsNotExist(statErr) {
+				t.Fatalf("rejected managed directory %s was created: %v", name, statErr)
+			}
+		}
+	}
+
+	sibling := filepath.Join(home, ".claude-workspace")
+	if _, err := Init(InitOptions{Directory: sibling, Home: home, Project: project}); err != nil {
+		t.Fatalf("safe sibling was rejected: %v", err)
+	}
+}
+
+func TestInitRejectsSymlinkIntoManagedToolDirectory(t *testing.T) {
+	home := t.TempDir()
+	managed := filepath.Join(home, ".claude")
+	if err := os.MkdirAll(managed, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(t.TempDir(), "workspace-link")
+	if err := os.Symlink(managed, link); err != nil {
+		t.Fatal(err)
+	}
+	candidate := filepath.Join(link, "library")
+	before := listTree(t, home)
+	_, err := Init(InitOptions{Directory: candidate, Home: home})
+	if !errors.Is(err, ErrInitBlocked) {
+		t.Fatalf("symlinked managed path error = %v, want ErrInitBlocked", err)
+	}
+	if after := listTree(t, home); after != before {
+		t.Fatalf("rejected symlink path wrote:\nbefore=%s\nafter=%s", before, after)
+	}
+
+	outside := t.TempDir()
+	target := t.TempDir()
+	managedLink := filepath.Join(outside, ".grok")
+	if err := os.Symlink(target, managedLink); err != nil {
+		t.Fatal(err)
+	}
+	_, err = Init(InitOptions{Directory: filepath.Join(managedLink, "library"), Home: home})
+	if !errors.Is(err, ErrInitBlocked) {
+		t.Fatalf("named managed symlink error = %v, want ErrInitBlocked", err)
+	}
+	if _, statErr := os.Stat(filepath.Join(target, "library")); !os.IsNotExist(statErr) {
+		t.Fatalf("rejected named symlink wrote into its target: %v", statErr)
+	}
+}
+
 func TestInitDerivesAndValidatesTheManifestName(t *testing.T) {
 	cases := []struct {
 		directory string

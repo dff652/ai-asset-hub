@@ -75,24 +75,37 @@ func validateRootCandidate(candidate, home, project string) (string, error) {
 		}
 	}
 
-	absolute, err := resolveBoundaryPath(value)
-	if err != nil {
-		return "", fmt.Errorf("%w: resolve workspace root", ErrInvalidOptions)
-	}
-	managed, err := overlapsManagedToolDirectory(absolute, home, project)
+	managed, err := overlapsManagedToolDirectory(value, home, project)
 	if err != nil {
 		return "", fmt.Errorf("%w: resolve managed tool directories", ErrInvalidOptions)
 	}
 	if managed {
 		return "", fmt.Errorf("%w: workspace root overlaps a managed tool directory", ErrInvalidOptions)
 	}
+	absolute, err := resolveBoundaryPath(value)
+	if err != nil {
+		return "", fmt.Errorf("%w: resolve workspace root", ErrInvalidOptions)
+	}
 	return filepath.Clean(absolute), nil
 }
 
 func overlapsManagedToolDirectory(candidate, home, project string) (bool, error) {
+	lexicalCandidate, err := filepath.Abs(candidate)
+	if err != nil {
+		return false, err
+	}
 	resolvedCandidate, err := resolveBoundaryPath(candidate)
 	if err != nil {
 		return false, err
+	}
+	// A workspace nested below an exact managed-directory component is unsafe
+	// even when the caller does not know the corresponding HOME or project
+	// root. This matters for commands such as `aiah init /other/repo/.claude/x`:
+	// they must not create a library that the TUI and compose path will later
+	// reject. Similar-looking siblings such as `.claude-workspace` remain valid.
+	if hasManagedDirectoryComponent(lexicalCandidate) ||
+		hasManagedDirectoryComponent(resolvedCandidate) {
+		return true, nil
 	}
 	for _, boundary := range []string{home, project} {
 		if strings.TrimSpace(boundary) == "" {
@@ -109,6 +122,22 @@ func overlapsManagedToolDirectory(candidate, home, project string) (bool, error)
 		}
 	}
 	return false, nil
+}
+
+func hasManagedDirectoryComponent(candidate string) bool {
+	for current := filepath.Clean(candidate); ; current = filepath.Dir(current) {
+		base := filepath.Base(current)
+		for _, managed := range managedToolDirectories {
+			if base == managed {
+				return true
+			}
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			break
+		}
+	}
+	return false
 }
 
 // resolveBoundaryPath follows every existing symlink prefix while preserving
