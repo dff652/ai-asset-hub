@@ -29,6 +29,7 @@ const (
 	profileForDeployment profilePurpose = iota
 	profileForPublish
 	profileForPreflight
+	profileForReadiness
 )
 
 func prepareWorkspaceCommand(candidate, home, project string) tea.Cmd {
@@ -147,6 +148,9 @@ func (m Model) updateProfileInput(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.profilePurpose = profileForDeployment
 		if purpose == profileForPreflight {
 			return m, m.beginWorkspacePreflight(profile)
+		}
+		if purpose == profileForReadiness {
+			return m.beginReadiness(profile)
 		}
 		m.invalidateBuiltPackage()
 		m.building = true

@@ -449,7 +449,7 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 
 | 顺序 | 优先级 | 任务 | 当前边界与验收出口 |
 |---|---|---|---|
-| N10 | P1 | 🟡 **迁移准备检查** | N10.1 Go Core、JSON schema 与 `aiah readiness` CLI 源码候选已实现，尚未发布；构建就绪、迁移前置、外部副本和恢复演练保持独立，不自动上传、不后台同步、不把安装恢复点冒充换机备份。N10.2 TUI、N10.3 MCP 只读与 N10.4 隔离演练尚未实现，见[方案](designs/migration-readiness.md)与[检查点](reviews/2026-08-01-n10-1-readiness-core-cli-checkpoint.md) |
+| N10 | P1 | 🟡 **迁移准备检查** | N10.1 Go Core、JSON schema 与 `aiah readiness` CLI 已合入 `dev`（尚未正式发布）。N10.2 TUI「换机与备份」源码候选已实现（共享 Core、三态状态卡、零隐式写入）；N10.3 MCP 只读与 N10.4 隔离演练尚未实现。不自动上传、不后台同步、不把安装恢复点冒充换机备份。见[方案](designs/migration-readiness.md)与[检查点](reviews/2026-08-01-n10-1-readiness-core-cli-checkpoint.md) |
 
 N10.1 当前处于本地源码候选门禁阶段；通过 review/CI 并进入正式发布前，不写成
 v0.1.9 已有能力。后续先评估 N10.2，而 N8.3 描述/标签/许可证与 N8.4 索引/数据库
