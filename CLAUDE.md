@@ -7,9 +7,10 @@
 
 ## 项目定位
 
-AI Asset Hub 是文件优先、工具无关的 AI 编程资产管理器。它盘点、校验、构建和部署
-Skills、Rules、Memory、Agents、Hooks 与 MCP 模板，并通过 adapter 面向 Claude
-Code、Codex、Grok 等目标生成结果。
+AI Asset Hub（`aiah`）是文件优先的 AI 编程资产与配置工具：在 Claude Code、Codex、
+Grok 等目标之间盘点、校验、构建和**安全应用** Skills、Rules、Memory、Agents、
+Hooks 与 MCP 模板。对外说法优先是「安全地改 AI 工具配置 / 多工具语义统一」，
+不是通用 dotfile 同步器，也不是「跨设备搬运」单点产品。
 
 核心原则：
 
@@ -19,8 +20,9 @@ Code、Codex、Grok 等目标生成结果。
 - 密钥只在目标设备 apply 阶段解析，不进入包、报告、journal 或 backup metadata。
 - 写入前必须能 diff，写入后必须能通过 `backupId` 回滚。
 
-架构与产品边界分别见 `docs/architecture.md`、`docs/asset-model.md` 和
-`docs/decisions/`。
+架构与产品边界见 `docs/architecture.md`、`docs/asset-model.md`、
+`docs/decisions/`；产品取舍见
+`docs/research/product-positioning-and-direction.md`。
 
 ## 开始工作
 
