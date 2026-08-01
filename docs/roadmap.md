@@ -194,14 +194,15 @@
       dev CI 8 个 job 全绿且 annotations 为 0；Release-only 的 action-gh-release
       已随 public `v0.1.1` 正常 tag 实跑通过。
     - ✅ **Linux amd64 安装脚本 `scripts/install.sh`**（ADR-0003 §3 分发顺序
-      第 4 项）。当前源码默认固定 `v0.1.8`；校验 Release `SHA256SUMS` 后才安装，同目录
+      第 4 项）。当前源码默认固定 `v0.1.9`；校验 Release `SHA256SUMS` 后才安装，同目录
       stage 后原子替换，不先删旧版本，不用 sudo、不改 profile，同版本零下载。
-      校验复用 `scripts/_sha256.sh`；网络隔离测试覆盖校验失败保旧、重复 checksum、
-      幂等、原子替换，以及 macOS/arm64 在下载前被拒绝。Windows/macOS/arm64
+      安装器校验逻辑已内联，不在运行时加载本地或网络 helper；网络隔离测试覆盖
+      校验失败保旧、重复 checksum、幂等、原子替换，以及 macOS/arm64 在下载前被
+      拒绝。Windows/macOS/arm64
       安装入口须在对应平台完成原生验收后再提供。已发布 `v0.1.4` / `v0.1.5`
       二进制仍生成缺少 `AIAH_VERSION` 的命令；`v0.1.6` 已完成 bridge Release，
       `v0.1.6 → v0.1.7` 又首次完成修复后推荐命令的严格端到端证明。当前源码 pin
-      随发布后收口更新到 `v0.1.8`。
+      随 v0.1.9 正式包验收后的独立 PR 更新到 `v0.1.9`。
       校验函数原先在运行时加载（`scripts/_sha256.sh`），在 `curl | sh` 形态下
       `$0` 不是真实路径，helper 会落到**当前工作目录**，取不到时再从网络下载并
       source——校验器自身既可被本地同名文件替换，也经由它本该校验的通道取得。
@@ -379,11 +380,12 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 
 | 层面 | 已完成 | 当前边界 |
 |---|---|---|
+| 公开版 `v0.1.9` | v0.1.8 安全安装器、init、N8.1，加受管目录 init 边界修复 | 从受保护 main 发布；严格 `v0.1.8→v0.1.9` 升级、init 正反路径、真 TTY 首页和 MCP 回归通过；完整偏好/双设备闭环引用 v0.1.7 |
 | 公开版 `v0.1.7` | CLI/Core、任务首页、统一资产状态、连续应用、Doctor/rollback、E3.2–E3.4、7 工具只读 MCP、双语与三项本机 UI 偏好 | Linux amd64 线上产物、严格 `v0.1.6→v0.1.7` 升级、正式 TUI/MCP、双设备闭环与幂等复装通过 |
 | `v0.1.7` 发布基线 | tag 精确指向发布提交；tag 内 installer 按 staged-pin 保持 v0.1.6 | 发布后默认分支把 installer pin 与文档收口到 v0.1.7；实时分支状态以 GitHub 为准 |
 | `main` / `dev` 同步规则 | squash 历史下以最终文件树一致为目标 | 每次发布后按发版 SOP 经 PR 同步并用 `git diff origin/main origin/dev` 验证，不以祖先关系代替内容证明 |
 | 人工操作入口 | TUI 覆盖本机资产、迁移和本机偏好；CLI 保留全部高级、脚本和 CI 能力 | 写操作继续要求显式路径、diff 和 typed confirmation |
-| AI 接入入口 | `v0.1.7` 提供 7 个只读工具 | 正式包直接协议零写入；源码候选 Codex/Grok 模型调用通过，Claude 模型调用仍被组织策略 403 阻止；不开放写操作 |
+| AI 接入入口 | `v0.1.9` 提供 7 个只读工具 | v0.1.9 正式包协议、schema、两项状态调用与零写入回归通过；Codex/Grok 模型调用矩阵仍引用 v0.1.7，Claude 模型调用仍被组织策略 403 阻止；不开放写操作 |
 | README 视觉 | README mode、规范化主入口和视觉门禁已发布 | 证明板同步到 v0.1.7；一张主流程图表达首次成功，其它流程由任务表和详细文档覆盖 |
 
 资产管理后续可增强“资产库备份就绪与恢复验证、搜索/标签/描述、来源与许可证追踪”，
@@ -441,7 +443,7 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 | N6 | P1 | ✅ **MCP 只读状态补齐与客户端验收** | PR #27 合入；v0.1.7 正式包 7 工具直接协议与四目录零写入通过；Claude 模型请求被组织策略 403 阻止仍保留为外部补测 |
 | N7 | P2 | ✅ **E4 设置与 i18n** | PR #28 合入；v0.1.7 正式包完成首启、显式保存、重启、双语/密度、首选路径只预填、CLI 覆盖和损坏配置恢复 |
 | N8 | P2 | ✅ **规模化资产管理增强评估** | N8.0 已完成真实规模/边界评估；N8.1 统一筛选与 manifest v1 来源读取已通过 PR #34 合入并随 `v0.1.8` 发布。Release notes 曾遗漏该范围；N8.2–N8.4 继续按真实需求触发，见[方案](designs/scalable-asset-management.md) |
-| N9 | P1 | 🟡 **v0.1.8 发布后修复与分支收口** | 已完成线上产物审计并定位 `init` 受管目录缺口、tag 未来自 main、默认分支仍停留 v0.1.7 三项问题；修复候选补共享 Core 边界、回归测试、发版 SHA 门禁和文档状态。出口是变异/完整门禁、PR 提升 main、下一补丁版正式验收及 main/dev tree 收口；见[审计](reviews/2026-08-01-v0.1.8-post-release-audit.md) |
+| N9 | P1 | 🟡 **v0.1.8 发布后修复与分支收口** | PR #38 修复已提升到 `main@3523d75`；v0.1.9 main/tag/Release、线上资产、严格升级、init 正反路径、真 TTY 和 MCP 回归均通过。当前发布后 PR 正在把默认 pin/用户文档收口到 v0.1.9；最后只剩 main/dev 最终 tree 同步。见[审计](reviews/2026-08-01-v0.1.8-post-release-audit.md)、[候选检查点](reviews/2026-08-01-v0.1.9-candidate-readiness.md)与[正式验收](reviews/2026-08-01-v0.1.9-release-acceptance.md) |
 
 `v0.1.8` 已从 `dev@21ef3fc0d753` 发布，Release/CI、线上六项资产、固定 tag 隔离安装、
 `init → validate` 与预期 `empty_selection` 均通过；N8.1 也实际包含在 tag 中。但 tag
@@ -449,6 +451,12 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 public v0.1.8 `init` 可在受管工具目录内创建随后被 TUI/compose 拒绝的资产库。
 这些结果是“发布产物可用但治理/边界未收口”，不是完整正式包验收；准确证据见
 [v0.1.8 发布后审计](reviews/2026-08-01-v0.1.8-post-release-audit.md)。
+
+`v0.1.9` 已从受保护 `main@3523d75acd90` 发布：tag 精确指向并包含于该 main SHA，
+main/tag/Release CI、线上六项资产、v0.1.8 → v0.1.9 严格升级、幂等复装、init 正反
+路径、裸/显式真 TTY 首页和 MCP 只读零写入回归均通过。发布后收口把默认 installer
+pin 和用户文档更新到 v0.1.9；最终 main/dev tree 同步完成前，N9 仍保持进行中。
+证据见 [v0.1.9 发布与正式验收](reviews/2026-08-01-v0.1.9-release-acceptance.md)。
 
 `v0.1.7` 已从 `main@b6779193c3ac` 发布：main/Release CI、线上六项资产、
 `v0.1.6 → v0.1.7` 严格升级命令、真实升级、幂等复装、正式 TUI/MCP 和双设备
@@ -480,10 +488,10 @@ Secret Provider ✅ → TUI Phase C ✅ → bootstrap ✅。
 当前再向后是 TUI D1 引导式本地闭环 ✅ → D2 Doctor/当前回滚 ✅ →
 D3 版本/只读更新检查 ✅ → `v0.1.6` bridge ✅ → E3.2–E3.4 ✅ → N6 统一状态
 MCP ✅ → N7 设置/i18n ✅ → `v0.1.7` Release 与正式包验收 ✅ → N8.0 规模与
-边界评估 ✅ → N8.1 统一筛选与来源读取随 `v0.1.8` 发布 ✅ → N9 发布后边界与分支
-收口 🟡。
+边界评估 ✅ → N8.1 统一筛选与来源读取随 `v0.1.8` 发布 ✅ → v0.1.9 边界修复与
+正式验收 ✅ → N9 最终 main/dev tree 收口 🟡。
 **首次真机 dogfood 已完成，工具已从「工程演示」变为「自用工具」**（2026-07-25）；
-private `v0.1.0` 已完成流水线验收（2026-07-26）；public `v0.1.1`–`v0.1.8`
+private `v0.1.0` 已完成流水线验收（2026-07-26）；public `v0.1.1`–`v0.1.9`
 已发布（2026-07-28 至 2026-08-01）。v0.1.5 的历史升级命令限制由 v0.1.6 bridge
 公开处理；v0.1.7 已首次完成修复后命令的严格 Release → Release 证明。
 
