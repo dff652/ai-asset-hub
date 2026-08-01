@@ -210,7 +210,8 @@ development，并在可更新时展示精确 tag 安装命令。TUI 不自替换
 
 ### Phase E3.2：跨设备连续发布与取回
 
-**实现状态：已合入 `dev`（2026-07-30），尚未发布。** 在 E3.1 只读状态页上增加：
+**实现状态：已于 2026-07-30 合入 `dev`，并随 public `v0.1.7` 发布且完成正式
+安装包验收。** 在 E3.1 只读状态页上增加：
 
 - `p` → profile → `build.Build` → 显示包/通道 → typed `publish`
   → `channel.Publish`；
@@ -224,7 +225,8 @@ TUI 不 shell out、不自动选定或取回最后发布项、不创建通道目
 
 ### Phase E3.3/E3.4：资产库前置检查与取回包检查
 
-**实现状态：E3.3/E3.4 已合入 `dev`（2026-07-30），均尚未发布。**
+**实现状态：E3.3/E3.4 已于 2026-07-30 合入 `dev`，并随 public `v0.1.7`
+发布且完成正式安装包验收。**
 
 - `e` 选择资产库 profile 后调用 `migration.InspectPreflight`，零写入展示
   device-private、secret、目标支持和 adapter dropped/degraded；
