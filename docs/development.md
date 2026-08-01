@@ -198,9 +198,11 @@ PR 的两组检查和合并后的
 `AIAH_VERSION=0.1.6` 升级成功，同版本复装幂等；正式安装包的裸 `aiah`、Doctor、
 版本检查、typed rollback 与 CLI 对账均通过。Release 说明已公开 workaround。
 
-由于 `v0.1.5` 自身不能追溯修复，`v0.1.6` 仍是一次性 bridge release；从
-`v0.1.6` 升级到再下一版时，才能首次证明推荐命令端到端闭环。当前源码安装器默认
-pin 已在发布后收口到验收完成的 `v0.1.6`。候选与历史证据见
+由于 `v0.1.5` 自身不能追溯修复，`v0.1.6` 是一次性 bridge release；当时的
+源码安装器默认 pin 已在发布后收口到验收完成的 `v0.1.6`。随后
+`v0.1.6 → v0.1.7` 首次证明推荐命令端到端闭环，当前默认 pin 已通过
+[PR #30](https://github.com/dff652/ai-asset-hub/pull/30) 收口到 `v0.1.7`。候选与
+历史证据见
 [v0.1.6 bridge 检查点](reviews/2026-07-30-v0.1.6-bridge-candidate-readiness.md)和
 [v0.1.5 检查点 §5](reviews/2026-07-30-v0.1.5-candidate-readiness.md#5-发布结果与已知问题)。
 
