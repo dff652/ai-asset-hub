@@ -379,7 +379,7 @@ Phase A/B 均已实现，边界写在 **ADR-0006**（已取代 ADR-0003 §5）�
 
 | # | 决策 | 现状与影响 | 出处 |
 |---|---|---|---|
-| D1 | MCP create-only 的 fail-closed 是否放宽 | 已有原生配置是软链 / 0 字节 / 写成 `"args": []` 时**整单 apply 失败**。放宽会移动 ADR-0004 §3 边界。其中 `"args": []` 属比较逻辑没规范化空值，**建议无论如何单独修** | [复审 §2](reviews/2026-07-25-mcp-create-only-strict-review.md) |
+| D1 | MCP create-only 的 fail-closed 是否放宽 | 已有原生配置是软链 / 0 字节 / 写成 `"args": []` 时**整单 apply 失败**。放宽会移动 ADR-0004 §3 边界。其中 `"args": []` 属比较逻辑没规范化空值，**建议无论如何单独修** **2026-08-01 补注：该决策的范围不止 native config 冲突**——`${ENV:...}` / `${secret:...}` 解析失败走的是同一条整单 fail-closed 路径（`internal/apply/mcp_policy.go`），放宽时两处必须一起改，否则同一套策略的两半会互相矛盾。 | [复审 §2](reviews/2026-07-25-mcp-create-only-strict-review.md) |
 | D2 | `targets` 要不要**完全字面** | 现在是「`portable` 的 skill/rules 可扩散到 Grok 且记 `Degraded`」。若要一点都不扩散，是删 `shouldIncludeAsset` 一个分支的事，代价是共享技能要显式列全 target | P7 |
 | D3 | apply 要不要支持**替换软链** | 现在遇到软链目标整单失败并提示手工替换。加 opt-in 等于删用户建的东西，与「不删除未知文件」冲突 | P9 |
 | D4 | 包内 manifest 要不要带 `producedBy` | 要带就得抬 `schemaVersion`（`DisallowUnknownFields` 会让旧二进制读不了新包）。同时是包格式兼容矩阵的前置 | [development.md §4](development.md) |
