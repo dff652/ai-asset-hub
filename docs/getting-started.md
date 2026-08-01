@@ -16,25 +16,26 @@ less /tmp/aiah-install.sh
 sh /tmp/aiah-install.sh
 ```
 
-当前源码中的安装器默认 pin 是已验收的 `0.1.9`。`v0.1.8` 修复了安装器运行时加载
-校验函数的缺陷；`v0.1.9` 又让 `init` 在写入前统一拒绝受管工具目录及其软链接别名。
-要固定不可变 tag、安装目录或版本，显式设置：
+当前源码中的安装器默认 pin 是已验收的 `0.1.10`。`v0.1.8` 修复了安装器运行时加载
+校验函数的缺陷；`v0.1.9` 又让 `init` 在写入前统一拒绝受管工具目录及其软链接别名；
+`v0.1.10` 交付迁移准备检查（CLI/TUI/MCP）。要固定不可变 tag、安装目录或版本，
+显式设置：
 
 ```bash
-curl -fsSLo /tmp/aiah-install-v0.1.9.sh \
-  https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.9/scripts/install.sh
-AIAH_VERSION=0.1.9 AIAH_INSTALL_DIR="$HOME/.local/bin" \
-  sh /tmp/aiah-install-v0.1.9.sh
+curl -fsSLo /tmp/aiah-install-v0.1.10.sh \
+  https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.10/scripts/install.sh
+AIAH_VERSION=0.1.10 AIAH_INSTALL_DIR="$HOME/.local/bin" \
+  sh /tmp/aiah-install-v0.1.10.sh
 ```
 
-从 [Release](https://github.com/dff652/ai-asset-hub/releases/tag/v0.1.9)
+从 [Release](https://github.com/dff652/ai-asset-hub/releases/tag/v0.1.10)
 手动下载时，必须同时下载 `SHA256SUMS`。Linux amd64 示例：
 
 ```bash
 sha256sum -c SHA256SUMS --ignore-missing
-chmod +x aiah_0.1.9_linux_amd64
+chmod +x aiah_0.1.10_linux_amd64
 mkdir -p "$HOME/.local/bin"
-install -m 0755 aiah_0.1.9_linux_amd64 "$HOME/.local/bin/aiah"
+install -m 0755 aiah_0.1.10_linux_amd64 "$HOME/.local/bin/aiah"
 aiah version
 ```
 
@@ -42,11 +43,11 @@ aiah version
 
 ### 升级
 
-当前升级到 `v0.1.9` 使用显式版本命令：
+当前升级到 `v0.1.10` 使用显式版本命令：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.9/scripts/install.sh |
-  AIAH_VERSION=0.1.9 sh
+curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.10/scripts/install.sh |
+  AIAH_VERSION=0.1.10 sh
 ```
 
 **从 `v0.1.7` 或更早升级时请用上面这条命令，不要用旧版安装脚本。** 安装器
@@ -58,7 +59,7 @@ curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.9/scripts/
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh |
-  AIAH_VERSION=0.1.9 sh
+  AIAH_VERSION=0.1.10 sh
 ```
 
 aiah 没有后台自动更新器，升级始终是显式操作。升级后用 `aiah version` 核对版本。
@@ -73,7 +74,7 @@ aiah update --check --output json
 检查只在命令执行时请求 GitHub latest release 元数据，不下载、不替换当前二进制。
 `v0.1.6 → v0.1.7` 已验证旧版实际生成的命令逐字等于安全模板，并完成真实升级、
 同版本幂等复装和版本/commit/SHA256 对账。只有 `v0.1.4` / `v0.1.5` 的旧命令仍
-缺少显式 `AIAH_VERSION`；从这些版本升级时直接使用本节上方的 `v0.1.9` 命令。
+缺少显式 `AIAH_VERSION`；从这些版本升级时直接使用本节上方的 `v0.1.10` 命令。
 `aiah --update` 不存在；不带 `--check` 的 `aiah update` 也会拒绝执行。
 
 `v0.1.1` 中现存的 macOS、Windows 和 arm64 文件是发布范围收口前生成的历史
@@ -149,7 +150,7 @@ aiah
 - 跨设备字节传输本身，以及需要 JSON 的 publish / pull / versions 自动化；
 - 选择并回滚某个历史 backup；
 - JSON 自动化、CI、假 HOME 批量演练和 MCP server；
-- N10.1 源码候选的迁移准备聚合报告（尚未进入 v0.1.9、TUI 或 MCP）；
+- 迁移准备聚合报告（`aiah readiness` / TUI「换机与备份」/ MCP `aiah_migration_readiness`，v0.1.10）；
 - secret provider 环境准备，以及直接编辑资产正文或 manifest 的高级字段。
 
 TUI 是资产管理操作台；可审计的 `manifest.yaml` 仍是资产业务配置的事实源。
@@ -229,7 +230,7 @@ aiah readiness --workspace ~/ai-assets --profile personal --output text
 
 它把“可以打包”“迁移前置条件”“已记录外部副本”“恢复已验证”分开报告，不会仅因
 存在 `.aiah/backups` 就宣称资产库已备份。可选证据必须放在资产库
-`.aiah/evidence/` 内并显式传入；当前命令不创建证据。该能力尚未进入 v0.1.9，正式
+`.aiah/evidence/` 内并显式传入；当前命令不创建证据。正式
 安装包用户仍以现有换机检查和跨设备流程为准。
 
 盘点结果中的 `candidate` 只是迁移候选，不代表应原样打包。凭据、session、cache、
@@ -257,7 +258,7 @@ aiah ui --language en --density detailed
 ### 2.4 AI 工具只读接入
 
 安装后把 `aiah mcp` 配成 Claude Code、Codex 或 Grok 的本地 stdio server。
-`v0.1.9` 提供 7 个只读工具，其中两个统一状态入口是：
+`v0.1.10` 提供 8 个只读工具；统一状态与迁移准备入口包括：
 
 - `aiah_asset_status`：比较源端与指定资产库；
 - `aiah_migration_status`：比较指定资产库、当前安装和可选分发通道。

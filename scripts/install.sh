@@ -3,7 +3,7 @@
 
 set -eu
 
-DEFAULT_AIAH_VERSION=0.1.9
+DEFAULT_AIAH_VERSION=0.1.10
 
 die() {
   echo "error: $*" >&2
