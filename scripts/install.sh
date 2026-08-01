@@ -14,6 +14,24 @@ need() {
   command -v "$1" >/dev/null 2>&1 || die "$1 is required"
 }
 
+# Inlined rather than sourced from scripts/_sha256.sh. This script is published
+# as `curl ... | sh`, where $0 is not a real path: resolving a helper "next to
+# it" falls back to the current directory, so any file a local user drops there
+# would be sourced, and the network fallback fetched the verifier itself over
+# the very channel the verifier exists to check. A verifier that can be
+# substituted verifies nothing, so it must not be loaded at runtime.
+sha256_value() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+    return
+  fi
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+    return
+  fi
+  die "sha256sum or shasum is required"
+}
+
 installed_version() {
   "$1" version 2>/dev/null |
     awk 'NR == 1 && $1 == "aiah" { sub(/,$/, "", $2); print $2 }'
@@ -76,18 +94,6 @@ cleanup() {
   rm -rf "$tmp_dir"
 }
 trap cleanup EXIT HUP INT TERM
-
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" 2>/dev/null && pwd || true)
-if [ -n "$script_dir" ] && [ -f "$script_dir/_sha256.sh" ]; then
-  sha_helper=$script_dir/_sha256.sh
-else
-  sha_helper=$tmp_dir/_sha256.sh
-  curl -fsSL \
-    "https://raw.githubusercontent.com/dff652/ai-asset-hub/v$version/scripts/_sha256.sh" \
-    -o "$sha_helper"
-fi
-# shellcheck source=scripts/_sha256.sh
-. "$sha_helper"
 
 asset=aiah_${version}_linux_amd64
 release_base=https://github.com/dff652/ai-asset-hub/releases/download/v$version
