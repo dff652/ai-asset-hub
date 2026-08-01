@@ -111,8 +111,19 @@
      P3、hash、mode、backup payload、journal/stage、MCP 空 args 与软链边界均完成
      变异验证。真实 HOME 只读 dogfood：2 个 backup 完整、0 journal、0 stage；
      旧部署 7 个文件如实记为 `unchecked`，检查前后 `.aiah` 内容 hash/mode 不变。
-6. `aiah init <directory>`：脚手架 `ai-assets/` 目录与 manifest 模板；首版
-   继续显式传 `--manifest`，不加入隐式默认发现。
+6. ✅ **`aiah init <directory>` 已完成（2026-08-01）**：脚手架 `manifest.yaml`
+   与 adapter 实际读取的五个资产目录（`agents`/`hooks`/`mcp`/`rules`/`skills`），
+   不建任何没有消费者的目录。
+   - **create-only**：已存在的 manifest 永不改写——它是用户整个资产库的事实源，
+     脚手架没有值得拿它冒险的东西。重跑幂等，只补缺失目录。
+   - **确定性**：默认版本是固定的 `0.1.0` 而非当天日期，两次 init 产物逐字节一致，
+     不会变成莫名其妙的 diff，也不依赖时钟。
+   - manifest 名默认由目录名归一（`My AI Assets` → `my-ai-assets`），归一不出
+     合法名时**要求显式 `--name`**而不是猜——它会进 manifest 和包文件名，猜错是永久的。
+   - 产物**零手改直接通过 `validate`**；`build` 需先加入第一个资产
+     （空 profile 报 `empty_selection`，是既有的正确行为）。
+   - 路径被非目录/软链占用时 fail-closed 且一个字节都不写。
+   - **仍不加入隐式工作区发现**：`--manifest` 保持显式。
 7. ✅ **`aiah bootstrap` 最小闭环已实现（2026-07-28）**：pull 前要求真实 TTY，
    取回后复用 TUI Phase C，必须完整输入 `apply`；取消不写 HOME、包保留在显式
    `--out`，成功持久展示 backup/rollback。边界固化为 ADR-0008。

@@ -264,9 +264,17 @@ Codex/Grok 使用同一 stdio 进程：`command = "aiah"`、`args = ["mcp"]`。�
 需要脚本化时：
 
 ```bash
+aiah init ~/ai-assets --output json          # 建空工作区（可跳过，手工建也行）
 aiah scan --home "$HOME" --output json > /tmp/aiah-scan.json
 aiah ui --home "$HOME" --workspace ~/ai-assets
 ```
+
+`init` 建出 `manifest.yaml` 和 `assets/{agents,hooks,mcp,rules,skills}`。它是
+create-only 的：已存在的 manifest 永不改写，重跑只补缺失目录，所以拿不准时重跑
+是安全的。建完即可 `validate`；`build` 要等你加入第一个资产。
+
+`init` **不会**让后续命令自动找到这个工作区——`--manifest` / `--workspace` 始终
+显式传，避免隐藏状态决定命令作用在哪个资产库上。
 
 `scan` 不写 HOME/project、不执行 hook，也不跟随逃逸软链接。TUI 把选中资产复制进
 资产库并登记到 `manifest.yaml`；已有文件 create-only，不覆盖。校验失败会回滚
