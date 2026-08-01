@@ -16,24 +16,24 @@ less /tmp/aiah-install.sh
 sh /tmp/aiah-install.sh
 ```
 
-当前源码中的安装器默认 pin 是已经完成线上产物和正式 TUI 验收的 `0.1.6`。
+当前源码中的安装器默认 pin 是已经完成线上产物和正式 TUI/MCP 验收的 `0.1.7`。
 要固定不可变 tag、安装目录或版本，显式设置：
 
 ```bash
-curl -fsSLo /tmp/aiah-install-v0.1.6.sh \
-  https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.6/scripts/install.sh
-AIAH_VERSION=0.1.6 AIAH_INSTALL_DIR="$HOME/.local/bin" \
-  sh /tmp/aiah-install-v0.1.6.sh
+curl -fsSLo /tmp/aiah-install-v0.1.7.sh \
+  https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.7/scripts/install.sh
+AIAH_VERSION=0.1.7 AIAH_INSTALL_DIR="$HOME/.local/bin" \
+  sh /tmp/aiah-install-v0.1.7.sh
 ```
 
-从 [Release](https://github.com/dff652/ai-asset-hub/releases/tag/v0.1.6)
+从 [Release](https://github.com/dff652/ai-asset-hub/releases/tag/v0.1.7)
 手动下载时，必须同时下载 `SHA256SUMS`。Linux amd64 示例：
 
 ```bash
 sha256sum -c SHA256SUMS --ignore-missing
-chmod +x aiah_0.1.6_linux_amd64
+chmod +x aiah_0.1.7_linux_amd64
 mkdir -p "$HOME/.local/bin"
-install -m 0755 aiah_0.1.6_linux_amd64 "$HOME/.local/bin/aiah"
+install -m 0755 aiah_0.1.7_linux_amd64 "$HOME/.local/bin/aiah"
 aiah version
 ```
 
@@ -41,11 +41,11 @@ aiah version
 
 ### 升级
 
-当前升级到 `v0.1.6` 使用显式版本命令：
+当前升级到 `v0.1.7` 使用显式版本命令：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.6/scripts/install.sh |
-  AIAH_VERSION=0.1.6 sh
+curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.7/scripts/install.sh |
+  AIAH_VERSION=0.1.7 sh
 ```
 
 脚本不是不受控的“永远取 latest”：仓库中的默认版本只在对应 Release 产物和
@@ -54,7 +54,7 @@ curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.6/scripts/
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh |
-  AIAH_VERSION=0.1.6 sh
+  AIAH_VERSION=0.1.7 sh
 ```
 
 aiah 没有后台自动更新器，升级始终是显式操作。升级后用 `aiah version` 核对版本。
@@ -67,11 +67,10 @@ aiah update --check --output json
 ```
 
 检查只在命令执行时请求 GitHub latest release 元数据，不下载、不替换当前二进制。
-已知问题：`v0.1.4` / `v0.1.5` 生成的推荐命令虽然绑定精确 tag，却没有显式设置
-`AIAH_VERSION`；从这些版本升级到 `v0.1.6` 时请使用本节上方的显式版本命令。
-`v0.1.6` Release 说明已公开 bridge 边界，真实升级也已验收；`v0.1.6` 二进制已修复
-后续版本的命令生成，但旧二进制不会改变。`aiah --update` 不存在；不带 `--check`
-的 `aiah update` 也会拒绝执行。
+`v0.1.6 → v0.1.7` 已验证旧版实际生成的命令逐字等于安全模板，并完成真实升级、
+同版本幂等复装和版本/commit/SHA256 对账。只有 `v0.1.4` / `v0.1.5` 的旧命令仍
+缺少显式 `AIAH_VERSION`；从这些版本升级时直接使用本节上方的 `v0.1.7` 命令。
+`aiah --update` 不存在；不带 `--check` 的 `aiah update` 也会拒绝执行。
 
 `v0.1.1` 中现存的 macOS、Windows 和 arm64 文件是发布范围收口前生成的历史
 交叉编译产物，未做对应平台原生验收。它们不是安装器或当前支持范围的一部分；
@@ -139,11 +138,11 @@ aiah
 `.claude`、`.codex`、`.grok` 及其子目录不能作为资产库。底层 build、diff 和 apply 都
 调用与 CLI 相同的 Core，不另做一套规则。
 
-`v0.1.6` TUI 覆盖日常单机流程：整理资产、加入资产库、预览并应用、安装检查，
-以及撤销上次安装。以下高级场景在该公开版仍使用 CLI：
+`v0.1.7` TUI 覆盖日常单机流程、跨设备连续迁移和三项本机界面偏好。以下高级场景
+仍使用 CLI：
 
 - aiah 程序自身的安装、升级和版本固定（TUI 只展示版本与安全命令）；
-- publish / pull / versions / bootstrap 和跨设备传输；
+- 跨设备字节传输本身，以及需要 JSON 的 publish / pull / versions 自动化；
 - 选择并回滚某个历史 backup；
 - JSON 自动化、CI、假 HOME 批量演练和 MCP server；
 - secret provider 环境准备，以及直接编辑资产正文或 manifest 的高级字段。
@@ -171,8 +170,7 @@ TUI 是资产管理操作台；可审计的 `manifest.yaml` 仍是资产业务�
 作为树节点。当前资产库会显示在页面上方；按 `m` 返回任务首页，按 `?` 查看帮助。
 
 任务首页的“迁移到其他设备”先只读读取资产库版本、当前受管安装和用户明确选择的
-普通目录通道；“版本不同”不会被解释成某一方更新。`v0.1.6` 公开版到这里为止。
-当前源码候选的 E3.2 继续提供：
+普通目录通道；“版本不同”不会被解释成某一方更新。`v0.1.7` 继续提供：
 
 1. 按 `p` 发布当前版本：选择资产组合，复用检查/build，核对安装包与通道路径，
    完整输入 `publish` 后才写入通道；
@@ -186,7 +184,7 @@ TUI 是资产管理操作台；可审计的 `manifest.yaml` 仍是资产业务�
    后得到 `channel.json` 和不可变包布局。aiah 仍不联网，也不接管 Git、NAS、
    rsync 或 U 盘搬运。
 
-E3.3 已在当前源码候选增加 `e 换机检查`：
+`e 换机检查`提供：
 
 1. 选择当前资产库中的资产组合；
 2. 只读检查目标工具支持、adapter 丢弃/降级、MCP secret 引用在**本机**是否可用；
@@ -195,8 +193,8 @@ E3.3 已在当前源码候选增加 `e 换机检查`：
 4. 缺失 secret、不支持目标和 adapter 丢弃显示为阻止项；adapter 降级要求确认；
 5. 全过程不生成安装包、不创建 `dist/`、不写通道或工具目标目录。
 
-`e` 检查的是当前资产库与所选 profile，适合源设备发布前使用。当前源码候选的 E3.4 另在
-目标设备 pull 后自动检查刚取回的确切发布包：报告来源标记为 `package`，绑定
+`e` 检查的是当前资产库与所选 profile，适合源设备发布前使用。目标设备 pull 后
+自动检查刚取回的确切发布包：报告来源标记为 `package`，绑定
 name/version/profile/SHA256，逐项展示目标、secret、本机排除项与问题。坐标或摘要
 不匹配、有阻止项时不能进入 diff；该步骤仍为零写入，也不替用户确认 apply。
 
@@ -221,11 +219,29 @@ name/version/profile/SHA256，逐项展示目标、secret、本机排除项与�
 盘点结果中的 `candidate` 只是迁移候选，不代表应原样打包。凭据、session、cache、
 数据库和疑似 secret 会被排除或脱敏报告。
 
-### 2.3 AI 工具只读接入
+### 2.3 偏好设置与中英文
 
-安装后把 `aiah mcp` 配成 Claude Code、Codex 或 Grok 的本地 stdio server。公开版
-`v0.1.6` 提供基础 5 工具；当前源码候选已通过 N6 增加以下工具，尚未进入公开
-Release：
+首页进入“偏好设置 / Preferences”可以显式保存三项设备本地界面偏好：
+
+- 语言：`auto` / `zh-CN` / `en`；
+- 信息密度：`standard` / `detailed`，只控制可选技术明细的默认展开；
+- 首选资产库：只在首页提示并预填路径，每次会话仍须明确确认。
+
+偏好文件位于 `${XDG_CONFIG_HOME:-$HOME/.config}/aiah/preferences.json`。首次启动和
+预览不会创建文件；只有选择“保存偏好”才创建 `0700` 目录和 `0600` 文件并原子
+替换。损坏或权限不安全时回退安全默认值并告警，不自动修复或覆盖。临时使用：
+
+```bash
+aiah ui --language en --density detailed
+```
+
+命令行 override 只作用于本次进程，永不反写偏好文件。密度不能隐藏路径、版本、
+目标、风险、确认词或恢复信息。
+
+### 2.4 AI 工具只读接入
+
+安装后把 `aiah mcp` 配成 Claude Code、Codex 或 Grok 的本地 stdio server。
+`v0.1.7` 提供 7 个只读工具，其中两个统一状态入口是：
 
 - `aiah_asset_status`：比较源端与指定资产库；
 - `aiah_migration_status`：比较指定资产库、当前安装和可选分发通道。

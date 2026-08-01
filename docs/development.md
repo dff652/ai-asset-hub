@@ -1,6 +1,6 @@
 # 工程流程：开发 / 测试 / 构建 / 部署 / 发布
 
-- 更新时间：2026-07-30
+- 更新时间：2026-08-01
 - 定位：长期有效的工程约束与流程现状。排期与**待决策清单 D1–D8** 看
   [MVP 路线图](roadmap.md)。
 
@@ -12,7 +12,7 @@
 |---|---|---|
 | 做什么 | 把资产包装进 `~/.claude` / `~/.codex` / `~/.grok` | 把 `aiah` 二进制交付给用户 |
 | 链路 | `build → diff/dry-run → apply → rollback` | tag → 多平台二进制 → 校验和 → Release |
-| 状态 | **已固化，且 2026-07-25 真机验证** | public `v0.1.6` 已发布；线上产物、bridge 升级、正式 TUI 与幂等复装通过，旧版推荐命令边界已公开，见 §5 |
+| 状态 | **已固化，且 2026-07-25 真机验证** | public `v0.1.7` 已发布；线上产物、严格升级命令、正式 TUI/MCP 和双设备闭环通过，见 §5 |
 | SOP | [真机 dry-run runbook](runbooks/real-home-dry-run.md)、[假 HOME 闭环](runbooks/fake-home-loop.md) | [发版 runbook](runbooks/release.md)、[安装/升级 dogfood](runbooks/install-upgrade-dogfood.md) |
 
 ## 1. 开发
@@ -99,7 +99,7 @@ Windows 的 `chmod`、shebang、配置根语义都要单独的行为验收，不
 ```bash
 go build -o build/aiah ./cmd/aiah   # 版本 = dev，未发布二进制的诚实答案
 ./scripts/build.sh                  # 注入 git 版本 / commit / 时间
-VERSION=0.1.6-dev.1 ./scripts/build.sh  # 未发布候选必须带开发标记
+VERSION=0.1.8-dev.1 ./scripts/build.sh  # 未发布候选必须带开发标记
 aiah version [--output json]
 aiah update --check [--output text|json]  # 只读查 Release，不安装
 ```
@@ -123,8 +123,8 @@ VERSION/COMMIT/DATE——两份戳规则正是本地构建与发布构建开始�
 2026-07-28 从单提交干净历史发布并完成匿名验收。
 
 ```bash
-VERSION=0.1.6 ./scripts/release-build.sh   # 本地预演：Linux amd64 + 许可材料 + 校验和 + 自检
-git tag -a v0.1.6 -m "aiah v0.1.6" && git push origin v0.1.6   # 触发 Release
+VERSION=0.1.7 ./scripts/release-build.sh   # 本地预演：Linux amd64 + 许可材料 + 校验和 + 自检
+git tag -a v0.1.7 -m "aiah v0.1.7" && git push origin v0.1.7   # 触发 Release
 ```
 
 `.github/workflows/release.yml` 监听 `v*` tag，跑测试与 gofmt 门禁后调用同一个
@@ -222,7 +222,23 @@ Release 能力。
 E3.4 已通过 [PR #26](https://github.com/dff652/ai-asset-hub/pull/26) 合入
 `dev@0a7171b`，把 pull 与 diff 之间补成“绑定 name/version/profile/SHA256 的
 取回版本检查 → 用户 Enter → diff”，并补双设备、旧版本显式恢复、中断恢复和
-恶意通道夹具；合并后主线 CI 9/9 全绿。E3.2–E3.4 仍未进入公开 Release。
+恶意通道夹具；合并后主线 CI 9/9 全绿。该时点 E3.2–E3.4 尚未进入公开 Release，
+后续发布结果见下段。
+
+public `v0.1.7` 于 2026-07-31 从 `main@b6779193c3ac` 发布。main CI
+[30603359981](https://github.com/dff652/ai-asset-hub/actions/runs/30603359981) 与
+Release workflow
+[30604175819](https://github.com/dff652/ai-asset-hub/actions/runs/30604175819) 均通过；
+annotated tag 精确指向同一 commit。线上六项资产与 SHA256、静态 stripped ELF、
+版本/commit 和许可材料通过。隔离 `v0.1.6 → v0.1.7` 首次证明旧版实际生成的
+升级命令逐字等于带精确 tag 和 `AIAH_VERSION=0.1.7` 的模板；真实升级、`0755`、
+无 stage 残留和同版本幂等复装全部通过。
+
+正式包还完成裸 `aiah` PTY、三项偏好保存/重启/临时覆盖/损坏回退、7 工具 MCP
+直接协议零写入，以及 build/apply/doctor/publish/pull/第二设备 apply/rollback
+闭环。源包与取回包 SHA256 一致。完整证据见
+[v0.1.7 发布与正式验收记录](reviews/2026-08-01-v0.1.7-release-acceptance.md)。
+E3.2–E3.4、N6 和 N7 因此从“源码候选”转为 public `v0.1.7` 已验收能力。
 
 首次发布时 GitHub 把 `actions/checkout@v4`、`actions/setup-go@v5` 与
 `softprops/action-gh-release@v2` 的 Node.js 20 action 强制运行在 Node.js 24，

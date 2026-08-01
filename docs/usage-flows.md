@@ -11,7 +11,7 @@
 | 第一次整理并应用 | 发现 → 整理 → 准备 → 预览 → 人工确认 | `aiah` | TUI 已覆盖；前四步不写目标工具目录 |
 | 日常维护资产 | 查看统一状态 → 更新/移出 → 预览 → 应用 | `aiah` | `update/remove/apply` 都是显式操作，不做后台同步 |
 | 检查或撤销安装 | 安装检查 → 判断漂移 → typed `rollback` | `aiah` 或 CLI | 恢复点只在本机使用，不等于资产库备份 |
-| 迁移到其他设备 | 换机检查 → build/publish → 外部搬运 → versions/pull → 取回版本检查 → diff/apply | TUI（当前源码候选）/ CLI | E3.2–E3.4 已合入源码候选；`v0.1.6` 仍为 E3.1；网络传输不归 aiah |
+| 迁移到其他设备 | 换机检查 → build/publish → 外部搬运 → versions/pull → 取回版本检查 → diff/apply | TUI / CLI | E3.2–E3.4 已随 `v0.1.7` 发布；网络传输不归 aiah |
 | AI 或自动化接入 | MCP 只读查询，或 CLI JSON 编排 | `aiah mcp` / CLI | MCP 不开放 build/apply/rollback |
 | 安装或升级 aiah | 检查版本 → 显式安装指定 Release → 复核版本 | installer / `update --check` | 不后台自更新；这不是用户资产生命周期 |
 
@@ -91,7 +91,7 @@ doctor → 正常 / 漂移 / 缺失 / 前置条件失败 → 必要时 typed rol
 ```
 
 TUI 的“迁移到其他设备”先只读比较资产库、当前安装和用户选择的普通目录通道。
-当前源码候选的 E3.2 在同一页增加两条显式路径：
+`v0.1.7` 在同一页提供两条显式路径：
 
 - 发布：`p` → 选择资产组合 → build → 核对包/通道 → typed `publish`；
 - 取回：`v` → 明确选择版本/profile → 输入已有输出目录 → pull。
@@ -104,7 +104,7 @@ E3.3 在同一页增加第三条只读路径：
 - 检查只针对当前设备和当前资产库/profile，不创建 `dist/`，也不替用户发布、
   取回或应用。
 
-E3.4 已在当前源码候选把取回后的连续路径补成：
+取回后的连续路径是：
 
 ```text
 pull → 绑定 name/version/profile/SHA256 → 目标设备检查
@@ -115,8 +115,8 @@ pull → 绑定 name/version/profile/SHA256 → 目标设备检查
 报告。坐标或摘要不匹配、有阻止项时不能进入 diff；检查通过也不会自动应用。
 
 光标默认停在最后发布项只用于导航，不会自动取回；TUI 不比较版本号大小。取回不会
-覆盖输出目录中不同或残缺的同名产物，完整同内容四件套才视为幂等。`v0.1.6` 公开版
-仍只提供 E3.1 状态页，全部 CLI 命令继续兼容。完整命令见
+覆盖输出目录中不同或残缺的同名产物，完整同内容四件套才视为幂等。全部 CLI 命令
+继续兼容。完整命令见
 [跨设备迁移 runbook](runbooks/cross-device-transfer.md)。
 
 凭据、session、cache、数据库、device scope 和厂商运行时状态默认不迁移。密钥只在
@@ -126,8 +126,8 @@ pull → 绑定 name/version/profile/SHA256 → 目标设备检查
 
 ### 5.1 AI 工具通过 MCP 读取状态
 
-公开版 `v0.1.6` 的 `aiah mcp` 暴露 5 个基础只读工具；当前源码候选已通过 N6
-增加 `aiah_asset_status` 与 `aiah_migration_status`。AI 可以盘点、校验、解释源端与
+公开版 `v0.1.7` 的 `aiah mcp` 暴露 7 个只读工具，包括
+`aiah_asset_status` 与 `aiah_migration_status`。AI 可以盘点、校验、解释源端与
 资产库状态、查看跨设备版本对齐，但不能通过 MCP build、修改资产库、publish/pull、
 apply 或 rollback。
 

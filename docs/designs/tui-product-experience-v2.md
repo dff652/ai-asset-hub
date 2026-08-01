@@ -1,7 +1,7 @@
 # TUI 产品体验与导航方案 V2
 
-- 状态：**Accepted；Phase E1/E2/E3.1 已随 `v0.1.6` 正式验收，E3.2 已在当前
-  开发分支实现并进入候选验证，尚未发布**
+- 状态：**Accepted；Phase E1/E2/E3.1 与 E3.2–E3.4 已随 `v0.1.7` 发布并完成
+  正式安装包验收**
 - 日期：2026-07-29
 - 关联：[TUI 技术方案](tui-technical-design.md)、
   [ADR-0006](../decisions/0006-tui-as-first-interactive-surface.md)、
