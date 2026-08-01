@@ -35,6 +35,7 @@ const (
 	screenVersion
 	screenMigration
 	screenSettings
+	screenReadiness
 )
 
 type Model struct {
@@ -111,6 +112,7 @@ type Model struct {
 	updateErr      error
 
 	migrationFlow migrationFlow
+	readinessFlow readinessFlow
 
 	preferenceStore    preferences.StoreOptions
 	preferencePath     string
@@ -173,6 +175,7 @@ func NewModel(options inventory.Options) Model {
 		manageInput:    manageInput,
 		preferredInput: preferredInput,
 		migrationFlow:  newMigrationFlow(),
+		readinessFlow:  newReadinessFlow(),
 		expanded:       make(map[string]bool),
 		selected:       make(map[string]bool),
 		diffExpanded: map[string]bool{
@@ -281,6 +284,7 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.preferredInput.Width = max(10, min(64, message.Width-6))
 		m.migrationFlow.channelInput.Width = max(10, min(64, message.Width-6))
 		m.migrationFlow.pullOutInput.Width = max(10, min(64, message.Width-6))
+		m.readinessFlow.evidenceInput.Width = max(10, min(64, message.Width-6))
 		return m, nil
 	case scanMsg:
 		if message.generation != m.generation {
@@ -357,6 +361,8 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.screen = screenInventory
 		case homeActionApply:
 			return m.startProfileInput()
+		case homeActionReadiness:
+			return m.startProfileInputFor(profileForReadiness)
 		case homeActionMigration:
 			return m.startMigration()
 		}
@@ -467,6 +473,8 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handlePublishMessage(message)
 	case pullMsg:
 		return m.handlePullMessage(message)
+	case readinessMsg:
+		return m.handleReadinessMessage(message)
 	case tea.KeyMsg:
 		return m.updateKey(message)
 	}
@@ -513,6 +521,9 @@ func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.choosingProfile {
 		return m.updateProfileInput(message)
+	}
+	if m.readinessFlow.choosingEvidence != readinessEvidenceNone {
+		return m.updateReadinessEvidenceInput(message)
 	}
 	if m.editingPreferred {
 		return m.updatePreferredInput(message)
@@ -578,6 +589,9 @@ func (m Model) updateKey(message tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.screen == screenSettings {
 		return m.updateSettingsKey(message)
+	}
+	if m.screen == screenReadiness {
+		return m.updateReadinessKey(message)
 	}
 
 	rows := m.visibleRows()

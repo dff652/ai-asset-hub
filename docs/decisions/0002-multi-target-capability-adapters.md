@@ -177,8 +177,10 @@ Adapter 概念接口：
 | E | T2 映射与 degraded 报告 |
 | F | 更多工具 = 新 target 声明 + probe + adapter + fixture |
 
-当前实现阶段仍以 Phase 0/1（盘点与 validate）为主；本 ADR 约束后续设计与
-schema 演进，不要求立即实现全部 Probe/Adapter。
+上述顺序是 2026-07-23 冻结的演进约束，不代表当前实现进度。到 2026-08-01，
+Target/capability、共享根、Claude/Codex adapter、Grok 部署子集和 Grok home/project
+只读盘点均已实现；Inventory 仍使用最小 `scanProbes` 表，并未为了尚不存在的第四个
+target 提前抽象完整 Probe 插件接口。
 
 ## 原因
 
@@ -226,20 +228,21 @@ schema 演进，不要求立即实现全部 Probe/Adapter。
 
 除非 profile 显式要求 mirror，否则以共享权威根为默认，避免分叉。
 
-## 与 Grok Build 的当前关系（2026-07-24 更新）
+## 与 Grok Build 的当前关系（2026-08-01 更新）
 
 | 问题 | 结论 |
 |---|---|
 | Skill 格式是否兼容 | 是（`SKILL.md`） |
 | 项目规则是否兼容 | 是（`AGENTS.md` / `CLAUDE.md` 等） |
-| aiah 是否已盘点 `~/.grok` | 否 |
+| aiah 是否已盘点 `~/.grok` | 是；home/project `.grok` 的 skill、rules、agents、hooks、MCP 与 config 已进入只读 Inventory，设备状态按排除表处理 |
 | 是否已有 Grok adapter | 是，Phase 2B 落盘子集；尚未实现全量语义转换 |
 | 共享 `.agents/skills` | 是有效重叠面；应作为 T0 优先策略 |
-| 产品承诺 | 多端为已接受架构方向；实现按第 9 节阶段推进 |
+| 产品承诺 | Grok 是一等只读盘点来源和部署子集 target；不承诺会话、厂商运行态或所有专属语义的无损迁移 |
 
 ## 后续文档与实现约束
 
 - 架构总览见 [总体架构](../architecture.md)「多 Target」一节。
 - 资产目录与 sidecar 约定见 [资产模型](../asset-model.md)。
-- Grok 落盘子 Adapter 已实现；下一步优先补只读 Probe，不先扩展写入语义。
-- 未完成本 ADR 阶段 A/B 前，不得宣称「支持 Grok 全量迁移」。
+- Grok 落盘子 Adapter 与最小只读 Probe 已实现；新增 target 时再评估是否把
+  `scanProbes` 提升为完整插件接口，不为抽象而抽象。
+- 不得把“Grok 已盘点 + 部署子集”宣称为「Grok 全量无损迁移」。

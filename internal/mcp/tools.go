@@ -26,6 +26,7 @@ import (
 	"github.com/dff652/ai-asset-hub/internal/channel"
 	"github.com/dff652/ai-asset-hub/internal/inventory"
 	"github.com/dff652/ai-asset-hub/internal/migration"
+	"github.com/dff652/ai-asset-hub/internal/readiness"
 	"github.com/dff652/ai-asset-hub/internal/validate"
 	"github.com/dff652/ai-asset-hub/internal/version"
 	"github.com/dff652/ai-asset-hub/internal/workspace"
@@ -124,6 +125,28 @@ func Tools() []Tool {
 				"project": stringProperty("Optional project directory used by the managed installation."),
 			}, []string{"workspace"}),
 			Handler: handleMigrationStatus,
+		},
+		{
+			Name: "aiah_migration_readiness",
+			Description: "Read-only migration preparation report for one asset-library profile: " +
+				"package readiness, migration preflight, optional external-copy evidence and " +
+				"restore-exercise evidence. Never builds, publishes, pulls, applies, rolls back " +
+				"or creates evidence files.",
+			InputSchema: objectSchema(map[string]any{
+				"workspace": stringProperty("Asset library directory containing manifest.yaml."),
+				"manifest": stringProperty("Optional manifest path inside the asset library. " +
+					"Defaults to <workspace>/manifest.yaml."),
+				"profile": stringProperty("Profile name from the manifest. Required; never guessed."),
+				"home":    stringProperty("Home directory to inspect. Defaults to the current user's home."),
+				"project": stringProperty("Optional project directory used by migration preflight."),
+				"backupEvidence": stringProperty(
+					"Optional external-copy evidence file under <workspace>/.aiah/evidence.",
+				),
+				"restoreExercise": stringProperty(
+					"Optional restore-exercise evidence file under <workspace>/.aiah/evidence.",
+				),
+			}, []string{"workspace", "profile"}),
+			Handler: handleMigrationReadiness,
 		},
 		{
 			Name:        "aiah_version",
@@ -340,6 +363,55 @@ func handleMigrationStatus(arguments json.RawMessage) (any, error) {
 			return nil, errors.New("migration status failed: manifest is invalid")
 		default:
 			return nil, errors.New("migration status failed")
+		}
+	}
+	return report, nil
+}
+
+type migrationReadinessArguments struct {
+	Workspace       string `json:"workspace"`
+	Manifest        string `json:"manifest"`
+	Profile         string `json:"profile"`
+	Home            string `json:"home"`
+	Project         string `json:"project"`
+	BackupEvidence  string `json:"backupEvidence"`
+	RestoreExercise string `json:"restoreExercise"`
+}
+
+func handleMigrationReadiness(arguments json.RawMessage) (any, error) {
+	var args migrationReadinessArguments
+	if err := decodeArguments(arguments, &args); err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(args.Workspace) == "" {
+		return nil, fmt.Errorf("%w: workspace is required", errInvalidArguments)
+	}
+	if strings.TrimSpace(args.Profile) == "" {
+		return nil, fmt.Errorf("%w: profile is required", errInvalidArguments)
+	}
+	home, err := resolveHome(args.Home)
+	if err != nil {
+		return nil, err
+	}
+	report, err := readiness.Inspect(readiness.Options{
+		WorkspaceRoot:       args.Workspace,
+		ManifestPath:        args.Manifest,
+		Profile:             args.Profile,
+		Home:                home,
+		Project:             args.Project,
+		BackupEvidencePath:  args.BackupEvidence,
+		RestoreExercisePath: args.RestoreExercise,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, readiness.ErrInvalidOptions),
+			errors.Is(err, workspace.ErrInvalidOptions):
+			return nil, fmt.Errorf(
+				"%w: workspace, manifest, profile, home, project or evidence path is invalid",
+				errInvalidArguments,
+			)
+		default:
+			return nil, errors.New("migration readiness failed")
 		}
 	}
 	return report, nil

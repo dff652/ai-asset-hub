@@ -1,0 +1,17 @@
+aiah · 换机与备份                                                                             需关注
+
+资产库  fixture-personal 2026.07.1 · 资产组合 personal
+选择摘要  aaaaaaaaaaaaaaaa…
+
+可以打包      [ready] 就绪 · 2 资产 · 2 文件
+迁移前置      [ready] 就绪 · 目标 claude,codex,shared · 缺失 Secret 0 · 降级 0
+已记录外部副本  [missing] 未提供
+恢复已验证    [missing] 未提供
+
+证据路径（只读，位于资产库 .aiah/evidence/）
+  外部副本  （未指定）
+  恢复演练  （未指定）
+
+下一步：把安装包放到本机之外，并提供外部副本证据文件。
+- info [package-readiness]: package can be built
+b 外部副本证据 · x 恢复演练证据 · r 刷新 · m 首页 · ? 帮助 · q 退出

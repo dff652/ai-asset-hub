@@ -14,6 +14,7 @@ const (
 	homeActionOrganize
 	homeActionApply
 	homeActionHealth
+	homeActionReadiness
 	homeActionMigration
 	homeActionVersion
 	homeActionSettings
@@ -41,6 +42,11 @@ func (m Model) homeItems() []homeItem {
 			action:      homeActionHealth,
 			title:       m.text(msgHomeHealthTitle),
 			description: m.text(msgHomeHealthDesc),
+		},
+		{
+			action:      homeActionReadiness,
+			title:       m.text(msgHomeReadinessTitle),
+			description: m.text(msgHomeReadinessDesc),
 		},
 		{
 			action:      homeActionMigration,
@@ -220,6 +226,8 @@ func (m Model) startHomeAction(action homeAction) (tea.Model, tea.Cmd) {
 		return m.startProfileInput()
 	case homeActionHealth:
 		return m.startDoctor()
+	case homeActionReadiness:
+		return m.startReadiness()
 	case homeActionMigration:
 		if m.workspace == "" {
 			return m.startWorkspaceInputFor(homeActionMigration)
@@ -244,6 +252,7 @@ func (m Model) homeHelpView(style styles) string {
 		m.text(msgHomeHelpOrganize),
 		m.text(msgHomeHelpApply),
 		m.text(msgHomeHelpHealth),
+		m.text(msgHomeHelpReadiness),
 		m.text(msgHomeHelpMigration),
 		m.text(msgHomeHelpVersion),
 		m.text(msgHomeHelpSettings),
