@@ -41,6 +41,27 @@ print(collections.Counter(f['code'] for f in r['findings']).most_common())"
 [开发环境搭建 SOP §4](development-environment.md) 先建立该设备的只读基线；
 不要拿另一台设备的绝对数量直接判回归。
 
+### 本设备只读基线
+
+| 日期 | 候选资产 | findings | 说明 |
+|---|---|---|---|
+| 2026-07-26 | 15 | 0 | TUI Phase A dogfood 时的记录 |
+| 2026-08-01 | 29 | `symlinked_asset`×3、`suspected_secret`×1 | 见下 |
+
+2026-08-01 的差值经**同机差分**确认不是分类回归：用改动前的树（`3d1078c`）与改动后
+分别构建扫描，两者**逐字相同**（29 候选、同样 4 条 findings），且
+`internal/inventory/` 自 technical preview 发布以来未被改动。
+
+四条 findings 都是文档记录过的预期类别，不是新问题：
+
+- `suspected_secret` on `home/.claude.json` —— 设备本地 native MCP config 必须含真值，
+  [资产模型 §7](../asset-model.md) 明确规定 inventory 将其作为 `suspected_secret` 排除；
+- `symlinked_asset` ×3 —— 同一个软链 skill 在 `.agents` / `.claude` / `.codex` 三个根下，
+  正是 4b 补 warning 时要让它「不再静默消失」的那一组。
+
+增长来自 codex（12）/ grok（9）/ claude（5）/ shared（3）的日常使用。下次发版拿
+**2026-08-01 这一行**做比较基准，不要再用 15。
+
 ## 2. 本地预演发布产物
 
 安装器默认版本必须始终指向一个实际存在且已验收的 Release，不能提前指向尚未发布
