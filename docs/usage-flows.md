@@ -130,7 +130,7 @@ pull → 绑定 name/version/profile/SHA256 → 目标设备检查
 
 ### 5.1 AI 工具通过 MCP 读取状态
 
-公开版 `v0.1.7` 的 `aiah mcp` 暴露 7 个只读工具，包括
+公开版 `v0.1.9` 的 `aiah mcp` 暴露 7 个只读工具，包括
 `aiah_asset_status` 与 `aiah_migration_status`。AI 可以盘点、校验、解释源端与
 资产库状态、查看跨设备版本对齐，但不能通过 MCP build、修改资产库、publish/pull、
 apply 或 rollback。
