@@ -9,6 +9,7 @@ What would you like to do?
 > Organize local assets        Discover assets and add them to one library
   Preview and apply library    Check assets, prepare a package, and preview changes
   Check or undo install        Inspect drift and undo the last install if needed
+  Backup and device move       Check package readiness, external-copy and restore-exercise evidence
   Move to another device       Compare versions and publish or retrieve immutable packages
   About and updates            View the version and manually check Releases
   Preferences                  Set language, information density, and preferred library

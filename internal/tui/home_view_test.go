@@ -24,6 +24,7 @@ func TestHomeViewExplainsPurposeStateAndTasks(t *testing.T) {
 		"整理本机资产",
 		"预览并应用资产库",
 		"安装检查与撤销",
+		"换机与备份",
 		"迁移到其他设备",
 		"关于与更新",
 		"偏好设置",
