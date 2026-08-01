@@ -222,16 +222,16 @@ name/version/profile/SHA256，逐项展示目标、secret、本机排除项与�
 - **安装恢复点**：apply 覆盖目标文件前保存的本机材料，只用于 `rollback`。
 - **跨设备分发**：发布、搬运和取回不可变包；不做双向同步或冲突合并。
 
-N10.1 源码候选增加一条只读汇总命令，帮助在换机前把这些边界对账：
+`v0.1.10` 提供只读迁移准备汇总，帮助在换机前把这些边界对账：
 
 ```bash
 aiah readiness --workspace ~/ai-assets --profile personal --output text
 ```
 
-它把“可以打包”“迁移前置条件”“已记录外部副本”“恢复已验证”分开报告，不会仅因
-存在 `.aiah/backups` 就宣称资产库已备份。可选证据必须放在资产库
-`.aiah/evidence/` 内并显式传入；当前命令不创建证据。正式
-安装包用户仍以现有换机检查和跨设备流程为准。
+CLI、TUI「换机与备份」与 MCP `aiah_migration_readiness` 共用同一 Core。它把
+“可以打包”“迁移前置条件”“已记录外部副本”“恢复已验证”分开报告，不会仅因存在
+`.aiah/backups` 就宣称资产库已备份。可选证据必须放在资产库 `.aiah/evidence/`
+内并显式传入；命令不创建证据。N10.4 自动证据记录与隔离演练编排仍延期。
 
 盘点结果中的 `candidate` 只是迁移候选，不代表应原样打包。凭据、session、cache、
 数据库和疑似 secret 会被排除或脱敏报告。
@@ -261,10 +261,12 @@ aiah ui --language en --density detailed
 `v0.1.10` 提供 8 个只读工具；统一状态与迁移准备入口包括：
 
 - `aiah_asset_status`：比较源端与指定资产库；
-- `aiah_migration_status`：比较指定资产库、当前安装和可选分发通道。
+- `aiah_migration_status`：比较指定资产库、当前安装和可选分发通道；
+- `aiah_migration_readiness`：汇总打包条件、迁移前置与可选证据（不写证据、不构建）。
 
-两个工具都要求显式资产库路径，不会猜测 `~/ai-assets`。AI 只能读取和解释；纳入、
-更新、移出、build、publish/pull、apply/rollback 仍回到 TUI/CLI 由用户审阅。
+状态与准备工具要求显式资产库路径，不会猜测 `~/ai-assets`。AI 只能读取和解释；
+纳入、更新、移出、build、publish/pull、apply/rollback 与证据创建仍回到 TUI/CLI
+由用户审阅。
 
 Claude Code 的基础配置：
 
