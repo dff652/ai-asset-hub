@@ -36,16 +36,29 @@ Hooks 与 MCP 模板。对外说法优先是「安全地改 AI 工具配置 / �
 
 ```bash
 git status --short
-git rev-list --count origin/dev..dev
+git fetch --prune origin
+git log --oneline origin/dev -5      # dev 常有并行改动，别默认本地是最新
 ./scripts/dev-doctor.sh
 ```
+
+`docs/roadmap.md` 的「下一阶段方向」是当前排期，「待决策」表是需要所有者拍板、
+不得代为决定的事项。
 
 开发可能跨设备进行，不要把用户名、绝对 HOME 或上一台机器的安装状态写成项目事实。
 
 ## 开发边界
 
-- 日常开发只提交到 `dev`；大里程碑才合 `main`。
-- push、tag、Release、仓库 visibility 等远端动作由所有者明确授权后执行。
+- **`dev` 是受保护分支，不能直接 push**：要求 8 项状态检查且开启
+  `required_linear_history`。所有改动走「功能分支 → PR → CI 全绿 → 合入 `dev`」；
+  大里程碑才合 `main`。
+- **合并只能用 rebase 或 squash**。线性历史保护会拒绝 merge commit，尽管仓库级
+  设置允许它、历史上也存在 2-parent 的旧合并。改动包含多个实质不同的提交时用
+  rebase 保留分离（安全修复应当在历史里独立可追溯）。
+- **并行开发很密，PR 被 `dev` 追上是常态**：合并前若 `mergeStateStatus=BEHIND`，
+  先 rebase 到最新 `origin/dev` 再推。写状态类文档时不要复制别处的可变状态
+  （子任务进度、版本号），指向权威位置，否则 PR 还没合就已过时。
+- push、tag、Release、仓库 visibility 等远端动作由所有者明确授权后执行；
+  拿到针对具体操作的授权后可以执行，但 CI 未绿不打 tag。
 - 尊重脏工作区，不回滚用户改动，不使用 destructive git 命令。
 - 分类、路径安全、adapter 映射、备份和回滚逻辑只放在 `internal/*` Core。
 - 项目专属 `CLAUDE.md` / `AGENTS.md` 由对应项目 Git 管理；aiah 默认只读盘点，
@@ -78,3 +91,11 @@ docs(rules): define project instruction source
 ```
 
 提交后报告验证结果、提交号、工作树状态和领先远端的提交数；没有授权不要 push。
+
+## 已知流程陷阱
+
+**发布后的 `main → dev` 文件树同步会删除 `dev` 独有的内容**，这是它的性质不是
+意外：门禁就是两棵树完全一致，因此 `main` 切出之后才落到 `dev` 的改动会被抹掉。
+新增文件可能因此变成没有任何引用的孤儿文档，比整份删掉更难发现。
+同步前必须先跑 `docs/runbooks/release.md` §5 的第 0 步逐项决定去留。
+实例：`v0.1.10` 的同步删掉了刚合入的路线章节与一条待决策。
