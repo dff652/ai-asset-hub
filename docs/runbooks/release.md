@@ -83,23 +83,29 @@ print(collections.Counter(f['code'] for f in r['findings']).most_common())"
 ```
 
 ```bash
-RELEASE_VERSION=0.1.7
+RELEASE_VERSION=0.1.11
 VERSION="$RELEASE_VERSION" ./scripts/release-build.sh
-./scripts/check-release-checksums.sh
+./scripts/check-release-checksums.sh "$ROOT/dist/release"   # or pass OUT
+ls -1 dist/release/
 file "dist/release/aiah_${RELEASE_VERSION}_linux_amd64"
 ```
 
-必须看到：
+必须看到（平台清单以 `scripts/_release_platforms.sh` 为准，当前为）：
 
-- 一个 `aiah_<version>_linux_amd64` 二进制，且没有其他平台二进制；
+- 三个二进制：`aiah_<version>_linux_amd64`、
+  `aiah_<version>_darwin_arm64`、`aiah_<version>_darwin_amd64`；
+- **没有** `linux_arm64` / Windows 等未验收产物；
 - `LICENSE`、`NOTICE`、`THIRD_PARTY_LICENSES.txt`、
   `THIRD_PARTY_DEPENDENCIES.md` 与 `SHA256SUMS`；
-- `sha256sum -c` 全部成功；
-- 脚本末尾的 self check 打印出正确版本号（脚本自己会断言，不匹配直接退出 1）。
+- `check-release-checksums.sh` 通过（校验**产物集形状**，不只是在场文件完好）；
+- 本机若属于发布平台，脚本末尾 self check 打印正确版本号。
 
-CI 的跨平台目标只证明**可构建**，不代表在那些平台上验证过行为
+档位：`linux/amd64` 与 `darwin/arm64` 为完整支持（各 OS 真机全套）；
+`darwin/amd64` 为交叉编译 + 冒烟。CI build-matrix 里未列入发布清单的目标只证明
+**可构建**，不等于写入语义已验收
 （[ADR-0003 §4](../decisions/0003-cli-first-go-core-and-product-surfaces.md)）。
-任何新平台必须先补原生行为验收，再加入安装器和 Release 输出。
+任何新平台必须先补原生行为验收，再加入 `_release_platforms.sh`、安装器和
+Release 输出。
 
 ## 3. 打 tag 并发布
 
@@ -131,18 +137,21 @@ diverged；Release notes 不得直接把 GitHub 自动生成的 Full Changelog �
 ## 4. 发布后验收
 
 ```bash
-RELEASE_TAG=v0.1.7
+RELEASE_TAG=v0.1.11
 RELEASE_VERSION="${RELEASE_TAG#v}"
 gh release view "$RELEASE_TAG"
-# 下载并校验（换成实际平台）
 RELEASE_CHECK_DIR="$(mktemp -d)"
 gh release download "$RELEASE_TAG" \
-  -p 'aiah_*_linux_amd64' -p 'LICENSE' -p 'NOTICE' \
+  -p 'aiah_*' -p 'LICENSE' -p 'NOTICE' \
   -p 'THIRD_PARTY_*' -p 'SHA256SUMS' -D "$RELEASE_CHECK_DIR"
 cd "$RELEASE_CHECK_DIR"
+# Prefer the repo verifier when available (shape + checksums):
+#   ./scripts/check-release-checksums.sh "$RELEASE_CHECK_DIR"
 sha256sum -c SHA256SUMS --ignore-missing
+# Host platform binary (example: Linux amd64 CI host):
 chmod +x "aiah_${RELEASE_VERSION}_linux_amd64"
 "./aiah_${RELEASE_VERSION}_linux_amd64" version
+# Expect three binaries named from scripts/_release_platforms.sh, not only linux.
 ```
 
 `version` 输出的版本号必须与 tag 一致（去掉 `v`）。不一致说明 ldflags 注入或
@@ -154,7 +163,7 @@ workflow 的 `VERSION` 处理坏了，**先撤下 Release 再排查**。
 
 ```bash
 OLD_AIAH=/path/to/previous/aiah
-RELEASE_TAG=v0.1.7
+RELEASE_TAG=v0.1.11
 RELEASE_VERSION="${RELEASE_TAG#v}"
 UPGRADE_JSON="$("$OLD_AIAH" update --check --output json)"
 UPGRADE_COMMAND="$(printf '%s' "$UPGRADE_JSON" |
