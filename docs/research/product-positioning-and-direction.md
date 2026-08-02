@@ -136,6 +136,106 @@
 
 第 2、3 项已完成文档落地。第 1 项是工程活；第 4 项是使用与反馈，**不需要写 Go。**
 
+## 5.1 P1「macOS 支持」的范围与验证方式（2026-08-02 定）
+
+所有者已就 D9 拍板：**自用与对外都要满足**，并同意支持 macOS，初步范围定为
+macOS + Linux。以下是把这个范围落成可执行判据后的结论。
+
+### 好消息：这主要是验证问题，不是移植问题
+
+生产代码里**零 OS 分支**（`rg "darwin|runtime.GOOS"` 在非测试代码零命中），
+整套实现统一 POSIX；harness 根 `~/.claude` / `~/.codex` / `~/.grok` / `~/.agents`
+在 macOS 同名。因此工作量集中在「证明行为正确」，而不是写新代码路径。
+
+### 分两档，而不是笼统说「支持 macOS + Linux」
+
+| 档位 | 平台 | 依据 |
+|---|---|---|
+| **完整支持** | `linux/amd64`、`darwin/arm64` | CI 真机跑完整测试 + 假 HOME 闭环 + `install.sh` |
+| **交叉编译 + 冒烟** | `darwin/amd64` | 编译 + 版本自检；OS 语义与 arm64 同源 |
+| **暂不宣称** | `linux/arm64`、Windows | Windows 的 chmod / shebang / 配置根语义需单独验收 |
+
+分档的依据是一个实质区分：
+
+- **OS 差异是语义的**（file mode、软链、配置根、TTY、`pass` 是否存在）→ 必须真机
+  行为验证；
+- **arch 差异只是代码生成**（纯 Go + `CGO_ENABLED=0`）→ 交叉编译 + 冒烟即可诚实
+  声称。
+
+这让范围可以便宜地扩，而不必为每个 arch 重做一遍完整验收。
+
+### 验证方式：CI 加 macOS runner
+
+当前 CI 全部是 `ubuntu-latest`，`build-matrix` 自己的注释已经写明它「仅证明能编译，
+从不证明行为在那里被验证过」（ADR-0003 §4）。这正是 README 目前只敢声称
+Linux amd64 的原因。
+
+GitHub 提供 macOS runner（`macos-latest` 即 Apple Silicon），公共仓库免费。
+加一个 job 跑现有全套 + 假 HOME 闭环 + `install.sh`，即构成真机行为验证，且
+**每个 PR 都重跑，不会随时间腐化**——优于人工验一次。所有者若有 Mac，可再叠
+人工 dogfood，但不是前提。
+
+### macOS 特有的待验清单
+
+1. **大小写不敏感文件系统**（默认）：`CLAUDE.md` 与 `claude.md` 是同一文件。
+   `mapRulesFile` 已用 `ToLower` 匹配，但 **shadowing 检测在该文件系统上的行为
+   必须实测**，不能假设。
+2. **`pass` 在 macOS 罕见**（常态是 Keychain），secret provider 覆盖会打折。
+3. **Gatekeeper / quarantine**：`curl | sh` 路径不打 quarantine，正常；**浏览器
+   从 Releases 页下载会被拦**。彻底解决需 Apple Developer 账号（约 $99/年）做
+   签名与公证——**建议先不买，把限制写进文档**，给一行 `xattr -d` 即可。
+4. 文件 mode、原子 rename、shebang hooks —— macOS 均支持，但要跑过才算数。
+
+### 构建仍然全部在 GitHub 上
+
+`release.yml` 已经是 tag 触发 → 测试 → 构建 → 发布，零本地参与。加 macOS 只需把
+`scripts/release-build.sh` 中写死的 `GOOS=linux GOARCH=amd64` 改回多平台循环。
+
+**一个会影响架构的前瞻点**：若日后实现 **macOS Keychain secret provider**
+（`security.md` §2 已列入规划，且 macOS 上它比 `pass` 常见得多），大概率需要
+CGO，**必须在 macOS runner 上原生构建**，交叉编译做不到。因此加 macOS runner
+不只服务于验证，它同时是该能力的前置基础设施。
+
+### 探针结果（2026-08-02 实跑）
+
+第 1 步已执行：CI 加 `macos-latest`（实为 `macos-26-arm64`，Apple Silicon）跑现有
+全套。结论是**工作量落在「半天」这一端**。
+
+| 检查 | 结果 |
+|---|---|
+| 假 HOME 闭环（build→apply→scan→rollback） | ✅ **首次即过** |
+| 安装器回归 | ✅ **首次即过** |
+| `go vet` / gofmt | ✅ |
+| `go test ./...` | 13 失败 / 17 包中 4 个 |
+
+**零生产代码改动。** 13 个失败全是测试里的路径拼写假设，两个根因：
+
+1. **`/private` 前缀（12 个）**：macOS 上 `/var` 是指向 `/private/var` 的软链。
+   生产代码规范化路径是**刻意的安全机制**——解析正是捕获软链逃逸的手段。决定性
+   证据是 `PrepareRoot` 返回的 `true` 与 `nil` 完全一致，只有路径字符串不同：
+   安全判定本身没问题。修法是给测试加 `canonicalTempDir`，只改那 13 个测试用到
+   的 10 处，没动其余 147 处 `t.TempDir()`。
+2. **XDG（1 个）**：`os.UserConfigDir()` 在 macOS 返回
+   `~/Library/Application Support`，不认 `XDG_CONFIG_HOME`。遵循平台约定才是想要
+   的行为，因此改测试而非生产；为 macOS 特判 XDG 是没人要求的产品口味。
+
+**行为层首次即过**是最重要的信号：写入语义、文件 mode、原子替换、软链拒绝在
+macOS 上本来就是对的，macOS 支持确实是验证问题而非移植问题。
+
+两个过程教训值得留下：**探针不能停在第一个失败**（初版 `go test` 一挂，闭环与
+安装器全被跳过，而那两项才决定工作量）；**按 commit SHA 锁定 run**，否则 push
+后立刻轮询「最新 run」会读到上一次的结果。
+
+### 执行顺序
+
+1. **CI 加 macOS runner，先跑现有全套**——这一步是探针，决定后续是半天还是三天；
+   在跑出结果前不预估，也不猜；
+2. 按暴露的问题修；
+3. `release-build.sh` 恢复多平台产出；
+4. `install.sh` 放开 darwin，`uname -m` 映射 `arm64` / `x86_64`；
+5. 文档平台声明按上表分档改写；
+6. 发版验收。
+
 ## 6. 明确不建议
 
 - ❌ 再加 TUI 界面——已占生产码约 39%，且增速高于内核；

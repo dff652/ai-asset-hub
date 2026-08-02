@@ -220,7 +220,28 @@ bridge release；再下一版本才是修复后推荐命令的首次完整 Relea
 `main` 不能通过普通 merge 变成 `dev` 的祖先；同步目标是**文件树相同**，不是伪造
 祖先关系。
 
+> ⚠️ **这个操作会删除 `dev` 独有的内容，这是它的性质而非意外。** 门禁是「文件树
+> 与 `main` 完全一致」，因此发布切出 `main` 之后、同步之前落到 `dev` 的任何改动，
+> 都会被这次同步抹掉。**先做下面第 0 步再动手。**
+>
+> 实例（2026-08-02）：`v0.1.10` 的同步提交 `bb6204d` 从 `docs/roadmap.md` 删掉
+> 44 行，其中包括 PR #45 刚合入 `dev` 的「下一阶段方向」章节与待决策 D9，同时
+> 回退了 `docs/decisions/0007-*.md` 与 `docs/README.md` 的编辑。新增文件本身没被
+> 删，于是留下一份**没有任何文件引用的孤儿文档**——比整份删掉更难被发现。
+
 安全流程：
+
+0. **先列出 `dev` 独有的内容，并逐项决定去留**：
+
+   ```bash
+   git fetch --prune origin
+   git diff --stat origin/main origin/dev      # dev 与 main 的全部差异
+   git log --oneline origin/main..origin/dev   # main 里没有的提交
+   ```
+
+   对每一项明确回答「这次同步之后它应该还在吗」。答案是「应该在」的，**必须先
+   带进 `main`**（或在同步 PR 里一并重新施加），不能指望它自己活下来。
+   只有确认差异全部是「本就该被 main 覆盖」的内容，才继续第 1 步。
 
 1. `git fetch --prune origin`，记录 `origin/dev`、`origin/main` 和 ahead/behind；
 2. 从 `origin/dev` 建专用同步分支，并保留本地

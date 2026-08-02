@@ -24,7 +24,8 @@ aiah scan --output json
 
 ## 安装
 
-当前安装和 Release 支持范围为 **Linux amd64**。推荐先下载并阅读安装器：
+当前安装和 Release 支持范围为 **Linux amd64 与 macOS**（`darwin/arm64` 完整验收，
+`darwin/amd64` 交叉编译 + 冒烟；分档依据见 [README](../README.md#立即开始)）。推荐先下载并阅读安装器：
 
 ```bash
 curl -fsSLo /tmp/aiah-install.sh \
@@ -46,7 +47,8 @@ AIAH_VERSION=0.1.10 AIAH_INSTALL_DIR="$HOME/.local/bin" \
 ```
 
 从 [Release](https://github.com/dff652/ai-asset-hub/releases/tag/v0.1.10)
-手动下载时，必须同时下载 `SHA256SUMS`。Linux amd64 示例：
+手动下载时，必须同时下载 `SHA256SUMS`。把 `linux_amd64` 换成
+`darwin_arm64` 或 `darwin_amd64` 即为 macOS。示例：
 
 ```bash
 sha256sum -c SHA256SUMS --ignore-missing
@@ -96,7 +98,12 @@ aiah update --check --output json
 
 `v0.1.1` 中现存的 macOS、Windows 和 arm64 文件是发布范围收口前生成的历史
 交叉编译产物，未做对应平台原生验收。它们不是安装器或当前支持范围的一部分；
-后续 Release 只发布 Linux amd64，其他平台通过原生验收后再恢复。
+后续 Release 发布 `linux/amd64`、`darwin/arm64` 与 `darwin/amd64`；`linux/arm64`
+与 Windows 通过原生验收前不分发，安装器也会在下载前拒绝这些平台。
+
+**macOS Gatekeeper**：`curl | sh` 路径不受影响（curl 不设置 quarantine 属性）。
+从 Release 页面用浏览器下载的二进制会被拦，需先
+`xattr -d com.apple.quarantine <文件>`。二进制未做 Apple 签名与公证。
 
 ## 1. 资产库、包和目标目录
 

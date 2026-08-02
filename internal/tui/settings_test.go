@@ -650,7 +650,7 @@ func openSettings(t *testing.T, model Model) Model {
 
 func testPreferenceStore(t *testing.T) preferences.StoreOptions {
 	t.Helper()
-	root := t.TempDir()
+	root := canonicalTempDir(t)
 	home := filepath.Join(root, "home")
 	if err := os.Mkdir(home, 0o700); err != nil {
 		t.Fatal(err)
