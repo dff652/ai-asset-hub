@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the supported Linux amd64 release artifact, plus SHA256SUMS.
+# Build the distributed release artifacts, plus SHA256SUMS.
 #
 # The release workflow is a thin wrapper around this script on purpose: a
 # workflow YAML cannot be run locally, this can. See docs/development.md 2.3.
@@ -8,8 +8,16 @@
 #   VERSION=0.1.0 ./scripts/release-build.sh            # -> dist/release/
 #   VERSION=0.1.0 OUT=/tmp/rel ./scripts/release-build.sh
 #
-# Other targets remain in CI as build-health checks. They are not distributed
-# until they have native acceptance coverage.
+# What ships is decided by acceptance coverage, not by what compiles. linux/amd64
+# and darwin/arm64 both run the full suite -- tests, vet, gofmt, the fake-HOME
+# closed loop and the installer regression -- on their own runner. darwin/amd64
+# ships alongside arm64 because a pure-Go CGO_ENABLED=0 binary differs only in
+# codegen across architectures of the same OS, and macOS semantics are verified
+# on arm64; that is a weaker claim than the other two and the docs say so.
+#
+# The remaining build-matrix targets stay CI-only build-health checks. Shipping a
+# binary reads as a support claim, and Windows chmod, shebang and config-root
+# semantics have no acceptance coverage at all.
 
 set -euo pipefail
 
@@ -22,16 +30,22 @@ EXTRA_LDFLAGS="-s -w"
 source "$ROOT/scripts/_stamp.sh"
 # shellcheck source=scripts/_sha256.sh
 source "$ROOT/scripts/_sha256.sh"
+# shellcheck source=scripts/_release_platforms.sh
+source "$ROOT/scripts/_release_platforms.sh"
 OUT="${OUT:-$ROOT/dist/release}"
 
 rm -rf "$OUT"
 mkdir -p "$OUT"
 echo "==> building aiah $VERSION"
 
-binary="aiah_${VERSION}_linux_amd64"
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
-  go build -trimpath -ldflags "$LDFLAGS" -o "$OUT/$binary" ./cmd/aiah
-echo "    $binary"
+for platform in "${RELEASE_PLATFORMS[@]}"; do
+  goos="${platform%/*}"
+  goarch="${platform#*/}"
+  binary="aiah_${VERSION}_${goos}_${goarch}"
+  GOOS="$goos" GOARCH="$goarch" CGO_ENABLED=0 \
+    go build -trimpath -ldflags "$LDFLAGS" -o "$OUT/$binary" ./cmd/aiah
+  echo "    $binary"
+done
 
 # Binary recipients need the project license, NOTICE, dependency inventory, and
 # the complete third-party license texts alongside the executable.
@@ -56,15 +70,19 @@ echo "==> artifacts in $OUT"
 "$ROOT/scripts/check-release-checksums.sh" "$OUT"
 ls -1 "$OUT"
 
-# The host-platform binary must report the version it was stamped with; a
-# release that cannot identify itself is the gap this whole pipeline closes.
-host_binary="$OUT/$binary"
-if [[ "$(go env GOOS)/$(go env GOARCH)" == "linux/amd64" ]]; then
-  echo "==> self check"
+# Only the host-platform binary can be executed here, so only it can be asked
+# whether it knows its own version. Cross-built artifacts are covered by their
+# own runner's suite, not by this check.
+host_platform="$(go env GOOS)/$(go env GOARCH)"
+host_binary="$OUT/aiah_${VERSION}_$(go env GOOS)_$(go env GOARCH)"
+if [[ " ${RELEASE_PLATFORMS[*]} " == *" $host_platform "* ]]; then
+  echo "==> self check ($host_platform)"
   reported="$("$host_binary" version)"
   echo "    $reported"
   case "$reported" in
     *"$VERSION"*) ;;
     *) echo "error: binary reports '$reported', expected to contain '$VERSION'" >&2; exit 1 ;;
   esac
+else
+  echo "==> self check skipped: no artifact for host $host_platform"
 fi

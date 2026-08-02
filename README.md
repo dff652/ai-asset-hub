@@ -5,7 +5,7 @@
 <p align="center">
   <a href="https://github.com/dff652/ai-asset-hub/releases"><img alt="Release v0.1.10" src="https://img.shields.io/badge/release-v0.1.10-238636"></a>
   <img alt="Status Technical Preview" src="https://img.shields.io/badge/status-technical_preview-D29922">
-  <img alt="Platform Linux amd64" src="https://img.shields.io/badge/platform-Linux_amd64-58A6FF">
+  <img alt="Platform Linux and macOS" src="https://img.shields.io/badge/platform-Linux_%7C_macOS-58A6FF">
   <a href="LICENSE"><img alt="License Apache 2.0" src="https://img.shields.io/badge/license-Apache--2.0-8B949E"></a>
 </p>
 
@@ -21,7 +21,7 @@ AI Asset Hub（`aiah`）帮你**安全地改 AI 工具配置**，并在 Claude�
 [产品定位与后续方向](docs/research/product-positioning-and-direction.md)。
 
 > **当前边界：Technical Preview。** 最新公开版是 `v0.1.10`，安装与端到端验收范围
-> 为 **Linux amd64**（macOS/Windows 未做原生写入验收）。N10.1–N10.3 迁移准备检查
+> 为 **Linux amd64 与 macOS**（Windows 未做原生写入验收）。N10.1–N10.3 迁移准备检查
 > 已发布；N10.4 自动证据记录器明确延期。当前优先真实使用与反馈，而不是继续扩
 > 功能清单。
 
@@ -40,7 +40,7 @@ aiah scan --output json
 
 ## 立即开始
 
-Linux amd64 一行安装：
+一行安装（Linux amd64、macOS Apple Silicon 与 Intel）：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh | sh
@@ -75,9 +75,20 @@ aiah update --check
 直接执行远程脚本前，推荐先下载、阅读再运行。Release 裸二进制的手动安装方法见
 [上手指南](docs/getting-started.md#安装)。
 
-Linux amd64 已完成端到端行为验证。`v0.1.1` 中现存的 macOS、Windows 和 arm64
-文件是历史交叉编译产物，未做对应平台原生验收，不属于当前支持范围；后续 Release
-只发布 Linux amd64，其他平台通过原生验收后再恢复分发。
+支持范围按**验收强度**分档，而不是按「能不能编译」：
+
+| 档位 | 平台 | 依据 |
+|---|---|---|
+| 完整支持 | `linux/amd64`、`darwin/arm64` | 各自在专属 CI runner 上跑完整套：测试、`vet`、gofmt、假 HOME 闭环与安装器回归 |
+| 交叉编译 + 冒烟 | `darwin/amd64` | 纯 Go `CGO_ENABLED=0` 二进制在同一 OS 的不同架构间只差代码生成，而 macOS 语义已在 arm64 验过 |
+| 不发布 | `linux/arm64`、Windows | 前者仅在 CI 编译健康检查中构建；Windows 的 chmod、shebang 与配置根语义没有任何验收覆盖 |
+
+发布二进制等于给出支持承诺，所以不发布的平台一个字节都不上传，安装器也会在下载前拒绝。
+
+**macOS Gatekeeper**：用上面的 `curl | sh` 安装**不受影响**（curl 不打 quarantine
+属性）。若改从 Release 页面用浏览器下载，首次执行会被拦，需
+`xattr -d com.apple.quarantine ./aiah_<version>_darwin_arm64` 或右键打开。
+二进制未做 Apple 签名与公证。
 
 ## 第一次使用：五步安全应用
 

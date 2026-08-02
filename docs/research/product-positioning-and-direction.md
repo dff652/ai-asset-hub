@@ -196,6 +196,36 @@ GitHub 提供 macOS runner（`macos-latest` 即 Apple Silicon），公共仓库�
 CGO，**必须在 macOS runner 上原生构建**，交叉编译做不到。因此加 macOS runner
 不只服务于验证，它同时是该能力的前置基础设施。
 
+### 探针结果（2026-08-02 实跑）
+
+第 1 步已执行：CI 加 `macos-latest`（实为 `macos-26-arm64`，Apple Silicon）跑现有
+全套。结论是**工作量落在「半天」这一端**。
+
+| 检查 | 结果 |
+|---|---|
+| 假 HOME 闭环（build→apply→scan→rollback） | ✅ **首次即过** |
+| 安装器回归 | ✅ **首次即过** |
+| `go vet` / gofmt | ✅ |
+| `go test ./...` | 13 失败 / 17 包中 4 个 |
+
+**零生产代码改动。** 13 个失败全是测试里的路径拼写假设，两个根因：
+
+1. **`/private` 前缀（12 个）**：macOS 上 `/var` 是指向 `/private/var` 的软链。
+   生产代码规范化路径是**刻意的安全机制**——解析正是捕获软链逃逸的手段。决定性
+   证据是 `PrepareRoot` 返回的 `true` 与 `nil` 完全一致，只有路径字符串不同：
+   安全判定本身没问题。修法是给测试加 `canonicalTempDir`，只改那 13 个测试用到
+   的 10 处，没动其余 147 处 `t.TempDir()`。
+2. **XDG（1 个）**：`os.UserConfigDir()` 在 macOS 返回
+   `~/Library/Application Support`，不认 `XDG_CONFIG_HOME`。遵循平台约定才是想要
+   的行为，因此改测试而非生产；为 macOS 特判 XDG 是没人要求的产品口味。
+
+**行为层首次即过**是最重要的信号：写入语义、文件 mode、原子替换、软链拒绝在
+macOS 上本来就是对的，macOS 支持确实是验证问题而非移植问题。
+
+两个过程教训值得留下：**探针不能停在第一个失败**（初版 `go test` 一挂，闭环与
+安装器全被跳过，而那两项才决定工作量）；**按 commit SHA 锁定 run**，否则 push
+后立刻轮询「最新 run」会读到上一次的结果。
+
 ### 执行顺序
 
 1. **CI 加 macOS runner，先跑现有全套**——这一步是探针，决定后续是半天还是三天；
