@@ -298,8 +298,8 @@ aiah update --check [--output text|json]
 `AIAH_VERSION`。从这些版本升级到当前版请使用：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.10/scripts/install.sh |
-  AIAH_VERSION=0.1.10 sh
+curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.11/scripts/install.sh |
+  AIAH_VERSION=0.1.11 sh
 ```
 
 `v0.1.6` 二进制已把生成格式修复为：

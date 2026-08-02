@@ -34,27 +34,27 @@ less /tmp/aiah-install.sh
 sh /tmp/aiah-install.sh
 ```
 
-当前源码中的安装器默认 pin 是已验收的 `0.1.10`。`v0.1.8` 修复了安装器运行时加载
+当前源码中的安装器默认 pin 是已验收的 `0.1.11`。`v0.1.8` 修复了安装器运行时加载
 校验函数的缺陷；`v0.1.9` 又让 `init` 在写入前统一拒绝受管工具目录及其软链接别名；
 `v0.1.10` 交付迁移准备检查（CLI/TUI/MCP）。要固定不可变 tag、安装目录或版本，
 显式设置：
 
 ```bash
-curl -fsSLo /tmp/aiah-install-v0.1.10.sh \
-  https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.10/scripts/install.sh
-AIAH_VERSION=0.1.10 AIAH_INSTALL_DIR="$HOME/.local/bin" \
-  sh /tmp/aiah-install-v0.1.10.sh
+curl -fsSLo /tmp/aiah-install-v0.1.11.sh \
+  https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.11/scripts/install.sh
+AIAH_VERSION=0.1.11 AIAH_INSTALL_DIR="$HOME/.local/bin" \
+  sh /tmp/aiah-install-v0.1.11.sh
 ```
 
-从 [Release](https://github.com/dff652/ai-asset-hub/releases/tag/v0.1.10)
+从 [Release](https://github.com/dff652/ai-asset-hub/releases/tag/v0.1.11)
 手动下载时，必须同时下载 `SHA256SUMS`。把 `linux_amd64` 换成
 `darwin_arm64` 或 `darwin_amd64` 即为 macOS。示例：
 
 ```bash
 sha256sum -c SHA256SUMS --ignore-missing
-chmod +x aiah_0.1.10_linux_amd64
+chmod +x aiah_0.1.11_linux_amd64
 mkdir -p "$HOME/.local/bin"
-install -m 0755 aiah_0.1.10_linux_amd64 "$HOME/.local/bin/aiah"
+install -m 0755 aiah_0.1.11_linux_amd64 "$HOME/.local/bin/aiah"
 aiah version
 ```
 
@@ -62,11 +62,11 @@ aiah version
 
 ### 升级
 
-当前升级到 `v0.1.10` 使用显式版本命令：
+当前升级到 `v0.1.11` 使用显式版本命令：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.10/scripts/install.sh |
-  AIAH_VERSION=0.1.10 sh
+curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.11/scripts/install.sh |
+  AIAH_VERSION=0.1.11 sh
 ```
 
 **从 `v0.1.7` 或更早升级时请用上面这条命令，不要用旧版安装脚本。** 安装器
@@ -78,7 +78,7 @@ curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.10/scripts
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/main/scripts/install.sh |
-  AIAH_VERSION=0.1.10 sh
+  AIAH_VERSION=0.1.11 sh
 ```
 
 aiah 没有后台自动更新器，升级始终是显式操作。升级后用 `aiah version` 核对版本。
@@ -93,7 +93,7 @@ aiah update --check --output json
 检查只在命令执行时请求 GitHub latest release 元数据，不下载、不替换当前二进制。
 `v0.1.6 → v0.1.7` 已验证旧版实际生成的命令逐字等于安全模板，并完成真实升级、
 同版本幂等复装和版本/commit/SHA256 对账。只有 `v0.1.4` / `v0.1.5` 的旧命令仍
-缺少显式 `AIAH_VERSION`；从这些版本升级时直接使用本节上方的 `v0.1.10` 命令。
+缺少显式 `AIAH_VERSION`；从这些版本升级时直接使用本节上方的 `v0.1.11` 命令。
 `aiah --update` 不存在；不带 `--check` 的 `aiah update` 也会拒绝执行。
 
 `v0.1.1` 中现存的 macOS、Windows 和 arm64 文件是发布范围收口前生成的历史
