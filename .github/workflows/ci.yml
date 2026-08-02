@@ -28,17 +28,17 @@ jobs:
       - name: closed loop
         run: ./scripts/demo-apply-scan-loop.sh
 
-  # Probe for P1 macOS support (roadmap 下一阶段方向). It runs exactly what the
-  # linux job already runs -- nothing macOS-specific is added or pre-fixed,
-  # because the point is to find out what actually breaks rather than to guess.
+  # darwin/arm64 behavioural verification, the tier roadmap P1 wants proven
+  # rather than merely cross-compiled: macos-latest is Apple Silicon. It runs
+  # exactly what the linux job runs, so the two cannot drift apart.
   #
-  # macos-latest is Apple Silicon, so this covers darwin/arm64, the tier the
-  # roadmap wants verified behaviourally. It is deliberately NOT in the required
-  # status checks yet: until it is green, making it required would block every
-  # unrelated PR. Promote it once the findings are fixed.
-  macos-probe:
+  # Started as a probe with continue-on-error to find out what actually broke
+  # (thirteen tests, all path-spelling assumptions, no production change). Now
+  # that it is green the tolerance is gone -- a check that cannot fail reports
+  # nothing. Add it to the required status checks in branch protection so it
+  # gates merges the way the linux jobs do.
+  macos:
     runs-on: macos-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -46,22 +46,13 @@ jobs:
           go-version-file: go.mod
           cache: true
       - run: sw_vers && uname -m && go version
-      # Every step runs even after an earlier one fails. A probe that stops at
-      # the first failure only reports the first failure, and the behavioural
-      # checks below it -- the closed loop and the installer -- are the ones
-      # worth knowing about before deciding how much work this is.
       - run: go test ./...
-        if: always()
       - run: go vet ./...
-        if: always()
       - name: gofmt
-        if: always()
         run: ./scripts/check-gofmt.sh
       - name: closed loop
-        if: always()
         run: ./scripts/demo-apply-scan-loop.sh
       - name: installer regression
-        if: always()
         run: ./scripts/test-install.sh
 
   lint:
