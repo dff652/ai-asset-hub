@@ -196,24 +196,58 @@ if find "$atomic_dir" -maxdepth 1 -name '.aiah.install.*' | grep -q .; then
   fail "failed install left a stage file"
 fi
 
-# Unsupported systems and architectures fail before downloading. Darwin and
-# arm64 are explicit regression cases because both were previously published.
-: >"$AIAH_TEST_CURL_LOG"
-AIAH_TEST_UNAME_S=Darwin
-export AIAH_TEST_UNAME_S
-if run_installer "$fake_bin" "$TEST_ROOT/unsupported-os" >/dev/null 2>&1; then
-  fail "unsupported operating system was accepted"
-fi
-[ ! -s "$AIAH_TEST_CURL_LOG" ] || fail "unsupported operating system downloaded files"
-unset AIAH_TEST_UNAME_S
+# Each shipped platform resolves to its own asset name. Getting this wrong is
+# invisible on the host that happens to match and broken everywhere else.
+for platform_case in "Darwin:arm64:darwin_arm64" "Darwin:x86_64:darwin_amd64" "Linux:x86_64:linux_amd64"; do
+  case_os=${platform_case%%:*}
+  case_rest=${platform_case#*:}
+  case_machine=${case_rest%%:*}
+  case_suffix=${case_rest#*:}
+  case_asset=aiah_${EXPECTED_DEFAULT_AIAH_VERSION}_${case_suffix}
 
-AIAH_TEST_UNAME_M=aarch64
-export AIAH_TEST_UNAME_M
-if run_installer "$fake_bin" "$TEST_ROOT/unsupported-arch" >/dev/null 2>&1; then
-  fail "unsupported architecture was accepted"
-fi
-[ ! -s "$AIAH_TEST_CURL_LOG" ] || fail "unsupported architecture downloaded files"
-unset AIAH_TEST_UNAME_M
+  make_binary "$fixture/binary" "$EXPECTED_DEFAULT_AIAH_VERSION"
+  write_checksums "$fixture/binary" "$case_asset" "$fixture/SHA256SUMS"
+  : >"$AIAH_TEST_CURL_LOG"
+  install_dir=$TEST_ROOT/platform-$case_suffix/bin
+  AIAH_TEST_UNAME_S=$case_os AIAH_TEST_UNAME_M=$case_machine \
+    run_installer "$fake_bin" "$install_dir" >/dev/null
+  assert_same "$fixture/binary" "$install_dir/aiah"
+  grep -q "$case_asset" "$AIAH_TEST_CURL_LOG" ||
+    fail "$case_os/$case_machine did not request $case_asset"
+done
+# Restore the default fixture for the cases below.
+write_checksums "$fixture/binary" \
+  "aiah_${EXPECTED_DEFAULT_AIAH_VERSION}_linux_amd64" "$fixture/SHA256SUMS"
+
+# Platforms without published binaries must be refused before any download.
+# Linux arm64 compiles in CI but ships nothing, so it is the interesting case:
+# a plausible platform that would otherwise 404.
+for refused in "Windows_NT:x86_64" "Linux:aarch64" "Linux:riscv64"; do
+  : >"$AIAH_TEST_CURL_LOG"
+  AIAH_TEST_UNAME_S=${refused%%:*}
+  AIAH_TEST_UNAME_M=${refused#*:}
+  export AIAH_TEST_UNAME_S AIAH_TEST_UNAME_M
+  if run_installer "$fake_bin" "$TEST_ROOT/refused-${AIAH_TEST_UNAME_S}-${AIAH_TEST_UNAME_M}" \
+    >/dev/null 2>&1; then
+    fail "$refused was accepted"
+  fi
+  [ ! -s "$AIAH_TEST_CURL_LOG" ] || fail "$refused downloaded files before failing"
+  unset AIAH_TEST_UNAME_S AIAH_TEST_UNAME_M
+done
+
+# A release predating a platform must say so, rather than fail as a bare 404.
+: >"$AIAH_TEST_CURL_LOG"
+write_checksums "$fixture/binary" \
+  "aiah_${EXPECTED_DEFAULT_AIAH_VERSION}_linux_amd64" "$fixture/SHA256SUMS"
+missing_output=$(AIAH_TEST_UNAME_S=Darwin AIAH_TEST_UNAME_M=arm64 \
+  run_installer "$fake_bin" "$TEST_ROOT/missing-asset" 2>&1) && \
+  fail "install succeeded for a platform absent from SHA256SUMS"
+case "$missing_output" in
+  *"publishes no darwin/arm64 binary"*) ;;
+  *) fail "unhelpful message for a missing platform asset: $missing_output" ;;
+esac
+grep -q "aiah_.*darwin_arm64" "$AIAH_TEST_CURL_LOG" &&
+  fail "downloaded a binary that SHA256SUMS does not list"
 
 # The verifier must never be loaded at runtime. install.sh is published as
 # `curl ... | sh`, where $0 is not a real path: a sourced helper would resolve

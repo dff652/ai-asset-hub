@@ -87,12 +87,13 @@ MCP surface 变化还必须：
 | `go` | `go test` / `go test -race` / `go vet` / `check-gofmt.sh` / `demo-apply-scan-loop.sh` |
 | `lint` | golangci-lint v1.62.2；用当前仓库 Go 直接从源码安装并执行，不经过 Node.js action wrapper，避免上游预编译版的构建 Go 低于目标版本 |
 | `install-linux` | Linux amd64 安装器的校验、幂等、原子替换与平台拒绝回归 |
+| `macos` | 在 macos-latest（Apple Silicon）上跑与 linux 相同的全套：测试、`vet`、gofmt、假 HOME 闭环与安装器回归。交叉编译只证明能构建，这个 job 才是 `darwin/arm64` 的行为验收 |
 | `build-matrix` | linux / darwin / windows × amd64 / arm64，只交叉编译 |
 
 `build-matrix` **只证明可构建，不等于该平台语义已验证**
 （[ADR-0003 §4](decisions/0003-cli-first-go-core-and-product-surfaces.md)）：
 Windows 的 `chmod`、shebang、配置根语义都要单独的行为验收，不能用「编译通过」
-代替。当前安装和 Release 只支持 Linux amd64。
+代替。当前安装和 Release 支持 `linux/amd64`、`darwin/arm64`（均有原生验收）与 `darwin/amd64`（交叉编译 + 冒烟）。
 
 ## 4. 构建与版本
 
