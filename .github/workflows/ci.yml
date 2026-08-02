@@ -46,13 +46,22 @@ jobs:
           go-version-file: go.mod
           cache: true
       - run: sw_vers && uname -m && go version
+      # Every step runs even after an earlier one fails. A probe that stops at
+      # the first failure only reports the first failure, and the behavioural
+      # checks below it -- the closed loop and the installer -- are the ones
+      # worth knowing about before deciding how much work this is.
       - run: go test ./...
+        if: always()
       - run: go vet ./...
+        if: always()
       - name: gofmt
+        if: always()
         run: ./scripts/check-gofmt.sh
       - name: closed loop
+        if: always()
         run: ./scripts/demo-apply-scan-loop.sh
       - name: installer regression
+        if: always()
         run: ./scripts/test-install.sh
 
   lint:
