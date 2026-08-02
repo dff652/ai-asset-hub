@@ -409,7 +409,7 @@ func buildFixturePackage(t *testing.T) string {
 
 func copyTree(t *testing.T, source string) string {
 	t.Helper()
-	destination := t.TempDir()
+	destination := canonicalTempDir(t)
 	err := filepath.WalkDir(source, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
