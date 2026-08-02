@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/dff652/ai-asset-hub/releases"><img alt="Release v0.1.10" src="https://img.shields.io/badge/release-v0.1.10-238636"></a>
+  <a href="https://github.com/dff652/ai-asset-hub/releases"><img alt="Release v0.1.11" src="https://img.shields.io/badge/release-v0.1.11-238636"></a>
   <img alt="Status Technical Preview" src="https://img.shields.io/badge/status-technical_preview-D29922">
   <img alt="Platform Linux and macOS" src="https://img.shields.io/badge/platform-Linux_%7C_macOS-58A6FF">
   <a href="LICENSE"><img alt="License Apache 2.0" src="https://img.shields.io/badge/license-Apache--2.0-8B949E"></a>
@@ -20,7 +20,7 @@ AI Asset Hub（`aiah`）帮你**安全地改 AI 工具配置**，并在 Claude�
 定位与后续取舍见
 [产品定位与后续方向](docs/research/product-positioning-and-direction.md)。
 
-> **当前边界：Technical Preview。** 最新公开版是 `v0.1.10`，安装与端到端验收范围
+> **当前边界：Technical Preview。** 最新公开版是 `v0.1.11`，安装与端到端验收范围
 > 为 **Linux amd64 与 macOS**（Windows 未做原生写入验收）。N10.1–N10.3 迁移准备检查
 > 已发布；N10.4 自动证据记录器明确延期。当前优先真实使用与反馈，而不是继续扩
 > 功能清单。
@@ -50,11 +50,11 @@ aiah
 
 日常交互入口是 `aiah`（任务首页）。`aiah ui` 仅作兼容与高级参数入口。安装器校验
 Release SHA256 后原子替换到 `~/.local/bin`，不用 sudo，也不改 shell profile；
-同版本复装零下载、零写入。源码默认 pin 为已验收的 `v0.1.10`。也可固定版本：
+同版本复装零下载、零写入。源码默认 pin 为已验收的 `v0.1.11`。也可固定版本：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.10/scripts/install.sh |
-  AIAH_VERSION=0.1.10 AIAH_INSTALL_DIR="$HOME/.local/bin" sh
+curl -fsSL https://raw.githubusercontent.com/dff652/ai-asset-hub/v0.1.11/scripts/install.sh |
+  AIAH_VERSION=0.1.11 AIAH_INSTALL_DIR="$HOME/.local/bin" sh
 ```
 
 aiah 不在后台升级。固定 tag 的安装器保留 tag 创建时的默认 pin，因此使用固定 tag
