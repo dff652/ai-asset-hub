@@ -89,7 +89,7 @@ func TestUpdateAssetsReplacesWholeAssetAndNeverWritesSource(t *testing.T) {
 		".claude/skills/review/SKILL.md": "# old\n",
 		".claude/skills/review/notes.md": "old\n",
 	})
-	root := t.TempDir()
+	root := canonicalTempDir(t)
 	asset := multiFileSkillAsset("home/.claude/skills/review")
 	_, err := Compose(ComposeOptions{
 		WorkspaceRoot: root, Home: home, Assets: []inventory.Asset{asset},
@@ -155,7 +155,7 @@ func TestRemoveAssetsUpdatesManifestAndRemovesLibraryContent(t *testing.T) {
 	home := fakeHome(t, map[string]string{
 		".claude/skills/review/SKILL.md": "# review\n",
 	})
-	root := t.TempDir()
+	root := canonicalTempDir(t)
 	asset := skillAsset("home/.claude/skills/review")
 	if _, err := Compose(ComposeOptions{
 		WorkspaceRoot: root, Home: home, Assets: []inventory.Asset{asset},
