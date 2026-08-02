@@ -42,7 +42,7 @@ func TestAssetStatusReturnsTheUnifiedCoreReport(t *testing.T) {
 func TestMigrationStatusReturnsTheCrossDeviceCoreReport(t *testing.T) {
 	home := copyTree(t, filepath.Join("..", "..", "testdata", "home-basic"))
 	workspaceRoot := copyTree(t, filepath.Join("..", "..", "testdata", "workspace-valid"))
-	channelRoot := t.TempDir()
+	channelRoot := canonicalTempDir(t)
 	pkg := buildFixturePackage(t)
 	if _, err := channel.Publish(channel.PublishOptions{
 		Package: pkg, Channel: channelRoot,

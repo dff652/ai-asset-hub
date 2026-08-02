@@ -66,14 +66,25 @@ esac
 [ -n "$install_dir" ] || die "AIAH_INSTALL_DIR must not be empty"
 
 need uname
+# The supported set mirrors scripts/_release_platforms.sh. It is repeated rather
+# than sourced because this script is published as `curl ... | sh`, where there
+# is no checkout to source anything from -- the same reason the checksum helper
+# is inlined below.
 case "$(uname -s)" in
-  Linux) ;;
-  *) die "only Linux amd64 is currently supported" ;;
+  Linux) goos=linux ;;
+  Darwin) goos=darwin ;;
+  *) die "$(uname -s) is not supported; releases ship Linux and macOS only" ;;
 esac
 case "$(uname -m)" in
-  x86_64 | amd64) ;;
-  *) die "only Linux amd64 is currently supported" ;;
+  x86_64 | amd64) goarch=amd64 ;;
+  arm64 | aarch64) goarch=arm64 ;;
+  *) die "$(uname -m) is not supported; releases ship amd64 and arm64 only" ;;
 esac
+# Linux arm64 compiles in CI but has no acceptance coverage, so no binary is
+# published for it. Refusing here is better than a download that 404s.
+if [ "$goos/$goarch" = "linux/arm64" ]; then
+  die "Linux arm64 has no published binary; only linux/amd64, darwin/arm64 and darwin/amd64 ship"
+fi
 
 target=$install_dir/aiah
 if [ -x "$target" ] && [ "$(installed_version "$target")" = "$version" ]; then
@@ -95,18 +106,24 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
-asset=aiah_${version}_linux_amd64
+asset=aiah_${version}_${goos}_${goarch}
 release_base=https://github.com/dff652/ai-asset-hub/releases/download/v$version
 checksums=$tmp_dir/SHA256SUMS
 binary=$tmp_dir/$asset
 
 curl -fsSL "$release_base/SHA256SUMS" -o "$checksums"
-curl -fsSL "$release_base/$asset" -o "$binary"
 
+# Checked before downloading the binary. A release predating this platform would
+# otherwise fail as a bare curl 404, which says nothing about why.
 expected_count=$(awk -v name="$asset" '$2 == name { count++ } END { print count + 0 }' \
   "$checksums")
+if [ "$expected_count" -eq 0 ]; then
+  die "v$version publishes no $goos/$goarch binary (looked for $asset); try a newer AIAH_VERSION"
+fi
 [ "$expected_count" -eq 1 ] ||
   die "SHA256SUMS must contain exactly one entry for $asset"
+
+curl -fsSL "$release_base/$asset" -o "$binary"
 expected=$(awk -v name="$asset" '$2 == name { print $1 }' "$checksums")
 actual=$(sha256_value "$binary")
 if [ "$actual" != "$expected" ]; then

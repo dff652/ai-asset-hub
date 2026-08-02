@@ -39,3 +39,16 @@ sha256_check_file() {
   echo "error: sha256sum or shasum is required" >&2
   return 1
 }
+
+sha256_stdin() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum | awk '{print $1}'
+    return
+  fi
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 | awk '{print $1}'
+    return
+  fi
+  echo "error: sha256sum or shasum is required" >&2
+  return 1
+}

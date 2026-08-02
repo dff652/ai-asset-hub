@@ -409,6 +409,88 @@ N10.1–N10.3 已发布；N10.4 明确延期。当前优先级是 dogfood 与定
 | D6 | `~/.grok/skills` 的 `bundled-copy` 判定要不要做 | 三个内置拷贝会被打进包，到新机器与自带版本重复。判定方法确定（与 `bundled/skills/<name>` 比内容），只是要不要花这个工 | 真机盘点结果 |
 | D7 | `~/.claude/CLAUDE.md` 怎么拆 | 通用 / Claude 专属 / 本机私有三份，**人工判断**，拆完才能进包 | 同上 |
 | D8 | **repo 何时转 public** | ✅ 2026-07-28 已完成：`github.com/dff652/ai-asset-hub` 使用单提交干净公开历史，private 原历史保留在 internal 档案；`v0.1.1`、匿名验收与远端治理均已完成 | [Public readiness 评估](reviews/2026-07-27-public-readiness-assessment.md) |
+| D9 | **目标是自用还是让别人用** | ✅ **2026-08-02 已拍板：两者都要**，P1 macOS 支持已批准（范围与验证方式见 §5.1）。原分析：决定 P1–P5 做不做。自用则当前状态已是完整结果；对外则瓶颈在 macOS 覆盖、pitch 与分发，而非功能 | [产品定位与方向评估 §7](research/product-positioning-and-direction.md) |
+
+## 下一阶段方向（2026-08-02 产品评估后）
+
+N0–N9 已全部收口，N10「迁移准备检查」在进行中（**子项状态以上面的 N10 行为准，
+本节不复制**，那份状态变得比本节快）。本节**不替代 N10**——它问的是另一个层面的问题：N10 做完之后，
+以及在做 N10 的同时，**这个产品是做给谁的、该怎么说**。
+
+提出这个问题的理由是一组数字：`v0.1.9` 已公开发布，而 star / fork / 外部 issue
+均为 0，二进制下载量与「只有 CI 和自测」一致。继续按功能清单往下做不会改变这组
+数字。
+
+完整论证见[产品定位与后续方向评估](research/product-positioning-and-direction.md)，
+要点：
+
+- **痛感最强的不是「跨设备」**，是「安全地改 AI 工具配置」（`diff → apply →
+  doctor → rollback`）和「一份资产喂多个工具」。当前 README 把最弱的价值放在最前。
+- **小众的是现在这个说法，不是这套能力。** 定位要求「资产多 ∧ 多设备 ∧ 在乎
+  审计」三者交集，当然小；同一套机器换成「团队 AI 编码规范落地」就不小众。
+- **当前瓶颈一行代码都不是**：装不上（仅 Linux amd64）、看不懂在解决什么、
+  没人知道它存在。
+
+| 顺序 | 动作 | 性质 | 为什么在这个位置 |
+|---|---|---|---|
+| P1 | 🟡 **macOS 支持（进行中）** | 工程 | 目标用户在 macOS，而产品只支持 Linux amd64，多数潜在用户装都装不上。交叉编译早已通过，缺的是原生验收：apply/rollback/hooks、文件 mode、软链与配置根语义。**不做这个，后面几项无从谈起** |
+| P2 | **改 pitch** | 文字 | 从「资产管理」改为「安全地改 AI 工具配置」/「团队规范落地」，并在前 30 秒回答「为什么不用 chezmoi 加几个模板」 |
+| P3 | **把 `aiah scan` 做成零承诺入口** | 文字 | 它只读、不写盘、不执行 hook，适合作为「先看到问题」的入口；本机实测 29 候选 / 4 findings，多数人不知道自己攒了这么多 |
+| P4 | **找 1 个真实团队试用** | 验证 | 团队场景的真需求只能从真团队里长出来，不能靠推演 |
+| P5 | 审计回收（薄 receiver：谁装了哪版） | 工程 | **等 P4 真提出来再做**；[形态评估 §3.4](research/product-form-and-distribution-assessment.md) 已论证不需要自研服务端 |
+
+**前提**：以上建立在「目标是让别人用」这个假设上。若目标只是自用加练手，当前状态
+已经是一个完整的好结果，P1–P5 都不必做——**这个前提需要所有者拍板**，记为待决策 D9。
+
+### P1 进展（2026-08-02）
+
+1. ✅ **探针**：CI 加 macOS runner 跑现有全套。行为层（假 HOME 闭环、安装器回归）
+   **首次即过**；13 个单测失败全是路径拼写假设，**零生产代码改动**。结论与两个
+   过程教训见[评估 §5.1](research/product-positioning-and-direction.md)。
+2. ✅ **探针转常规检查**：去掉 `continue-on-error`——不会失败的检查等于什么都没报。
+   `macos` job 跑的内容与 linux job 完全一致，两者不会漂移。
+   **仍需在分支保护里把 `macos` 加进必需检查**（仓库设置，不是代码）。
+3. ✅ **多平台发布**：`release-build.sh` 恢复出 `linux/amd64` + `darwin/arm64` +
+   `darwin/amd64`；平台清单抽成 `scripts/_release_platforms.sh`，构建器与校验器
+   共用，避免两边对「什么算完整发布」产生分歧。
+4. ✅ **安装器放开 macOS**：`uname -s/-m` 映射到 goos/goarch，**下载前**先查
+   `SHA256SUMS` 里有没有该产物——老版本没有 darwin 产物时报「该版本不发布
+   darwin/arm64」，而不是裸 404。`linux/arm64` 显式拒绝：它在 CI 里只做编译健康
+   检查，不发布二进制。
+5. ✅ **文档分档**：README / 上手指南 / development 的平台声明改为「完整支持 /
+   交叉编译+冒烟 / 不发布」三档，并写明 Gatekeeper 限制（`curl | sh` 不受影响，
+   浏览器下载需 `xattr -d`；未做 Apple 签名公证）。
+6. ⬜ **发一个带 macOS 产物的版本**，线上验收后按 staged-pin 规则再移动默认 pin。
+
+### 本阶段明确不做
+
+- 再加 TUI 界面（已占生产码约 39%，增速高于内核）；
+- 补 doctor / compose / channel 的 report schema（一致性洁癖，不解决真实路径）；
+- 自建服务端（[形态评估 §2](research/product-form-and-distribution-assessment.md)）；
+- 网盘同步（[ADR-0007 §6.1](decisions/0007-immutable-channel-distribution.md)：
+  放已挂载目录**今天就能用**；内置网盘客户端与密钥原则冲突；工作区实时双向同步
+  会拆掉不可变包模型的存在理由）。
+
+### P1 macOS：已批准，范围已定（2026-08-02）
+
+D9 拍板「自用与对外都要满足」，P1 随之批准，初步范围 macOS + Linux。完整论证见
+[产品定位与方向评估 §5.1](research/product-positioning-and-direction.md)，要点：
+
+- 生产代码**零 OS 分支**，harness 根在 macOS 同名——**这主要是验证问题不是移植问题**；
+- 分两档声称：`linux/amd64` + `darwin/arm64` **完整支持**（CI 真机跑全套），
+  `darwin/amd64` **交叉编译 + 冒烟**。依据是 OS 差异属语义（须真机验）、arch 差异
+  只是代码生成（纯 Go + `CGO_ENABLED=0`，交叉编译足够）；
+- 验证方式是**给 CI 加 macOS runner**（公共仓库免费），而非人工验一次——每个 PR
+  重跑，不会腐化；它同时是未来 macOS Keychain secret provider 的前置（那大概率需要
+  CGO，必须原生构建）；
+- **构建仍全部在 GitHub 上**：`release.yml` 已是 tag 触发全流程，只需把
+  `release-build.sh` 里写死的 `GOOS=linux GOARCH=amd64` 改回多平台循环；
+- **Gatekeeper**：`curl | sh` 不打 quarantine 属性、正常；浏览器从 Releases 页下载
+  会被拦。彻底解决需 Apple Developer 账号（约 $99/年）签名公证，**建议先不买**，
+  把限制和一行 `xattr -d` 写进文档。
+
+第 1 步「CI 加 macOS runner 跑现有全套」是**探针**，决定后续是半天还是三天；
+跑出结果前不预估，也不猜。
 
 ## 里程碑完成记录（截至 2026-08-01 `v0.1.9`）
 

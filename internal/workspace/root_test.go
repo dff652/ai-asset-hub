@@ -8,7 +8,7 @@ import (
 )
 
 func TestPrepareRootRequiresAnExplicitDirectory(t *testing.T) {
-	home := t.TempDir()
+	home := canonicalTempDir(t)
 	root, created, err := PrepareRoot("~/ai-assets", home, "")
 	if err != nil {
 		t.Fatal(err)
@@ -46,8 +46,8 @@ func TestPrepareRootRejectsEmptyAndFiles(t *testing.T) {
 }
 
 func TestPrepareRootRejectsManagedToolDirectories(t *testing.T) {
-	home := t.TempDir()
-	project := t.TempDir()
+	home := canonicalTempDir(t)
+	project := canonicalTempDir(t)
 	for _, boundary := range []string{home, project} {
 		for _, name := range managedToolDirectories {
 			candidate := filepath.Join(boundary, name, "workspace")
@@ -118,7 +118,7 @@ func TestPrepareRootRejectsSymlinkIntoManagedToolDirectory(t *testing.T) {
 }
 
 func TestValidateExistingRootNeverCreatesAndUsesTheSameSafetyBoundary(t *testing.T) {
-	home := t.TempDir()
+	home := canonicalTempDir(t)
 	missing := filepath.Join(home, "missing")
 	if _, err := ValidateExistingRoot(missing, home, ""); !errors.Is(err, ErrInvalidOptions) {
 		t.Fatalf("missing root error = %v, want ErrInvalidOptions", err)

@@ -245,7 +245,7 @@ func TestWorkspacePromptExplainsRoleTargetsAndStages(t *testing.T) {
 
 func composeModel(t *testing.T, workspaceRoot string) Model {
 	t.Helper()
-	home := t.TempDir()
+	home := canonicalTempDir(t)
 	skill := filepath.Join(home, ".claude", "skills", "review")
 	if err := os.MkdirAll(skill, 0o755); err != nil {
 		t.Fatal(err)

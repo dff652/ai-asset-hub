@@ -28,6 +28,33 @@ jobs:
       - name: closed loop
         run: ./scripts/demo-apply-scan-loop.sh
 
+  # darwin/arm64 behavioural verification, the tier roadmap P1 wants proven
+  # rather than merely cross-compiled: macos-latest is Apple Silicon. It runs
+  # exactly what the linux job runs, so the two cannot drift apart.
+  #
+  # Started as a probe with continue-on-error to find out what actually broke
+  # (thirteen tests, all path-spelling assumptions, no production change). Now
+  # that it is green the tolerance is gone -- a check that cannot fail reports
+  # nothing. Add it to the required status checks in branch protection so it
+  # gates merges the way the linux jobs do.
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: sw_vers && uname -m && go version
+      - run: go test ./...
+      - run: go vet ./...
+      - name: gofmt
+        run: ./scripts/check-gofmt.sh
+      - name: closed loop
+        run: ./scripts/demo-apply-scan-loop.sh
+      - name: installer regression
+        run: ./scripts/test-install.sh
+
   lint:
     runs-on: ubuntu-latest
     steps:

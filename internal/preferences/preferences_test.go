@@ -21,8 +21,20 @@ func TestDefaultsAreNonBusinessAndSafe(t *testing.T) {
 }
 
 func TestDefaultPathUsesOperatorConfigDirectory(t *testing.T) {
-	configRoot := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", configRoot)
+	// Asserted against os.UserConfigDir rather than against XDG_CONFIG_HOME.
+	// The two agree on Linux but not on macOS, where the platform location is
+	// ~/Library/Application Support and XDG is ignored -- and following the
+	// platform is the behaviour we want, so the test follows it too instead of
+	// pinning one platform's spelling. Isolation comes from HOME, which
+	// os.UserConfigDir honours everywhere.
+	home := canonicalTempDir(t)
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "config"))
+
+	configRoot, err := os.UserConfigDir()
+	if err != nil {
+		t.Fatal(err)
+	}
 	got, err := DefaultPath()
 	if err != nil {
 		t.Fatal(err)
@@ -31,6 +43,8 @@ func TestDefaultPathUsesOperatorConfigDirectory(t *testing.T) {
 	if got != want {
 		t.Fatalf("DefaultPath() = %q, want %q", got, want)
 	}
+	// The whole point of the call is that asking where preferences live must
+	// not bring them into existence.
 	if _, err := os.Stat(filepath.Join(configRoot, "aiah")); !os.IsNotExist(err) {
 		t.Fatalf("DefaultPath created a directory: %v", err)
 	}
@@ -189,7 +203,7 @@ func TestLoadValidDocumentAndWarnsWithoutCreatingStaleLibrary(t *testing.T) {
 }
 
 func TestSaveCreatesPrivateStoreAndNormalizesPreferredLibrary(t *testing.T) {
-	root := t.TempDir()
+	root := canonicalTempDir(t)
 	home := filepath.Join(root, "home")
 	if err := os.Mkdir(home, 0o700); err != nil {
 		t.Fatal(err)
